@@ -10,6 +10,7 @@ export const webmap = new WebMap({
     }
 });
 
+
 export const view = new MapView({
     map: webmap
 });
