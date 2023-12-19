@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import NavTabs from './NavTabs';
 import Home from "./pages/Home";
-import About from "./pages/About";
+import Download from "./pages/Download";
 import Tools from "./pages/Tools"
 
 import Container from "react-bootstrap/esm/Container";
@@ -26,8 +26,8 @@ export default function PortfolioContainer() {
       if (currentPage === 'Home') {
         return <Home />;
       }
-      if (currentPage === 'About') {
-        return <About />;
+      if (currentPage === 'Download') {
+        return <Download />;
       }
     //   if (currentPage === 'Blog') {
     //     return <Blog />;
