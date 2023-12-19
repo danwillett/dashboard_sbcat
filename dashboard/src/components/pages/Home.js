@@ -5,13 +5,14 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
 import Map from "../Map";
+import VolumeSlider from '../apps/VolumeSlider'
 
 export default function Home() {
     return (
 
         <Container>
             <Row>
-                <Map />
+                <VolumeSlider />
             </Row>
 
         </Container>
