@@ -20,14 +20,14 @@ function NavTabs({ currentPage, handlePageChange }) {
         <nav>
             <Container>
                 <Row className="justify-content-left">
-                    <h1 href='#' style={styles.navHeader}>SB County Active Transportation Data Hub</h1>
+                    <h1 href='#' style={styles.navHeader}>Geog W12: Favorite Places Lab</h1>
                 </Row>
                 <Row className="navbar navbar-expand-sm navbar-light">
                     <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                         <span className="navbar-toggler-icon"></span>
                     </button>
-                    <div className="collapse navbar-collapse d-flex justify-content-center" id="navbarSupportedContent">
-                        <ul className="navbar-nav justify-content-center">
+                    <div className="collapse navbar-collapse d-flex justify-content-left" id="navbarSupportedContent">
+                        <ul className="navbar-nav justify-content-left">
                             <li className="nav-item" style={styles.navItems}>
                                 <a
                                     href="#home"
@@ -40,48 +40,14 @@ function NavTabs({ currentPage, handlePageChange }) {
                             <li className="nav-item" style={styles.navItems}>
                                 <a
 
-                                    href="#about"
-                                    onClick={() => handlePageChange('About')}  //makes about the active page
-                                    className={currentPage === 'About' ? 'nav-link active' : 'nav-link'}
+                                    href="#download"
+                                    onClick={() => handlePageChange('Download')}  //makes about the active page
+                                    className={currentPage === 'Download' ? 'nav-link active' : 'nav-link'}
                                 >
-                                    About
+                                    Download Data
                                 </a>
                             </li>
-                            <li className="nav-item" style={styles.navItems}>
-                                <a
-
-                                    href="#tools"
-                                    onClick={() => handlePageChange('Tools')}  //makes about the active page
-                                    className={currentPage === 'Tools' ? 'nav-link active' : 'nav-link'}
-                                >
-                                    Tools
-                                </a>
-                            </li>
-                            <li className="nav-item" style={styles.navItems}>
-                                <a
-
-                                    href="#blog"
-                                    onClick={() => handlePageChange('Blog')} //makes blog the active page
-                                    //  TODO: Add a comment explaining what this logic is doing
-                                    //  If blog is currentpage, make this nav link active
-                                    className={currentPage === 'Blog' ? 'nav-link active' : 'nav-link'}
-                                >
-                                    Blog
-                                </a>
-                            </li>
-                            <li className="nav-item" style={styles.navItems}>
-
-                                <a
-
-                                    href="#contact"
-                                    //  TODO: Add a comment explaining what this logic is doing
-                                    // if current page is contact make this nav-link active
-                                    onClick={() => handlePageChange('Contact')} //makes contact the active page
-                                    className={currentPage === 'Contact' ? 'nav-link active' : 'nav-link'}
-                                >
-                                    Contact
-                                </a>
-                            </li>
+                            
                         </ul>
                     </div>
                 </Row>
