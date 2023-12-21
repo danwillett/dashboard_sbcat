@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { loadModules } from "esri-loader";
 // import MapForm from "./MapForm";
 
-export default function VolumeSlider() {
+export default function VolumeSliderMap() {
+
   const mapRef = useRef();
   const infoRef = useRef();
   const sliderRef = useRef();
@@ -128,8 +129,6 @@ export default function VolumeSlider() {
         };
       }
 
-      
-
       // Create a view
       const view = new MapView({
         map: map,
@@ -238,15 +237,12 @@ export default function VolumeSlider() {
   
       });
 
-
-      
-
-      
-
     };
 
     initMap();
   }, []);
+
+
 
   return (
     <div>
