@@ -7,11 +7,12 @@ export default function VolumeSlider() {
   const infoRef = useRef();
   const sliderRef = useRef();
   const slider = useRef(null);
-  const [symbolSize, setSymbolSize] = useState(5)
+  const legendRef = useRef()
+  const legend = useRef(null);
 
   useEffect(() => {
     const initMap = async () => {
-      const [Map, FeatureLayer, LayerView, MapView, esriConfig, FeatureTable, Query, GraphicsLayer, Graphic, Slider, Legend, Expand, ClassBreaksRenderer] =
+      const [Map, FeatureLayer, LayerView, MapView, esriConfig, FeatureTable, Query, GraphicsLayer, Graphic, Slider, Legend, Expand, UniqueValueRenderer] =
         await loadModules([
           "esri/Map",
           "esri/layers/FeatureLayer",
@@ -25,7 +26,7 @@ export default function VolumeSlider() {
           'esri/widgets/Slider',
           "esri/widgets/Legend",
           "esri/widgets/Expand",
-          "esri/renderers/ClassBreaksRenderer"
+          "esri/renderers/UniqueValueRenderer"
 
         ]);
       console.log(esriConfig);
@@ -112,7 +113,22 @@ export default function VolumeSlider() {
       });
 
       console.log(map)
-   
+
+      // Create a symbol function based on color
+      function createSymbol(color) {
+        return {
+          type: "simple-marker",
+          style: "circle",
+          color: color,
+          size: 10,
+          outline: {
+            color: "white",
+            width: 1,
+          },
+        };
+      }
+
+      
 
       // Create a view
       const view = new MapView({
@@ -132,17 +148,27 @@ export default function VolumeSlider() {
         }),
         "top-right"
       );
+      
       console.log(bikeResultsLayer)
       view.whenLayerView(bikeResultsLayer).then((layerView) => {
         
         console.log(layerView)
-        const legend = new Legend({
-          view: view,
-          container: "legendDiv"
-        });
+        if (!legend.current) {
+          legend.current = new Legend({
+            view: view,
+            container: legendRef.current,
+            // layerInfos: [
+            //   {
+            //     layer: dummyFeatureLayer,
+            //     title: "Hourly Bike Counts", // Add your desired title
+            //   },
+            // ],
+          });
+        }
+        console.log(legend.current)
+        
         
         if (!slider.current) {
-          console.log(slider)
           slider.current = new Slider({
             min: 0,
             max: 23,
@@ -153,27 +179,17 @@ export default function VolumeSlider() {
             },
             precision: 0
           });
-          console.log(slider)
+
         }
-        console.log(slider.current)
-        
-  
+
         const sliderValue = document.getElementById("sliderValue");
   
         const symbolRange = (count) => {
           let size = 0
-          if (count < 10) {
-            size = 5
-          } else if (count < 20) {
-            size = 10
-          } else if (count < 50) {
-            size = 15
-          } else if (count < 100) {
-            size = 20
-          } else if (count == null) {
-            size = 0
+          if (count) {
+            size = Math.sqrt(count)
           } else {
-            size = 25
+            size = 0
           }
           return size
         }
@@ -215,9 +231,7 @@ export default function VolumeSlider() {
           bikeResultsLayer.graphics.removeAll();
 
           // Add the updated graphics to the layer
-          bikeResultsLayer.graphics.addMany(updatedGraphics);
-
-  
+          bikeResultsLayer.graphics.addMany(updatedGraphics);  
   
         });
   
@@ -244,7 +258,7 @@ export default function VolumeSlider() {
         <div id="sliderContainer">
           <div ref={sliderRef}></div>
         </div>
-        <div id="legendDiv"></div>
+        <div ref={legendRef}></div>
       </div>
     </div>
   );
