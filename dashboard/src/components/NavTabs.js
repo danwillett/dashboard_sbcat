@@ -20,7 +20,7 @@ function NavTabs({ currentPage, handlePageChange }) {
         <nav>
             <Container>
                 <Row className="justify-content-left">
-                    <h1 href='#' style={styles.navHeader}>Geog W12: Favorite Places Lab</h1>
+                    <h1 href='#' style={styles.navHeader}>SB County Active Transportation Dashboard</h1>
                 </Row>
                 <Row className="navbar navbar-expand-sm navbar-light">
                     <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
