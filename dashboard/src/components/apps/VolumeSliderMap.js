@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { loadModules } from "esri-loader";
 import VolumeSliderOptions from "./VolumeSliderOptions";
+import VolumeChart from "./VolumeChart";
+
 
 export default function VolumeSliderMap() {
 
@@ -8,6 +10,7 @@ export default function VolumeSliderMap() {
     bikes: true,
     peds: false,
   });
+  const [chartData, setChartData] = useState(null)
   const [showForm, setShowForm] = useState(true)
   const handleApplyOptions = (options) => {
     // Update the filter options when the user applies changes
@@ -20,6 +23,25 @@ export default function VolumeSliderMap() {
   const slider = useRef(null);
   const legendRef = useRef()
   const legend = useRef(null);
+  const chartRef = useRef()
+
+  const chartOptions = {
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
+    },
+  };
+
+  const symbolRange = (count) => {
+    let size = 0
+    if (count) {
+      size = Math.sqrt(count)
+    } else {
+      size = 0
+    }
+    return size
+  }
 
   useEffect(() => {
 
@@ -117,19 +139,30 @@ export default function VolumeSliderMap() {
             })
  
             graphicFeature['attributes']['type'] = name
-
+            let countAmount = graphicFeature.attributes['avgh_12']
+            let symbolSize = symbolRange(countAmount)
+            console.log(symbolSize)
+            let symbol = {
+                type: "simple-marker",
+                color: "blue",
+                size: symbolSize,
+                outline: {
+                  color: "white",
+                  width: 1
+                }
+            
+              }
 
             if (graphicFeature['geometry']) {
               let graphic = new Graphic({
                 geometry: graphicFeature.geometry,
                 attributes: graphicFeature.attributes,
-                // symbol: symbol
+                symbol: symbol
               })
               resultsLayer.add(graphic)
             }
             }
             
-
           })
       
 
@@ -150,7 +183,7 @@ export default function VolumeSliderMap() {
       // Create a view
       const view = new MapView({
         map: map,
-        center: [-119.7, 34.5],
+        center: [-119.8, 34.45],
         zoom: 11,
         container: mapRef.current,
       });
@@ -197,16 +230,6 @@ export default function VolumeSliderMap() {
 
         const sliderValue = document.getElementById("sliderValue");
   
-        const symbolRange = (count) => {
-          let size = 0
-          if (count) {
-            size = Math.sqrt(count)
-          } else {
-            size = 0
-          }
-          return size
-        }
-  
         slider.current.on(["thumb-change", "thumb-drag"], (event) => {
 
           let fieldToShow = `avg${hourFields[event.value]}`
@@ -233,6 +256,7 @@ export default function VolumeSliderMap() {
                 symbol: symbol,
                 attributes: resultsLayer.graphics.items[i].attributes,
               });
+              updatedGraphic['attributes']['current_count'] = countAmount
           
               updatedGraphics.push(updatedGraphic);
           }
@@ -243,8 +267,24 @@ export default function VolumeSliderMap() {
           resultsLayer.graphics.removeAll();
 
           // Add the updated graphics to the layer
-          resultsLayer.graphics.addMany(updatedGraphics);  
-  
+          resultsLayer.graphics.addMany(updatedGraphics);
+          
+          // update charts with location counts
+          let chart_labels =[];
+          let chart_counts =[];
+          updatedGraphics.forEach((graphic) => {
+            chart_labels.push(graphic.attributes.location)
+            chart_counts.push(graphic.attributes.current_count)
+          })
+
+          setChartData({        
+            labels: chart_labels, 
+            datasets: [{
+              label: 'Counts',
+              data: chart_counts
+          }]
+          })
+        
         });
   
   
@@ -266,16 +306,19 @@ export default function VolumeSliderMap() {
   return (
     <div>
 
-        <div ref={mapRef} style={{ height: "70vh", width: "70vw" }}></div>
+        <div ref={mapRef} style={{ height: "50vh", width: "70vw" }}></div>
         <div ref={infoRef}>
           <div id="description">
-            Show power plants with at least <span id="sliderValue">0</span> megawatts of capacity
+            Counts at <span id="sliderValue">12</span> h
           </div>
           <div id="sliderContainer">
             <div ref={sliderRef}></div>
           </div>
           <div ref={legendRef}></div>
         </div>
+        
+        { chartData && <VolumeChart data={chartData} /> }
+        
     
       {showForm && <VolumeSliderOptions showForm={showForm} onApplyOptions={handleApplyOptions} onClose={handleCloseForm} />}
     </div>
