@@ -1,9 +1,9 @@
 import './App.css';
-import PortfolioContainer from './components/AppContainer'
+import AppContainer from './components/AppContainer'
 
 function App() {
   return (
-    <PortfolioContainer></PortfolioContainer>
+    <AppContainer></AppContainer>
   );
 }
 

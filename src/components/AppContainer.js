@@ -1,23 +1,21 @@
 import React from "react";
 import { useState } from "react";
-
+import CssBaseline from '@mui/material/CssBaseline';
 import NavTabs from './NavTabs';
 import Home from "./pages/Home";
 import Download from "./pages/Download";
 import Tools from "./pages/Tools"
 
-import Container from "react-bootstrap/esm/Container";
+import {Container, Grid} from "@mui/material";
 
 const styles = {
-    head: {
-        padding: '0 50px'
-    },
+
     siteName: {
         fontSize: '30px'
     }
 }
 
-export default function PortfolioContainer() {
+export default function AppContainer() {
     const [currentPage, setCurrentPage] = useState('Home');
   
     // TODO: Add a comment describing the functionality of this method
@@ -38,13 +36,16 @@ export default function PortfolioContainer() {
     const handlePageChange = (page) => setCurrentPage(page);
   
     return (
-    
-      <Container style={styles.head}>
+      <div>
+        <CssBaseline />
+        <Grid container xs={12} direction="column">
         {/* <h1 style={styles.siteName}>SB County Active Transportation Data Hub</h1> */}
         
-        <NavTabs currentPage={currentPage} handlePageChange={handlePageChange} />
-        {renderPage()}
-      </Container>
+          <NavTabs currentPage={currentPage} handlePageChange={handlePageChange} />
+          {renderPage()}
+      </Grid>
+      </div>
+      
 
        
         

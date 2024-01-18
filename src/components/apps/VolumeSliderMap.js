@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { loadModules } from "esri-loader";
+import {Container, Grid} from "@mui/material";
 import VolumeSliderOptions from "./VolumeSliderOptions";
 import VolumeChart from "./VolumeChart";
 
@@ -46,6 +47,7 @@ export default function VolumeSliderMap() {
   useEffect(() => {
 
     const initMap = async () => {
+
       const [Map, FeatureLayer, LayerView, MapView, esriConfig, FeatureTable, Query, GraphicsLayer, Graphic, Slider, Legend, Expand, UniqueValueRenderer] =
         await loadModules([
           "esri/Map",
@@ -141,7 +143,7 @@ export default function VolumeSliderMap() {
             graphicFeature['attributes']['type'] = name
             let countAmount = graphicFeature.attributes['avgh_12']
             let symbolSize = symbolRange(countAmount)
-            console.log(symbolSize)
+            
             let symbol = {
                 type: "simple-marker",
                 color: "blue",
@@ -218,26 +220,41 @@ export default function VolumeSliderMap() {
           slider.current = new Slider({
             min: 0,
             max: 23,
-            values: [12],
+            values: [0,23],
             container: sliderRef.current,
             visibleElements: {
               rangeLabels: true
             },
-            precision: 0
+            precision: 0,
+            rangeSlider: true
           });
-
         }
 
         const sliderValue = document.getElementById("sliderValue");
-  
+        let thumbValueMin = 0
+        let thumbValueMax = 23
         slider.current.on(["thumb-change", "thumb-drag"], (event) => {
-
-          let fieldToShow = `avg${hourFields[event.value]}`
+          
+          let thumbIndex = event.index // if 0, its the min thumb, if 1 its the max thumb
+          let thumbValue = event.value
+          console.log(thumbValue)
+          if (thumbIndex == 0) {
+            thumbValueMin = thumbValue            
+          } else if (thumbIndex == 1) {
+            thumbValueMax = thumbValue          
+          }
+          let fieldsToShow = []
+          for (let i = thumbValueMin; i <=thumbValueMax; i++) {
+            fieldsToShow.push(`avg${hourFields[i]}`)
+          }
   
           let pointsAmount = resultsLayer.graphics.items.length
           let updatedGraphics = []
           for (let i = 0; i < pointsAmount; i++) {
-            let countAmount = resultsLayer.graphics.items[i].attributes[fieldToShow]
+            let countAmount = 0;
+            fieldsToShow.forEach((field) => {
+              countAmount += resultsLayer.graphics.items[i].attributes[field]
+            })
             let symbolSize = symbolRange(countAmount)
             let symbol = {
                 type: "simple-marker",
@@ -304,9 +321,12 @@ export default function VolumeSliderMap() {
   };
 
   return (
-    <div>
-
-        <div ref={mapRef} style={{ height: "50vh", width: "70vw" }}></div>
+    <Container maxWidth='lg'>
+    <Grid container direction="column" style={{width: '100%', justifyContent: 'center'}}>
+      <Grid item xs={12} md={8}>
+        
+        <div ref={mapRef} style={{ height: "60vh", width: "100%", padding: '30px', boxSizing: "border-box"}}></div>
+            
         <div ref={infoRef}>
           <div id="description">
             Counts at <span id="sliderValue">12</span> h
@@ -316,11 +336,16 @@ export default function VolumeSliderMap() {
           </div>
           <div ref={legendRef}></div>
         </div>
+      </Grid>
         
-        { chartData && <VolumeChart data={chartData} /> }
+       <Grid item alignContent="center" >
+       { chartData && <VolumeChart data={chartData} /> }
+        </Grid> 
+        
         
     
       {showForm && <VolumeSliderOptions showForm={showForm} onApplyOptions={handleApplyOptions} onClose={handleCloseForm} />}
-    </div>
+    </Grid>
+    </Container>
   );
 }
