@@ -7,13 +7,6 @@ export default function VolumeChart(props) {
         const chartRef = useRef(null)
         const [chart, setChart] = useState(null)
         // const chartRef = props.chartRef
-        
-        if (chart !== null) {
-          // update chart
-          chart.data.datasets[0].data = props.data.datasets[0].data
-          chart.update()
-        }
-
         const formatLabels = (labels) => {
 
           return labels.map((label) => {
@@ -34,29 +27,39 @@ export default function VolumeChart(props) {
                           .replace(/\bTerrace\b/g, 'Ter')
                           .replace(/\bParkway\b/g, 'Pkwy')
                           .replace(/\bWay\b/g, 'Way')
+                          .replace(/\bNorthbound\b/g, '')
+                          .replace(/\bSouthbound\b/g, '')
+                          .replace(/\bEastbound\b/g, '')
+                          .replace(/\bWestbound\b/g, '')
                           .replace(/&(.*?)&.*?$/, '&$1');
           })
         }
+        if (chart !== null) {
+          // update chart
+          chart.data.datasets[0].data = props.data.datasets[0].data
+          chart.options.scales.x.labels = formatLabels(props.data.labels)
+          chart.update()
+        }
+
+        
       
         useEffect(() => {
-          console.log(chartRef.current)
           const ctx = chartRef.current.getContext('2d');
       
-          let data = props.data
-          
-      
+          const data = props.data
           const options = {
             scales: {
-              y: {
+              x: {
                 type: 'category', // Set the x-axis scale to 'category'
                 labels: formatLabels(data.labels),
               },
-              x: {
+              y: {
                 beginAtZero: true,
               },
               
             },
-            indexAxis:'y',
+            indexAxis:'x',
+            maintainAspectRatio: false
           };
       
           const chart = new Chart(ctx, {

@@ -233,33 +233,12 @@ export default function VolumeSliderMapCore() {
             name = "ped"
             console.log(name)
         }
-        let day_filter
-        if (filterOptions.weekday) {
-            console.log("weekday!")
-            day_filter = "'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'"
-        } 
         
-        if (filterOptions.weekend) {
-            console.log("weekend!!")
-            if (day_filter) {
-                day_filter = day_filter + ", 'Saturday', 'Sunday'"
-            } else {
-                day_filter = "'Saturday', 'Sunday'"
-            }
-        }
-
-        if (day_filter.length > 0) {
-            day_filter = `${name}_volumes_day IN (${day_filter})`
-        } else {
-            day_filter = ""
-        }
-        console.log(day_filter)
         
 
         const volumes = new FeatureLayer({
             url: url
         })
-        console.log(volumes)
 
         const sites = new FeatureLayer({
             url: "https://services1.arcgis.com/4TXrdeWh0RyCqPgB/arcgis/rest/services/ATP_Volumes_SB/FeatureServer/1"
@@ -292,7 +271,7 @@ export default function VolumeSliderMapCore() {
 
 
             const statsQuery = new Query({
-                where: day_filter,
+                where: filterOptions.filter,
                 outStatistics: statsObj,
                 groupByFieldsForStatistics: [`${name}_volumes_location`],
                 returnGeometry: false,
@@ -354,6 +333,7 @@ export default function VolumeSliderMapCore() {
         })
     }
 
+    
     const initMap = () => {
         console.log("reinitializing")
         console.log(view)
@@ -378,8 +358,8 @@ export default function VolumeSliderMapCore() {
                 }),
                 "top-right"
             );
-            const chartDiv = document.getElementById("chartDiv")
-            newView.ui.add([chartDiv], "bottom-left")
+            // const chartDiv = document.getElementById("chartDiv")
+            // newView.ui.add([chartDiv], "bottom-left")
             setView(newView)
 
         }
@@ -489,18 +469,18 @@ export default function VolumeSliderMapCore() {
 
                     <div ref={mapRef} style={{ width: "100%", minHeight: "80vh",  boxSizing: "border-box" }}></div>
 
-                    <Grid container justifyContent="center" direction="column" id="infoDiv" className="esri-widget" style={{ width: "550px" }} spacing={1}>
+                    <Grid container justifyContent="center" alignItems="center" direction="column" id="infoDiv" className="esri-widget" style={{ width: "550px", height: "100%" }} spacing={1}>
                         <Grid item>
                             <Typography id="description" variant="h6" style={{ textAlign: 'center' }}>
                                 Volumes
                             </Typography>
                         </Grid>
-                        <Grid item>
+                        <Grid item style={{width: "100%"}}>
                             
                             <VolumeSliderOptions onApplyOptions={handleApplyOptions} />
                         </Grid>
                         <Grid container alignItems="center" justifyContent="space-between" direction="row" padding={3}>
-                            <Grid item id="sliderContainer" style={{ height: "200px", width: "400px", marginTop: "10px", marginBottom: "10px" }}>
+                            <Grid item id="sliderContainer" style={{ height: "100px", width: "400px", marginTop: "10px", marginBottom: "10px" }}>
                                 <div id="sliderElement" ref={sliderRef}></div>
                             </Grid>
                             <Grid item>
@@ -515,7 +495,7 @@ export default function VolumeSliderMapCore() {
                                             handleSliderChange(event)
                                         }
                                         }
-                                    >
+                                      >
                                         <MenuItem value={"range"} className="esri-widget">Range</MenuItem>
                                         <MenuItem value={"hourly"} className="esri-widget">Hourly</MenuItem>
 
@@ -526,14 +506,14 @@ export default function VolumeSliderMapCore() {
 
 
                         </Grid>
-
+                        {chartData && <Grid item alignContent="center" id='chartDiv' className='esri-widget' style={{width: '95%', height: '40vh'}}>
+                                        <VolumeChart data={chartData} chartRef={chartRef} />
+                                      </Grid>}
                         <div></div>
                         <div ref={legendRef}></div>
                     </Grid>
 
-                    <Grid item alignContent="center" id='chartDiv' className='esri-widget' style={{width: '40vw', height: '50vh'}}>
-                    {chartData && <VolumeChart data={chartData} chartRef={chartRef} />}
-                    </Grid>
+                    
                 </Grid>
 
                 
