@@ -469,7 +469,7 @@ export default function VolumeSliderMapCore() {
 
                     <div ref={mapRef} style={{ width: "100%", minHeight: "80vh",  boxSizing: "border-box" }}></div>
 
-                    <Grid container justifyContent="center" alignItems="center" direction="column" id="infoDiv" className="esri-widget" style={{ width: "550px", height: "100%" }} spacing={1}>
+                    <Grid container justifyContent="center" alignItems="center" direction="column" wrap={false} id="infoDiv" className="esri-widget" style={{ width: "550px", height: "100%", overflowY: 'scroll', maxHeight: '75vh' }}  spacing={1}>
                         <Grid item>
                             <Typography id="description" variant="h6" style={{ textAlign: 'center' }}>
                                 Volumes
@@ -506,12 +506,14 @@ export default function VolumeSliderMapCore() {
 
 
                         </Grid>
-                        {chartData && <Grid item alignContent="center" id='chartDiv' className='esri-widget' style={{width: '95%', height: '40vh'}}>
-                                        <VolumeChart data={chartData} chartRef={chartRef} />
-                                      </Grid>}
+                        
                         <div></div>
                         <div ref={legendRef}></div>
                     </Grid>
+
+                    {chartData && <Grid item alignContent="center" id='chartDiv' className='esri-widget' style={{width: '80%', height: '40vh'}}>
+                                        <VolumeChart data={chartData} chartRef={chartRef} />
+                                      </Grid>}
 
                     
                 </Grid>
