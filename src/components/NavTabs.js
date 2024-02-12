@@ -1,7 +1,7 @@
 import React from "react";
-import Container from 'react-bootstrap/Container';
-import Row from "react-bootstrap/esm/Row";
-import Col from "react-bootstrap/esm/Col";
+import {Container, Grid} from '@mui/material';
+// import Row from "react-bootstrap/esm/Row";
+// import Col from "react-bootstrap/esm/Col";
 
 const styles = {
     navHeader: {
@@ -19,10 +19,10 @@ function NavTabs({ currentPage, handlePageChange }) {
     return (
         <nav>
             <Container>
-                <Row className="justify-content-left">
+                <Grid item className="justify-content-left">
                     <h1 href='#' style={styles.navHeader}>SB County Active Transportation Dashboard</h1>
-                </Row>
-                <Row className="navbar navbar-expand-sm navbar-light">
+                </Grid>
+                <Grid item className="navbar navbar-expand-sm navbar-light">
                     <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                         <span className="navbar-toggler-icon"></span>
                     </button>
@@ -50,7 +50,7 @@ function NavTabs({ currentPage, handlePageChange }) {
                             
                         </ul>
                     </div>
-                </Row>
+                </Grid>
             </Container>
         </nav>
     );
