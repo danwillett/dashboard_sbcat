@@ -38,7 +38,7 @@ export default function AppContainer() {
     return (
       <div>
         <CssBaseline />
-        <Grid container xs={12} direction="column">
+        <Grid container xs={12} width="100vw" height="100vh" direction="column">
         {/* <h1 style={styles.siteName}>SB County Active Transportation Data Hub</h1> */}
         
           <NavTabs currentPage={currentPage} handlePageChange={handlePageChange} />
