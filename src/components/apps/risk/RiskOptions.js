@@ -25,7 +25,7 @@ export default function RiskOptions(inputs) {
     const setFilters = inputs.setFilters
     const [mode, setMode] = useState("both")
     const [bikes, setBikes] = useState(true)
-    const [peds, setPeds] = useState(false)
+    const [peds, setPeds] = useState(true)
     const [weekday, setWeekday] = useState(true)
     const [weekend, setWeekend] = useState(true)
     const [years, setYears] = useState([])
@@ -70,9 +70,9 @@ export default function RiskOptions(inputs) {
         const pedFilt = peds?1 : 0
 
         console.log(mode)
-        const days = weekday ? "'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'" : weekend ? "'Saturday', 'Sunday'" : "'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'"
-        // const dayFilter = `${mode}_volumes_day IN (${days})`
-        const dayFilter = ``
+        // const days = weekday ? "'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'" : weekend ? "'Saturday', 'Sunday'" : "'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'"
+        // // const dayFilter = `${mode}_volumes_day IN (${days})`
+        // const dayFilter = ``
         let yearFilterGood
         let yearFilter
         if (yearChoices.length > 0) {
@@ -90,32 +90,7 @@ export default function RiskOptions(inputs) {
         const modeFilter = `bicyclist = ${bikeFilt} And pedestrian = ${pedFilt}`
         const filters = yearFilterGood ? `${modeFilter} And ${yearFilter}`: modeFilter
         setFilters(filters)
-        
-        // const riskQuery = new Query()
-        // riskQuery.where = `bicyclist = ${mode}`
-
-        // const layerView = await view.whenLayerView(incidentData)
-        // await reactiveUtils.whenOnce(() => !layerView.updating);
-        // console.log(layerView)
-        // layerView.queryFeatures().then(function(results){
-        //     console.log(results); 
-        // })
-        // layerView.filter = {
-        //     where: filters
-        // }
-        // layerView.effect = {
-        //     filter: layerView.filter
-        // }
-        // reactiveUtils.when(
-        //         () => !layerView.updating,
-        //         (val) => {
-        //           layerView.queryFeatures().then(function(results){
-        //             console.log(results);  // prints all the client-side features to the console
-        //           });
-        //         }
-        //       );
-
-       
+     
     };
 
     const handleYearChange = (event) => {
@@ -147,23 +122,15 @@ export default function RiskOptions(inputs) {
   
         })
   
-  
       }
 
     useEffect(()=>{
         loadYears()
     }, [])
 
-    // useEffect(() => {
-    //     if (view !== null){
-    //         const layerView = view.whenLayerView(incidentData)
-
-    //     }
-    // })
-  
 
     return (
-        <Grid container style= {{ width: '100%', padding: '5%'}} direction={"column"} justifyContent="center" alignItems="center">
+        <Grid container style= {{ width: '100%', padding: '5%'}} direction={"column"} justifyContent="center" alignItems="left">
 
             
             <Grid item>
@@ -262,7 +229,7 @@ export default function RiskOptions(inputs) {
                 </Grid>
             </Grid>
             
-            <Button variant="contained" onClick={handleApplyOptions}>Load Counts</Button>
+            <Button variant="contained" onClick={handleApplyOptions} style={{marginTop: '20px'}}>Load Counts</Button>
 
 
             

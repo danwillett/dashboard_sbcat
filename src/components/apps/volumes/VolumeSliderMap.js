@@ -1,21 +1,18 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
+import { MapContext } from "../../MapContext";
 import { Container, Grid, Checkbox, Typography, FormGroup, FormControl, FormControlLabel, Select, InputLabel, MenuItem } from "@mui/material";
 import VolumeSliderOptions from "./VolumeSliderOptions";
 import VolumeChart from "./VolumeChart";
 import Map from '@arcgis/core/Map.js'
 import MapView from '@arcgis/core/views/MapView.js'
-import Query from '@arcgis/core/rest/support/Query.js'
-import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer.js'
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer.js'
-import Graphic from '@arcgis/core/Graphic.js'
 import Expand from '@arcgis/core/widgets/Expand.js'
-import Slider from '@arcgis/core/widgets/Slider.js'
-import Legend from '@arcgis/core/widgets/Legend.js'
-import Fullscreen from "@arcgis/core/widgets/Fullscreen.js";
+
+
 import { createSlider, initMapSlider, initMapLayers, addSliderEventListener } from "./utils";
 
 export default function VolumeSliderMapCore() {
-    const [filterOptions, setFilterOptions] = useState({
+    // volume filters
+    const [volumeFilterOptions, setVolumeFilterOptions] = useState({
         bikes: true,
         peds: false,
         weekend: true,
@@ -24,14 +21,9 @@ export default function VolumeSliderMapCore() {
     const [chartData, setChartData] = useState(null)
     const [showForm, setShowForm] = useState(true)
     const [sliderType, setSliderType] = useState("range")
-    const [map, setMap] = useState(null)
-    const [view, setView] = useState(null)
-    const [resultsLayer, setResultsLayer] = useState(null)
+    const { map, setMap, view, setView, incidentData, setIncidentData } = useContext(MapContext)
 
-    const handleApplyOptions = (options) => {
-        // Update the filter options when the user applies changes
-        setFilterOptions(options);
-    };
+    const [resultsLayer, setResultsLayer] = useState(null)
 
     const mapRef = useRef();
     const sliderRef = useRef();
@@ -42,7 +34,7 @@ export default function VolumeSliderMapCore() {
 
 
     const hourFields = ["h_00", "h_01", "h_02", "h_03", "h_04", "h_05", "h_06", "h_07", "h_08", "h_09", "h_10", "h_11", "h_12", "h_13", "h_14", "h_15", "h_16", "h_17", "h_18", "h_19", "h_20", "h_21", "h_22", "h_23"]
-
+    
     const handleSliderChange = (event) => {
 
         event.preventDefault()
@@ -70,11 +62,10 @@ export default function VolumeSliderMapCore() {
             slider.current = createSlider(values, rangeSlider, sliderRef)
             addSliderEventListener(event.target.value, resultsLayer, slider, setChartData)
         }
+    }
 
         
-    };
-
-
+    
     const initMap = () => {
         console.log("reinitializing")
         console.log(view)
@@ -118,12 +109,12 @@ export default function VolumeSliderMapCore() {
 
     // When chart options get filled out, layers are queried to arcgis portal
     useEffect(()=> {
-        if (filterOptions.bikes | filterOptions.peds) {
+        if (volumeFilterOptions.bikes | volumeFilterOptions.peds) {
             console.log("querying data from Enterprise")
-            initMapLayers(filterOptions, hourFields, setResultsLayer)
+            initMapLayers(volumeFilterOptions, hourFields, setResultsLayer)
         } 
         
-    }, [filterOptions])
+    }, [volumeFilterOptions])
 
     // when query results are stored in resultsLayer, create a new map
     useEffect(() => {
@@ -164,51 +155,14 @@ export default function VolumeSliderMapCore() {
 
                     <div ref={mapRef} style={{ width: "100%", minHeight: "80vh",  boxSizing: "border-box" }}></div>
 
-                    <Grid container justifyContent="center" alignItems="center" direction="column" wrap={false} id="infoDiv" className="esri-widget" style={{ width: "550px", height: "100%", overflowY: 'scroll', maxHeight: '75vh' }}  spacing={1}>
-                        <Grid item>
-                            <Typography id="description" variant="h6" style={{ textAlign: 'center' }}>
-                                Volumes
-                            </Typography>
-                        </Grid>
-                        <Grid item style={{width: "100%"}}>
-                            
-                            <VolumeSliderOptions onApplyOptions={handleApplyOptions} />
-                        </Grid>
-                        <Grid container alignItems="center" justifyContent="space-between" direction="row" padding={3}>
-                            <Grid item id="sliderContainer" style={{ height: "100px", width: "400px", marginTop: "10px", marginBottom: "10px" }}>
-                                <div id="sliderElement" ref={sliderRef}></div>
-                            </Grid>
-                            <Grid item>
-                                <FormControl variant='standard'>
-                                    <Select
-                                        labelId="slider-type-label"
-                                        id="select-slider-type"
-                                        value={sliderType}
-                                        label="Counts By"
-                                        onChange={(event) => {
-   
-                                            handleSliderChange(event)
-                                        }
-                                        }
-                                      >
-                                        <MenuItem value={"range"} className="esri-widget">Range</MenuItem>
-                                        <MenuItem value={"hourly"} className="esri-widget">Hourly</MenuItem>
-
-                                    </Select>
-                                    {/* <Checkbox className="esri-widget"></Checkbox> */}
-                                </FormControl>
-                            </Grid>
-
-
-                        </Grid>
-                        
-                        <div></div>
-                        <div ref={legendRef}></div>
+                    <Grid container className="esri-widget" id="infoDiv" style={{ overflowY: 'auto', maxHeight: '75vh', width: "500px" }}>
+                        <VolumeSliderOptions onApplyOptions={(options) => setVolumeFilterOptions(options)} handleSliderChange={handleSliderChange} sliderRef={sliderRef} sliderType={sliderType}  />
                     </Grid>
+                    
 
-                    {chartData && <Grid item alignContent="center" id='chartDiv' className='esri-widget' style={{width: '80%', height: '40vh'}}>
+                    {/* {chartData && <Grid item alignContent="center" id='chartDiv' className='esri-widget' style={{width: '80%', height: '40vh'}}>
                                         <VolumeChart data={chartData} chartRef={chartRef} />
-                                      </Grid>}
+                                      </Grid>} */}
 
                     
                 </Grid>

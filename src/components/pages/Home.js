@@ -7,6 +7,7 @@ import Col from 'react-bootstrap/Col';
 import VolumeSliderMap from '../apps/volumes/VolumeSliderMap'
 import RiskMap from "../apps/risk/RiskMap";
 import Header from "../Header";
+// import DashboardMap from "../Map";
 import { MapContextProvider } from "../MapContext";
 
 
@@ -18,7 +19,8 @@ export default function Home() {
             <Grid container width="100vw" height="100vh" justifyContent="center" >
                 <Grid container direction="column" maxWidth="2000px" justifyContent="center" >
                     <Header />
-                    <VolumeSliderMap />
+                    <RiskMap />
+                    {/* <VolumeSliderMap /> */}
                 </Grid>
             </Grid>
         </MapContextProvider>

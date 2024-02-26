@@ -57,7 +57,6 @@ export default function RiskMap() {
     }
   }
 
-
   useEffect(() => {
     setMap(new Map({
       basemap: "streets-vector"
@@ -86,8 +85,6 @@ export default function RiskMap() {
         if (filters !== null) {
           incidentData.definitionExpression = filters
         }
-
-        
 
         const simpleRenderer = {
           type: "simple",

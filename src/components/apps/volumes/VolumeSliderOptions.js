@@ -4,6 +4,8 @@ import Query from '@arcgis/core/rest/support/Query.js'
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer.js'
 
 import { Box, Grid, Checkbox, Typography, FormGroup, FormControl, FormControlLabel, Select, InputLabel, MenuItem, Button, OutlinedInput, Chip} from "@mui/material";
+import { addSliderEventListener, createSlider } from "./utils";
+
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -18,7 +20,7 @@ const YearMenuProps = {
 
 export default function VolumeSliderOptions(inputs) {
 
-    const onApplyOptions = inputs.onApplyOptions
+    const {onApplyOptions, handleSliderChange, sliderRef, sliderType} = inputs
     const [mode, setMode] = useState("bikes")
     const [bikes, setBikes] = useState(true)
     const [peds, setPeds] = useState(false)
@@ -26,7 +28,6 @@ export default function VolumeSliderOptions(inputs) {
     const [weekend, setWeekend] = useState(true)
     const [years, setYears] = useState([])
     const [yearChoices, setYearChoices] = useState([])
-
 
     const handleSelectChange = (event) => {
         const currentMode = event.target.value
@@ -125,9 +126,15 @@ export default function VolumeSliderOptions(inputs) {
   
 
     return (
-        <Grid container style= {{ width: '100%'}} direction={"column"} justifyContent="center" alignItems="center">
-
-            
+        <Grid container>
+            <Grid item>
+                <Typography id="description" variant="h6" style={{ textAlign: 'center' }}>
+                    Volumes
+                </Typography>
+            </Grid>
+            <Grid item style={{width: "100%"}}>
+                
+            <Grid container style= {{ width: '100%'}} direction={"column"} justifyContent="center" alignItems="center">
             <Grid item>
                 <Grid container direction="column">
                     <Typography id="description" variant="h8" style={{ textAlign: 'left' }}>
@@ -225,11 +232,39 @@ export default function VolumeSliderOptions(inputs) {
             
             <Button variant="contained" onClick={handleApplyOptions}>Load Counts</Button>
 
-
-            
-
-
         </Grid >
+            </Grid>
+            <Grid container alignItems="center" justifyContent="space-between" direction="row" padding={3}>
+                <Grid item id="sliderContainer" style={{ height: "100px", width: "400px", marginTop: "10px", marginBottom: "10px" }}>
+                    <div id="sliderElement" ref={sliderRef}></div>
+                </Grid>
+                <Grid item>
+                    <FormControl variant='standard'>
+                        <Select
+                            labelId="slider-type-label"
+                            id="select-slider-type"
+                            value={sliderType}
+                            label="Counts By"
+                            onChange={(event) => {
+
+                                handleSliderChange(event)
+                            }
+                            }
+                            >
+                            <MenuItem value={"range"} className="esri-widget">Range</MenuItem>
+                            <MenuItem value={"hourly"} className="esri-widget">Hourly</MenuItem>
+
+                        </Select>
+                        {/* <Checkbox className="esri-widget"></Checkbox> */}
+                    </FormControl>
+                </Grid>
+            </Grid>
+
+
+        </Grid>
+                        
+    
+        
     )
 
 }
