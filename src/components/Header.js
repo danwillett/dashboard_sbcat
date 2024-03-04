@@ -4,7 +4,6 @@ import { Box, Grid, Checkbox, Typography, TextField, FormGroup, FormLabel, FormC
 
 export default function Header() {
 
-
     return (
         <Typography
                 component="h1"

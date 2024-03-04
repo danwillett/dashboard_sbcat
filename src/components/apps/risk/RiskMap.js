@@ -118,9 +118,6 @@ export default function RiskMap() {
 
   }, [view, filters])
 
-  useEffect(() => {
-    console.log("new incident data")
-  }, [filters])
 
   useEffect(() => {
 

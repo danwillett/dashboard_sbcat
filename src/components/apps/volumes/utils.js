@@ -34,8 +34,6 @@ export const createSlider = (values, rangeSlider, sliderRef) => {
             return (value == 0) ? "12 am" : (value < 12) ? `${value} am` : (value === 12) ? '12 pm' : `${value- 12} pm`;
           },
         
-        
-        
     });
 
     slider.tickConfigs = [{
@@ -58,6 +56,11 @@ export const createSlider = (values, rangeSlider, sliderRef) => {
     }]
     
     slider.labelInputsEnabled = true
+    const itemsArray =slider.segmentElements['items']
+    // console.log(slider.segmentElements._items.getItemAt(0))
+
+
+
     return slider
 }
 
@@ -85,10 +88,12 @@ export const initMapSlider = (sliderRef, resultsLayer, slider, sliderType, addSl
             sliderRef.current = newSliderEl
             sliderContainer.appendChild(newSliderEl)
             slider.current = createSlider(values, rangeSlider, sliderRef)
+
         }
         console.log(resultsLayer)
         if (resultsLayer !== null) {
             addSliderEventListener(sliderType, resultsLayer, slider, setChartData)
+
         }
 }
 
@@ -294,7 +299,6 @@ export const addSliderEventListener = (type, resultsLayer, slider, setChartData)
             let popupTemplate = resultsLayer.graphics.items[i].popupTemplate
             let timeLabel = type === "range" ? `${hourMapping[hourFields[thumbValueMin]]} to ${hourMapping[hourFields[thumbValueMax]]}` : `${hourMapping[hourFields[thumbValueMin]]} hour`
             popupTemplate.content =  `<b>${modeType} Counts: </b> ${countAmount}<br /><b>Time Period: </b> ${timeLabel}<br />`
-            console.log(resultsLayer.graphics.items[i].attributes)
             let updatedGraphic = new Graphic({
                 geometry: resultsLayer.graphics.items[i].geometry,
                 symbol: symbol,

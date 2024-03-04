@@ -3,9 +3,9 @@ import React, { useEffect, useRef, useState, useContext } from "react";
 import Query from '@arcgis/core/rest/support/Query.js'
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer.js'
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
-import { MapContext } from "../../MapContext";
-
-import { Box, Grid, Checkbox, Typography, FormGroup, FormControl, FormControlLabel, Select, InputLabel, MenuItem, Button, OutlinedInput, Chip} from "@mui/material";
+import { FilterContext } from "../../FilterContext";
+import CloseIcon from '@mui/icons-material/Close';
+import { Box, Grid, Checkbox, Typography, FormGroup, FormControl, FormControlLabel, Select, InputLabel, MenuItem, IconButton, Button, OutlinedInput, Chip} from "@mui/material";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -20,54 +20,64 @@ const YearMenuProps = {
 
 export default function RiskOptions(inputs) {
 
-    const {map, setMap, view, setView, incidentData, setIncidentData} = useContext(MapContext)
+    const {safetyMode,
+        setSafetyMode,
+        safetyBikes,
+        setSafetyBikes,
+        safetyPeds,
+        setSafetyPeds,
+        safetyWeekend, 
+        setSafetyWeekend,
+        safetyWeekday, 
+        setSafetyWeekday,
+        safetyYearChoices,
+        setSafetyYearChoices,
+        collision,
+        setCollision,
+        nearCollision,
+        setNearCollision,
+        fall,
+        setFall} = useContext(FilterContext)
     
-    const setFilters = inputs.setFilters
-    const [mode, setMode] = useState("both")
-    const [bikes, setBikes] = useState(true)
-    const [peds, setPeds] = useState(true)
-    const [weekday, setWeekday] = useState(true)
-    const [weekend, setWeekend] = useState(true)
+    const {setFilters, setPanelView} = inputs
+    
     const [years, setYears] = useState([])
-    const [yearChoices, setYearChoices] = useState([])
-
-
     const handleSelectChange = (event) => {
         const currentMode = event.target.value
-        setMode(currentMode)
+        setSafetyMode(currentMode)
         if (currentMode == "bikes") {
-            setBikes(true)
-            setPeds(false)
+            setSafetyBikes(true)
+            setSafetyPeds(false)
         } else if (currentMode == "peds") {
-            setBikes(false)
-            setPeds(true)
+            setSafetyBikes(false)
+            setSafetyPeds(true)
         } else {
-            setBikes(true)
-            setPeds(true)
+            setSafetyBikes(true)
+            setSafetyPeds(true)
         }
     }
 
-    const handleWeekend = () => {
-        setWeekend(!weekend)
-    }
-    const handleWeekday = () => {
-        setWeekday(!weekday)
-    }
+    // const handleWeekend = () => {
+    //     setSafetyWeekend(!safetyWeekend)
+    // }
+    // const handleWeekday = () => {
+    //     setSafetyWeekday(!safetyWeekday)
+    // }
     // const handleCheckboxChange = (day) => {
     //     // Update the selected options when a checkbox is changed
     //     if (day == "weekday") {
-    //         setWeekday(!weekday)
+    //         setSafetyWeekday(!weekday)
     //     }
     //     if (day == "weekend") {
-    //         setWeekend(!weekend)
+    //         setSafetyWeekend(!weekend)
     //     }
     // };
 
     const handleApplyOptions = async () => {
         console.log("hey!")
-        const mode = bikes? 1 : 0
-        const bikeFilt = bikes? 1 : 0
-        const pedFilt = peds?1 : 0
+        const mode = safetyBikes? 1 : 0
+        const bikeFilt = safetyBikes? 1 : 0
+        const pedFilt = safetyPeds?1 : 0
 
         console.log(mode)
         // const days = weekday ? "'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'" : weekend ? "'Saturday', 'Sunday'" : "'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'"
@@ -75,9 +85,9 @@ export default function RiskOptions(inputs) {
         // const dayFilter = ``
         let yearFilterGood
         let yearFilter
-        if (yearChoices.length > 0) {
-          const yearSqlPieces = yearChoices.map((year)=> {
-            return `date >= timestamp '${year}-01-01 00:00:00' And date <= timestamp '${year}-12-31 12:59:59'` //Or bike_volumes_date >= timestamp '2020-01-01 00:00:00' And bike_volumes_date <= timestamp '2020-12-31 12:59:59'
+        if (safetyYearChoices.length > 0) {
+          const yearSqlPieces = safetyYearChoices.map((year)=> {
+            return `(date >= timestamp '${year}-01-01 00:00:00' And date <= timestamp '${year}-12-31 12:59:59')` //Or bike_volumes_date >= timestamp '2020-01-01 00:00:00' And bike_volumes_date <= timestamp '2020-12-31 12:59:59'
           })
             yearFilter = yearSqlPieces.join(' Or ')
             yearFilterGood = true
@@ -87,15 +97,31 @@ export default function RiskOptions(inputs) {
         }
 
         // const filters = yearFilterGood ? `${dayFilter} And ${yearFilter}` : dayFilter
-        const modeFilter = `bicyclist = ${bikeFilt} And pedestrian = ${pedFilt}`
-        const filters = yearFilterGood ? `${modeFilter} And ${yearFilter}`: modeFilter
+        const modeFilter = `(bicyclist = ${bikeFilt} Or pedestrian = ${pedFilt})`
+
+        // collision type filters
+        let collisionFilter = []
+        collision && collisionFilter.push("'Collision'");
+        nearCollision && collisionFilter.push("'Near Collision'");
+        fall && collisionFilter.push("'Fall'");
+        let collisionFilterGood = false
+        if (collisionFilter.length > 0) {
+            collisionFilter = collisionFilter.join(', ')
+            console.log(collisionFilter)
+            collisionFilterGood = true
+            collisionFilter = `(incident_t IN (${collisionFilter}))`
+        }
+        // incident_t IN ('Collision', 'Fall', 'Near Collision')
+        let filters = yearFilterGood ? `${modeFilter} And (${yearFilter})`: modeFilter
+        filters = collisionFilterGood ? `${filters} And ${collisionFilter}`: filters
+        console.log(filters)
         setFilters(filters)
      
     };
 
     const handleYearChange = (event) => {
         const {target: {value}} = event;
-        setYearChoices(value)
+        setSafetyYearChoices(value)
     }
 
     const loadYears = () => {
@@ -130,9 +156,8 @@ export default function RiskOptions(inputs) {
 
 
     return (
-        <Grid container style= {{ width: '100%', padding: '5%'}} direction={"column"} justifyContent="center" alignItems="left">
-
-            
+        <Grid container style= {{ padding: '5%'}} direction={"column"} justifyContent="center" alignItems="left">
+           
             <Grid item>
                 <Grid container direction="column">
                     <Typography id="description" variant="h8" style={{ textAlign: 'left' }}>
@@ -143,7 +168,7 @@ export default function RiskOptions(inputs) {
                         <Select
                             labelId="slider-type-label"
                             id="select-slider-type"
-                            value={mode}
+                            value={safetyMode}
                             label="Counts By"
                             onChange={(event) => {
 
@@ -159,8 +184,8 @@ export default function RiskOptions(inputs) {
                     </FormControl>
                 </Grid>
             </Grid>
-            <Grid container direction="row" marginTop="20px" justifyContent="space-around" alignItems="center">
-                <Grid container direction ="column" style={{maxWidth: "50%", width: "30%"}}>
+
+                <Grid container direction ="column" style={{width: "100%", marginBottom: "20px", marginTop: "20px"}}>
                     <Typography id="description" variant="h8" style={{ textAlign: 'left', marginBottom: '10px'  }}>
                     Select years:
                     </Typography>
@@ -171,7 +196,7 @@ export default function RiskOptions(inputs) {
                             id="select-years"
                             
                             multiple
-                            value={yearChoices}
+                            value={safetyYearChoices}
                             onChange={handleYearChange}
                             input={<OutlinedInput id="select-multiple-chip" label="Chip" />}
                             renderValue={(selected) => (
@@ -195,29 +220,37 @@ export default function RiskOptions(inputs) {
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid container direction ="column" style={{maxWidth: "50%", width: "30%"}}>
+                <Grid container direction ="column" style={{width: "100%"}}>
                     <Typography id="description" variant="h8" style={{ textAlign: 'left'}}>
-                    Days to include:
+                    Incident Type:
                     </Typography>
                     <FormControl>
                         <Grid container direction="row">
                             <Grid container direction = "column">
                                 <FormControlLabel
-                                    label="Weekends"
+                                    label="Collision"
                                     control={
                                         <Checkbox
-                                        
-                                        defaultChecked
-                                        onChange={handleWeekend}
+                                        checked={collision}
+                                        onChange={() => setCollision(!collision)}
                                         />
                                     }
                                 />
                                 <FormControlLabel
-                                    label="Weekdays"
+                                    label="Near Collision"
                                     control={
                                         <Checkbox
-                                        defaultChecked
-                                        onChange={handleWeekday}
+                                        checked={nearCollision}
+                                        onChange={() => setNearCollision(!nearCollision)}
+                                        />
+                                    }
+                                />
+                                <FormControlLabel
+                                    label="Fall"
+                                    control={
+                                        <Checkbox
+                                        checked={fall}
+                                        onChange={() => setFall(!fall)}
                                         />
                                     }
                                 />
@@ -227,9 +260,9 @@ export default function RiskOptions(inputs) {
                         </Grid>
                     </FormControl>
                 </Grid>
-            </Grid>
+
             
-            <Button variant="contained" onClick={handleApplyOptions} style={{marginTop: '20px'}}>Load Counts</Button>
+            <Button variant="contained" onClick={handleApplyOptions} style={{marginTop: '20px'}}>Load Incidents</Button>
 
 
             
