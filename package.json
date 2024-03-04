@@ -34,7 +34,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-  "homepage": "https://danwillett.github.io/Dashboard-SBCAT",
+  "homepage": "https://danwillett.github.io/dashboard_sbcat",
   "eslintConfig": {
     "extends": [
       "react-app",
