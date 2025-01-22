@@ -4,6 +4,7 @@ import React, {  useRef, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 
 import { Radio, RadioGroup, FormControl, FormControlLabel, FormLabel } from '@mui/material';
+import * as math from 'mathjs'
 
 interface props {
     sublayer: any
@@ -13,7 +14,6 @@ function CensusRenderer(props: props) {
     
     
     const { sublayer } = props
-    console.log(sublayer)
     const [ renderField, setRenderField ] = useState()
 
     let fields = sublayer.layer.fields
@@ -28,9 +28,8 @@ function CensusRenderer(props: props) {
         event.stopPropagation()
         // event.preventDefault()
         const field = event.target.value
-        console.log(field)
+
         let normDisplayField = normField.name
-        console.log(normDisplayField)
         let lowStop = 0.1;
         let highStop = 0.5;
         let lowLabel = "<10%"
@@ -72,18 +71,18 @@ function CensusRenderer(props: props) {
             console.log(statResults)
             let normField = statResults.features.map((feature) => feature.attributes[field]/feature.attributes[normDisplayField])
             normField = normField.filter((record: number) => record > 0 && record !== null)
-            // const mean = math.mean(normField)
-            // const stddev = math.std(normField)
+            const mean = math.mean(normField)
+            const stddev = math.std(normField)
             
-            // highStop = mean + stddev
-            // console.log(highStop)
-            // // highStop = highStop < 0.3 ? 0.3 : highStop
-            // highStop = highStop > 0.9 ? 0.9 : highStop
-            // highLabel = `> ${Math.round(highStop * 100)}%`
+            highStop = mean + stddev
+            console.log(highStop)
+            // highStop = highStop < 0.3 ? 0.3 : highStop
+            highStop = highStop > 0.9 ? 0.9 : highStop
+            highLabel = `> ${Math.round(highStop * 100)}%`
             
-            // lowStop = mean - stddev
-            // lowStop = lowStop < .1 ? 0.1 : lowStop
-            // lowLabel = `> ${Math.round(lowStop * 100)}%`
+            lowStop = mean - stddev
+            lowStop = lowStop < .1 ? 0.1 : lowStop
+            lowLabel = `> ${Math.round(lowStop * 100)}%`
         }
         console.log("render this attribute")
 
@@ -143,11 +142,17 @@ function CensusRenderer(props: props) {
 }
 
 // create a panel to choose which field to visualize
-export default function addRenderPanel(sublayer: any) {
-    const panel = sublayer.panel
+export default function addCensusRenderPanel(sublayer: any) {
+
     const container = document.createElement("div")
     const root = createRoot(container)
     root.render(<CensusRenderer sublayer={sublayer} />)
 
-    panel.content = container
+    // set panel layerlist panel
+    sublayer.panel = {
+        content: container,
+        iconClass: "layer-graphics",
+        title: "visualization fields",
+    }
+    
 }

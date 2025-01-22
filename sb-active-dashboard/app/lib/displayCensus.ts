@@ -1,22 +1,16 @@
 'use client';
 
-import Query from "@arcgis/core/rest/support/Query.js";
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
 
 
-import addRenderPanel from "../ui/dashboard/CensusRenderer";
-
 const censusTitle = "ACS 2023 5-Year Demographics"
 // function creates a graphics layer for the census data based on a chosen table
 
 async function createCensusGraphics(geomLayer, tableLayer, layerName) {
-    // Creating census graphics
-
-    // querying layer for attributes
-
-    // querying census table information
+    
+    // create an array of graphics and array of table attribute fields
     let tableQuery = tableLayer.createQuery();
     tableQuery.where = "" // No filter, query all records
     tableQuery.outFields = ["*"]
@@ -25,7 +19,7 @@ async function createCensusGraphics(geomLayer, tableLayer, layerName) {
     const tableResults = await tableLayer.queryFeatures(tableQuery)
         
     let tableFeatures = tableResults.features
-    tableFeatures.forEach((feature) => {
+    tableFeatures.forEach((feature: any) => {
         tableArr.push(feature.attributes)    
     })
     let tableAttributes = Object.keys(tableFeatures[0].attributes)
@@ -49,26 +43,28 @@ async function createCensusGraphics(geomLayer, tableLayer, layerName) {
         geomArr.push({id: id, geometry: geometry})
     })
 
+
     // joining geometries with census table
-    const mergedCensus = tableArr.map((tableData) => {
+    const mergedData = tableArr.map((tableData) => {
         const geomData = geomArr.find((data) => data.id === tableData.geo_id)
         return {
             ...tableData,
             ...(geomData ? geomData : {})
         }
     })
+
     
     // creating a new graphics layer 
     let graphics = []
     let graphic
-    for (let i=0; i<mergedCensus.length; i++) {
+    for (let i=0; i<mergedData.length; i++) {
         graphic = new Graphic({
-            geometry: mergedCensus[i].geometry,
-            attributes: mergedCensus[i]
+            geometry: mergedData[i].geometry,
+            attributes: mergedData[i]
         })
         graphics.push(graphic)
     }
-
+    
     const layerFields = [
         {
             name: "OBJECTID",
@@ -108,7 +104,7 @@ async function createCensusGraphics(geomLayer, tableLayer, layerName) {
 
     if (medianField !== "") {
         displayField = medianField
-        const medianValues = mergedCensus.map(obj => obj[medianField]).filter(value => value !== null)
+        const medianValues = mergedData.map(obj => obj[medianField]).filter(value => value !== null)
         
         lowStop = Math.min(...medianValues)
         highStop = Math.max(...medianValues)
@@ -175,29 +171,22 @@ export async function createCensusGroupLayer() {
             
     const censusIncomeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/1"})
     const incomeLayer = await createCensusGraphics(censusPolygons, censusIncomeTable, "Income Distribution")
-    console.log(censusIncomeTable)
-    console.log(incomeLayer)
-
+    
     const censusRaceTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/2"})
     const raceLayer = await createCensusGraphics(censusPolygons, censusRaceTable, "Race Distribution")
     
-
     const censusAgeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/3"})
     const ageLayer = await createCensusGraphics(censusPolygons, censusAgeTable, "Age Distribution")
-    
 
     const censusTransportationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/4"})
     const transportationLayer = await createCensusGraphics(censusPolygons, censusTransportationTable, "Transportation Distribution")
-    
 
     const censusEducationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/5"})
     const educationLayer = await createCensusGraphics(censusPolygons, censusEducationTable, "Education")
-    
 
     const censusGenderTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/6"})
     const genderLayer = await createCensusGraphics(censusPolygons, censusGenderTable, "Gender Distribution")
     
-
 
     const censusGroupLayer = new GroupLayer({
         layers: [
@@ -214,37 +203,7 @@ export async function createCensusGroupLayer() {
     return censusGroupLayer
 }
 
-export function addCensusRendering() {
-    const arcgisLayerList = document.querySelector("arcgis-layer-list")
-
-    if (arcgisLayerList === null) {
-        console.log("layer list not loaded - could not add renderers to census data")
-        return
-    }
-    
-    // if the item is Demographics, add rendering actions for each attribute
-    arcgisLayerList.listItemCreatedFunction = (event) => {
-
-        const { item } = event
-
-        if (item.title === censusTitle) {
-             
-            item.children.items.forEach((sublayer: any, index: any) => {
-                                
-                sublayer.panel = {
-                    content: null,
-                    iconClass: "esri-icon-down-arrow",
-                    title: "safety data filters",
-                }
-                
-                addRenderPanel(sublayer)
-                
-            })
-
-        }
-        
-    }
 
     // arcgisLayerList.
         
-}
+
