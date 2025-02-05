@@ -14,7 +14,6 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
 
     const queryResults = await incidentPoints.queryFeatures(incidentsQuery)
     const incidentFeatures = queryResults.features
-    console.log(incidentFeatures)
     const graphics: Graphic[] = []
     let graphic
 

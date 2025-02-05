@@ -4,7 +4,6 @@ import React, {  useRef, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 
 import { Radio, RadioGroup, FormControl, FormControlLabel, FormLabel } from '@mui/material';
-import * as math from 'mathjs'
 
 interface props {
     sublayer: any
@@ -14,20 +13,31 @@ function CountRenderer(props: props) {
     
     
     const { sublayer } = props
-    console.log(sublayer)
-    const [ renderField, setRenderField ] = useState()
-
+    
     let fields = sublayer.layer.fields
     console.log(fields)
+    fields = fields.filter((field: any) => field.name.includes("_aadt"))
 
-    fields = fields.filter((field: any) => field.type === "double")
-    const normField = fields.filter((field: any) => field.name.includes("_total"))[0]
-    fields = fields.filter((field: any) => field.name !== normField.name)
+     const changeRenderField = async (event) => {
     
+            event.stopPropagation()
+            // event.preventDefault()
+            const field = event.target.value
+
+    
+            const renderer = sublayer.layer.renderer.clone()
+            const colorVariable = renderer.visualVariables[0]
+    
+            colorVariable.field = field
+            renderer.visualVariables = [ colorVariable ]
+            
+            sublayer.layer.renderer = renderer
    
+        }
+
     return (
         <FormControl>
-            <FormLabel id="counts-render-button-group">Select by source</FormLabel>
+            <FormLabel id="counts-render-button-group">Average Annual Daily Traffic (AADT)</FormLabel>
             <RadioGroup
             aria-labelledby="counts-render-button-group"
             defaultValue={fields[0].name}
@@ -35,10 +45,10 @@ function CountRenderer(props: props) {
             >
                 { fields.map((attribute) => (
                     <FormControlLabel 
-                        key={attribute.source} 
-                        value={attribute.source} 
-                        control={<Radio  />} 
-                        label={attribute.source} 
+                        key={attribute.name} 
+                        value={attribute.name} 
+                        control={<Radio onClick={changeRenderField} />} 
+                        label={attribute.alias} 
                         />
                 ))}
                 

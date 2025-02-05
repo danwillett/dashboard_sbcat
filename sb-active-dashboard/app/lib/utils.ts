@@ -2,8 +2,8 @@
 
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
-import addCensusRenderPanel from "../ui/dashboard/CensusRenderer";
-import addCountRenderPanel from "../ui/dashboard/CountRenderer";
+import addCensusRenderPanel from "../ui/query-vis/CensusRenderer";
+import addCountRenderPanel from "../ui/query-vis/CountRenderer";
 
 export async function createGraphics(geomLayer, tableLayer, geom_id: string, query: string = "") {
 
@@ -81,13 +81,13 @@ export function addVisualizationOptions(event) {
 
     }
 
-        // if (item.title === "Bike & Ped Counts") {
+    if (item.title === "Bike & Ped Counts") {
 
-        //     item.children.items.forEach((sublayer: any, index: any) => {
+        item.children.items.forEach((sublayer: any, index: any) => {
 
-        //         addCountRenderPanel(sublayer)
-        //     })
-        // }
+            addCountRenderPanel(sublayer)
+        })
+    }
 
         // if (item.title === "Bike & Ped Counts") {
              

@@ -28,6 +28,7 @@ import { createCensusGroupLayer } from "@/app/lib/displayCensus";
 import { createCountLayer } from "@/app/lib/displayCounts";
 import { createIncidentGroupLayer } from "@/app/lib/displayIncidents";
 import { addVisualizationOptions } from "@/app/lib/utils";
+import GroupLayer from "@arcgis/core/layers/GroupLayer";
 
 
 export default function DashboardMap() {
@@ -43,23 +44,34 @@ export default function DashboardMap() {
     setOpen(false);
     };
 
-    
+    const [showLegend, setShowLegend] = useState<Boolean>(false)
+    const [showLayerList, setShowLayerList] = useState<Boolean>(false)
     const [ mapElRef, setMapElRef ] = useState(null)
     const [ mapRef, setMapRef ] = useState<Map | null>(null)
     const [ viewRef, setViewRef ] = useState<MapView | null>(null)
+    const [ countLayer, setCountLayer ] = useState<GroupLayer | null>(null)
+    const [ incidentLayer, setIncidentLayer ] = useState<GroupLayer | null>(null)
 
     // once map is generated, load feature layers and add to the map
     useEffect(() => {
         if (mapRef !== null) {
 
-            const censusGroupLayer = createCensusGroupLayer()
-            const countLayer = createCountLayer()
-            const incidentGroupLayer = createIncidentGroupLayer()
+            const createLayers = async () => {
+                const censusGroupLayer = await createCensusGroupLayer()
+                const countGroupLayer = await createCountLayer()
+                const incidentGroupLayer = await createIncidentGroupLayer()
+
+                
+                mapRef.add(censusGroupLayer)
+                mapRef.add(countGroupLayer)
+                mapRef.add(incidentGroupLayer)
+                
+                setCountLayer(countGroupLayer)
+                setIncidentLayer(incidentGroupLayer)
+            }
             
-            mapRef.add(censusGroupLayer)
-            mapRef.add(countLayer)
-            mapRef.add(incidentGroupLayer)
-            
+            createLayers()
+                        
         }
         
     }, [mapRef])
@@ -101,8 +113,7 @@ export default function DashboardMap() {
         
     }
 
-    const [showLegend, setShowLegend] = useState<Boolean>(false)
-    const [showLayerList, setShowLayerList] = useState<Boolean>(false)
+    
 
 
     return (
@@ -111,21 +122,23 @@ export default function DashboardMap() {
             <Header open={open} handleDrawerOpen={handleDrawerOpen} />
             <Menu open={open} handleDrawerClose={handleDrawerClose} setShowLegend={setShowLegend} showLegend={showLegend} setShowLayerList={setShowLayerList} showLayerList={showLayerList} />
             
+            {/* Legend Panel */}
             <Grid justifyContent="center" sx={{display: showLegend ? 'block': 'none', marginTop: '64px'}}>
                 <Grid size={12} my={2}>
                     <Typography align='center' variant='h5'>Legend</Typography>
-                    
                 </Grid>
-                
                 <div id="legend-container"></div>
             </Grid>
-            <Box justifyContent="center" sx={{display: showLayerList ? 'block': 'none', marginTop: '64px'}}>
+            {/* Layer List Panel */}
+            <Grid justifyContent="center" sx={{display: showLayerList ? 'block': 'none', marginTop: '64px'}}>
                 <Grid size={12} my={2}>
                         <Typography align='center' variant='h5'>Layers</Typography>
                         
                     </Grid>
                 <div id="layer-list-container"></div>
-            </Box>
+            </Grid>
+
+            
             {/* <Box sx={{display: showLayerList ? 'block': 'none', marginTop: '64px'}}>
                 <Typography>Filters</Typography>
                 <Toolbar />
