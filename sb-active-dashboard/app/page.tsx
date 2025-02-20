@@ -1,7 +1,7 @@
-import { Typography } from "@mui/material";
+import HomePage from "./ui/home/Home";
 
 export default function Home() {
   return (
-    <Typography>welcome!</Typography>
+    <HomePage />
   );
 }

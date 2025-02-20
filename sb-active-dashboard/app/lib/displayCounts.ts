@@ -193,7 +193,7 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
     tableFeatures.forEach((feature: any) => {
         tableArr.push({...feature.attributes})
     })
-    console.log(tableArr)
+
    
     // const tableDf = new DataFrame(tableArr)
     // const dailyAvgCounts = tableDf.groupby(["site_id"]).agg({total_daily_count: "mean"}).rename({total_daily_count_mean: "avg_daily_count"})
@@ -213,6 +213,7 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
     geomFeatures.forEach((feature) => {
  
         let id = feature.attributes.id
+        let name = feature.attributes.name
         let source = feature.attributes.source
         let locality = feature.attributes.locality
         let edges = feature.attributes.site_edges_arr
@@ -227,7 +228,7 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
         
         let geometry = feature.geometry
 
-        geomArr.push({id: id, geometry: geometry, locality: locality, source: source, num_site_edges: numEdges})
+        geomArr.push({id: id, geometry: geometry, name: name, locality: locality, source: source, num_site_edges: numEdges})
     })
 
     // joining geometries with daily average counts table
@@ -282,7 +283,7 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
         {
             name: "year",
             alias: "Year",
-            type: "double"
+            type: "date-only"
         },
         {
             name: "count_type",
@@ -312,8 +313,35 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
 
     ]
 
-    // calculate metrics for visualization
-    // count_mean = math.mean()
+    const popupTemplate = {
+        // autocasts as new PopupTemplate()
+        title: "{count_type} Counts at {name}",
+        content: [
+          {
+            type: "fields",
+            fieldInfos: [
+              {
+                fieldName: "name",
+                label: "Location"
+              },
+              {
+                fieldName: "all_aadt",
+                label: "Average Annual Daily Traffic (AADT)"
+              },
+              {
+                fieldName: "weekday_aadt",
+                label: "Weekday AADT"
+              },
+              {
+                fieldName: "weekend_aadt",
+                label: "Weekend AADT"
+              }
+          
+            ]
+          }
+        ]
+      };
+      
  
     
     const layer = new FeatureLayer({
@@ -321,9 +349,7 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
         title: title,
         objectIdField: "OBJECTID",
         fields: layerFields,
-        // popupTemplate: {
-        //     content: "<p>heyo! '{tract}' '{block_group}'</p>"
-        // },
+        popupTemplate: popupTemplate,
         renderer: {
             type: "simple",
             symbol: {
@@ -361,7 +387,7 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
     return layer
 }
 
-export async function createCountLayer() {
+export async function createCountGroupLayer() {
 
     const countPoints = new FeatureLayer({url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Bicycle_and_Pedestrian_Counts/FeatureServer/0"})
     const countTable = new FeatureLayer({url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Bicycle_and_Pedestrian_Counts/FeatureServer/1"})

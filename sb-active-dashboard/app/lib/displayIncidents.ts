@@ -18,8 +18,8 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
     let graphic
 
     incidentFeatures.forEach((incident) => {
-        const timestamp = new Date(incident.attributes.timestamp)
-        incident.attributes.timestamp = timestamp.toLocaleString()
+        // const timestamp = new Date(incident.attributes.timestamp)
+        // incident.attributes.timestamp = timestamp
         graphic = new Graphic({
             geometry: incident.geometry,
             attributes: incident.attributes
@@ -58,7 +58,7 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
         },
         {
             name: "timestamp",
-            type: "string"
+            type: "date"
         }
     ]
     const colors = ["rgba(115, 0, 115, 0)", "#820082", "#910091", "#a000a0", "#af00af", "#c300c3", "#d700d7", "#eb00eb", "#ff00ff", "#ff58a0", "#ff896b", "#ffb935", "#ffea00"];
@@ -67,7 +67,23 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
         title: title,
         objectIdField: "OBJECTID",
         fields: layerFields,
+        timeInfo: {
+            startField: "timestamp",
+            interval: {
+                unit: "days",
+                value: 1
+            }
+        },
         opacity: 0.5,
+        // renderer: {
+        //     type: "simple",
+        //     symbol: {
+        //         type: "simple-marker",
+        //         size: 6,
+        //         color: "black",
+        //         outline: null
+        //     }
+        // }
         renderer: {
                 
             type: "heatmap",
@@ -97,8 +113,10 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
                 minLabel: "Few crashes",
                 maxLabel: "Frequent crashes"
                 }
-            }
+            },
+
     })
+    
     return layer
     
 }

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+
+
+import { NextAppProvider } from '@toolpad/core/nextjs';
 import "./globals.css";
 import '@esri/calcite-components/dist/calcite/calcite.css';
 

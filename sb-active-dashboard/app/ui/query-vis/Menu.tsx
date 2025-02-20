@@ -1,198 +1,129 @@
-import React, {useRef} from "react";
+import React, {useRef, useState} from "react";
 import "@arcgis/map-components/dist/components/arcgis-legend";
 import "@arcgis/map-components/dist/components/arcgis-layer-list";
 import { CalciteIcon } from "@esri/calcite-components-react";
-import { ArcgisLayerList, ArcgisLegend } from "@arcgis/map-components-react";
-import addCensusRenderPanel from "./CensusRenderer";
 
 import { styled, useTheme, Theme, CSSObject } from '@mui/material/styles'
-import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
-import { CssBaseline, Box, Toolbar, List, Typography, Divider, IconButton, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
-import MuiDrawer from '@mui/material/Drawer'
+
+import { Box, List, Typography, Divider, IconButton, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 
 
 const drawerWidth = 180;
 
-const openedMixin = (theme: Theme): CSSObject => ({
-  width: drawerWidth,
-  transition: theme.transitions.create('width', {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.enteringScreen,
-  }),
-  overflowX: 'hidden',
-});
+interface MenuItemProps {
+  open: boolean,
+  showWidget: boolean,
+  setShowWidget: any,
+  iconName: string,
+  label: string
+}
 
-const closedMixin = (theme: Theme): CSSObject => ({
-  transition: theme.transitions.create('width', {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  overflowX: 'hidden',
-  width: `calc(${theme.spacing(7)} + 1px)`,
-  [theme.breakpoints.up('sm')]: {
-    width: `calc(${theme.spacing(8)} + 1px)`,
-  },
-});
+function MenuItem(props: MenuItemProps) {
 
-const DrawerHeader = styled('div')(({ theme }) => ({
+  const { open, showWidget, setShowWidget, iconName, label } = props
+
+  return (
+      <ListItem  disablePadding sx={{ display: 'block' }}>
+        <ListItemButton
+          selected={showWidget}
+          onClick={() => {
+            // setShowLegend(false)
+            setShowWidget(!showWidget)
+          }}
+          sx={
+            {
+              minHeight: 48,
+              px: 2.5,
+              justifyContent: open ? 'initial' : 'center'
+            }}
+        >
+          <ListItemIcon
+            sx={{
+              minWidth: 0,
+              justifyContent: 'center',
+              mr: open ? 3 : 0
+            }}
+          >
+            <CalciteIcon icon={iconName} />
+          </ListItemIcon>
+          {open && (
+              <ListItemText
+              primary={label}
+              sx={{opacity: open ? 1: 0}}
+            />
+          ) 
+          }
+          
+        </ListItemButton>
+      </ListItem>
+  )
+  
+} 
+
+const DrawerFooter = styled('div')(({ theme }) => ({
   display: 'flex',
+  width: '100%',
   alignItems: 'center',
-  justifyContent: 'flex-end',
+  justifyContent: 'end',
   padding: theme.spacing(0, 1),
   // necessary for content to be below app bar
   ...theme.mixins.toolbar,
 }));
 
-
-
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
-  ({ theme }) => ({
-    width: drawerWidth,
-    flexShrink: 0,
-    whiteSpace: 'nowrap',
-    boxSizing: 'border-box',
-    variants: [
-      {
-        props: ({ open }) => open,
-        style: {
-          ...openedMixin(theme),
-          '& .MuiDrawer-paper': openedMixin(theme),
-        },
-      },
-      {
-        props: ({ open }) => !open,
-        style: {
-          ...closedMixin(theme),
-          '& .MuiDrawer-paper': closedMixin(theme),
-        },
-      },
-    ],
+const DrawerBox = styled(Box, { shouldForwardProp: (prop) => prop !== "open" && prop !== "color"})<
+  { open?: boolean; color?: keyof Theme["palette"]  }
+>(({ theme, open, color = "primary"}) => ({
+  width: open ? drawerWidth : `calc(${theme.spacing(7)} + 1px)`,
+  transition: theme.transitions.create("width", {
+    easing: theme.transitions.easing.sharp,
+    duration: theme.transitions.duration.standard,
   }),
-);
+  overflowX: "hidden",
+  height: "100%", 
+  display: "flex", 
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "space-between", 
+
+  // color
+  borderRight: `1px solid ${theme.palette[color].contrastText}`,
+  backgroundColor: theme.palette[color].main, // Use theme-based background color
+  color: theme.palette[color].contrastText,
+}));
 
 export default function Menu(props) {
-    const { open, handleDrawerClose, setShowLegend, showLegend, setShowLayerList, showLayerList } = props
-    const theme = useTheme()
+
+    const [drawerOpen, setDrawerOpen] = useState(true)
+    const handleDrawer = () => {
+      setDrawerOpen(!drawerOpen)
+    }
+    const { setShowLegend, showLegend, setShowLayerList, showLayerList, setShowFilter, showFilter } = props
   
     return (
 
-      <Drawer variant="permanent" open={open}>
-        <DrawerHeader>
-          <IconButton onClick={handleDrawerClose}>
-            {theme.direction === 'rtl' ? <CalciteIcon icon="chevron-right" /> : <CalciteIcon icon="chevron-left" />}
-          </IconButton>
-        </DrawerHeader>
-        <Divider />
+      <DrawerBox open={drawerOpen} color="white">
+
         <List>
-            <ListItem  disablePadding sx={{ display: 'block' }}>
-              <ListItemButton
-                onClick={() => {
-                  setShowLegend(false)
-                  setShowLayerList(!showLayerList)
-                }}
-                sx={
-                  {
-                    minHeight: 48,
-                    px: 2.5,
-                    justifyContent: open ? 'initial' : 'center'
-                  }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    justifyContent: 'center',
-                    mr: open ? 3 : 'auto'
-                  }}
-                >
-                  <CalciteIcon icon="layers" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Layers"
-                  sx={{opacity: open ? 1: 0}}
-                />
-              </ListItemButton>
-            </ListItem>
-            <ListItem  disablePadding sx={{ display: 'block' }}>
-              <ListItemButton
-                onClick={() => {
-                  setShowLayerList(false)
-                  setShowLegend(!showLegend)
-                  
-                }}
-                sx={
-                  {
-                    minHeight: 48,
-                    px: 2.5,
-                    justifyContent: open ? 'initial' : 'center'
-                  }}
-                  
-              >
-                <ListItemIcon
-                  sx={{
-                      minWidth: 0,
-                      justifyContent: 'center',
-                      mr: open ? 3 : 'auto'
-                    }}
-                >
-                  <CalciteIcon icon="legend" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Legend"
-                  sx={{opacity: open ? 1: 0}}
-                />
-              </ListItemButton>
-            </ListItem>
-            <ListItem  disablePadding sx={{ display: 'block' }}>
-              <ListItemButton
-                onClick={() => {
-                  setShowLayerList(false)
-                  setShowLegend(false)
-                  
-                }}
-                sx={
-                  {
-                    minHeight: 48,
-                    px: 2.5,
-                    justifyContent: open ? 'initial' : 'center'
-                  }}
-                  
-              >
-                <ListItemIcon
-                  sx={{
-                      minWidth: 0,
-                      justifyContent: 'center',
-                      mr: open ? 3 : 'auto'
-                    }}
-                >
-                  <CalciteIcon icon="filter" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Filters"
-                  sx={{opacity: open ? 1: 0}}
-                />
-              </ListItemButton>
-            </ListItem>
+            <MenuItem open={drawerOpen} showWidget={showLayerList} setShowWidget={setShowLayerList} iconName="layers" label="Layers" />
+            <MenuItem open={drawerOpen} showWidget={showFilter} setShowWidget={setShowFilter} iconName="filter" label="Filters" />
+            <MenuItem open={drawerOpen} showWidget={showLegend} setShowWidget={setShowLegend} iconName="legend" label="Legend" />
+            
         </List>
         
-      </Drawer>
+        <DrawerFooter>
+          <IconButton 
+              onClick={handleDrawer}
+              color = {drawerOpen ? "secondary" : "primary"}>
+              {drawerOpen ? <CalciteIcon icon="chevron-left" /> : <CalciteIcon icon="chevron-right"  />}
+          </IconButton>
+        </DrawerFooter>
+
+      </DrawerBox>
+
+      
       
     
   );
 }
-    // <CalciteShell contentBehind={true} >
-    //     <CalciteActionBar slot="action-bar">
-    //         <CalciteAction icon="layers" text="Layers" />
-    //         <CalciteAction icon="legend" text="Layers" />
 
-    //     </CalciteActionBar>
-    //     <CalcitePanel heading="Layers">
-    //         <div id="layer-list-container"></div>
-    //         {/* <ArcgisLayerList  /> */}
-    //     </CalcitePanel>
-    //     <CalcitePanel heading="Legend" >
-    //         <div id="legend-container"></div>
-    //         {/* <ArcgisLegend  onArcgisReady={(event) => addVisualizationOptions(event.target)} /> */}
-    //     </CalcitePanel>
-                
-    // </CalciteShell>
  
