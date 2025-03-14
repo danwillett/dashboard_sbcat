@@ -1,8 +1,8 @@
-import DashboardMap from "../../ui/query-vis/DashboardMap";
+import ExploreMap from "../../ui/explore-app/ExploreMap";
 
 export default function QueryVis() {
   return (
     
-    <DashboardMap />
+    <ExploreMap />
   );
 }

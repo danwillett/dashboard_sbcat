@@ -4,7 +4,6 @@ import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
 
-
 const censusTitle = "ACS 2023 5-Year Demographics"
 // function creates a graphics layer for the census data based on a chosen table
 
@@ -43,7 +42,6 @@ async function createCensusGraphics(geomLayer, tableLayer, layerName) {
         geomArr.push({id: id, geometry: geometry})
     })
 
-
     // joining geometries with census table
     const mergedData = tableArr.map((tableData) => {
         const geomData = geomArr.find((data) => data.id === tableData.geo_id)
@@ -52,7 +50,6 @@ async function createCensusGraphics(geomLayer, tableLayer, layerName) {
             ...(geomData ? geomData : {})
         }
     })
-
     
     // creating a new graphics layer 
     let graphics = []

@@ -32,20 +32,26 @@ export default function FilterPanel(props) {
         // })
     };
 
-    const setIncidentFilters = async () => {
-        if (incidentGroupLayer !== null && timeSlider !== null && viewRef !==null) {
-            console.log(incidentGroupLayer)
+    const setFilters = async () => {
+        if (incidentGroupLayer !== null && countGroupLayer !== null && timeSlider !== null && viewRef !==null) {
+            
+            // incident layers
             const groupIncidentView = await viewRef?.whenLayerView(incidentGroupLayer)
-
             const incidentLayers = incidentGroupLayer.layers.items
             const incidentLayerViews = groupIncidentView.layerViews.items
+
+            // count layers
+            const groupCountView = await viewRef?.whenLayerView(countGroupLayer)
+            const countLayers = countGroupLayer.layers.items
+            const countLayerViews = groupCountView.layerViews.items
             
             reactiveUtils.watch(
                 () => timeSlider?.timeExtent,
                 async () => {
                     const date = new Date(timeSlider.timeExtent.end).toISOString().replace("T", " ").replace("Z", "")
+                
                     incidentLayers.map((layer) => {
-                        layer.definitionExpression = "timestamp <= Timestamp '" + date + "'";
+                        layer.definitionExpression =  "timestamp <= Timestamp '" + date + "'";
                     })
 
                     incidentLayerViews.map((layerView) => {
@@ -57,15 +63,33 @@ export default function FilterPanel(props) {
                             excludedEffect: "grayscale(20%) opacity(12%)"
                         };
                     })
+
+                    countLayers.map((layer) => {
+                        console.log(layer)
+                        layer.definitionExpression =  `end_date <=  Timestamp '${date}'`;
+                    })
+
+                    countLayerViews.map((layerView) => {
+                        layerView.featureEffect = {
+                            filter: {
+                            timeExtent: timeSlider.timeExtent,
+                            geometry: viewRef.extent
+                            },
+                            excludedEffect: "grayscale(20%) opacity(12%)"
+                        };
+                    })
                 }
             )
+
         }
     }
+
+    
 
     // filters
     useEffect(() => {
         if (timeSlider !== null) {
-            setIncidentFilters()
+            setFilters()
         }
     }, [countGroupLayer, incidentGroupLayer, timeSlider])
 
@@ -97,7 +121,7 @@ export default function FilterPanel(props) {
 
             </Box>
             <Typography variant='body2' align="left" my={2} sx={{width: '100%', px: '20px'}} >Select a timeframe</Typography>
-            <div id="time-slider-container"></div>
+            <div id="explore-time-slider-container"></div>
             
         </Box>
         

@@ -194,11 +194,6 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
         tableArr.push({...feature.attributes})
     })
 
-   
-    // const tableDf = new DataFrame(tableArr)
-    // const dailyAvgCounts = tableDf.groupby(["site_id"]).agg({total_daily_count: "mean"}).rename({total_daily_count_mean: "avg_daily_count"})
-    // const dailyAvgsObj = toJSON(dailyAvgCounts)
-
     // querying count location point geometry attributes
     let geomQuery = countPoints.createQuery()
     geomQuery.where = ""
@@ -281,9 +276,19 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
             type: "double"
         },
         {
+            name: "start_date",
+            alias: "First Date",
+            type: "date-only"
+        },
+        {
+            name: "end_date",
+            alias: "Last Date",
+            type: "date-only"
+        },
+        {
             name: "year",
             alias: "Year",
-            type: "date-only"
+            type: "double"
         },
         {
             name: "count_type",
@@ -313,9 +318,11 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
 
     ]
 
+    const countType = query.includes("ped") ? "Pedestrian" : "Bike"
+
     const popupTemplate = {
         // autocasts as new PopupTemplate()
-        title: "{count_type} Counts at {name}",
+        title: `${countType} Counts at {name}`,
         content: [
           {
             type: "fields",
@@ -323,6 +330,20 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
               {
                 fieldName: "name",
                 label: "Location"
+              },
+              {
+                fieldName: "start_date",
+                label: "First Count Date",
+                format: {
+                    dateFormat: 'short-date'
+                }
+              },
+              {
+                fieldName: "end_date",
+                label: "Last Count Date",
+                format: {
+                    dateFormat: 'short-date'
+                }
               },
               {
                 fieldName: "all_aadt",
@@ -349,6 +370,14 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
         title: title,
         objectIdField: "OBJECTID",
         fields: layerFields,
+        timeInfo: {
+            startField: "start_date",
+            endField: "end_date",
+            interval: {
+                unit: "years",
+                value: 1
+            }
+        },
         popupTemplate: popupTemplate,
         renderer: {
             type: "simple",

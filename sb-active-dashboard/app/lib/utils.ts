@@ -2,8 +2,9 @@
 
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
-import addCensusRenderPanel from "../ui/query-vis/CensusRenderer";
-import addCountRenderPanel from "../ui/query-vis/CountRenderer";
+import addCensusRenderPanel from "../ui/explore-app/CensusRenderer";
+import addCountRenderPanel from "../ui/explore-app/CountRenderer";
+import addIncidentRenderPanel from "../ui/explore-app/IncidentRenderer";
 
 export async function createGraphics(geomLayer, tableLayer, geom_id: string, query: string = "") {
 
@@ -73,7 +74,7 @@ export function addVisualizationOptions(event) {
     const { item } = event
 
     if (item.title === "ACS 2023 5-Year Demographics") { // need to make this title a universal variable
-        
+        item.open = true
         item.children.items.forEach((sublayer: any, index: any) => {
 
             addCensusRenderPanel(sublayer)                
@@ -82,27 +83,39 @@ export function addVisualizationOptions(event) {
     }
 
     if (item.title === "Bike & Ped Counts") {
-
+        item.open = true
         item.children.items.forEach((sublayer: any, index: any) => {
 
             addCountRenderPanel(sublayer)
         })
     }
 
-        // if (item.title === "Bike & Ped Counts") {
-             
-        //     item.children.items.forEach((sublayer: any, index: any) => {
-                                
-        //         sublayer.panel = {
-        //             content: null,
-        //             iconClass: "layer-graphics",
-        //             title: "visualization fields",
-        //         }
-                
-        //         addRenderPanel(sublayer)
-        //     })
+    if (item.title == "Safety Incidents") {
+        item.open = true
+        // item.children.items.forEach((sublayer: any) => {
 
-        // }
-        
+        // })
+
+        item.actionsSections = [
+            [
+                {
+                    title: "View as points",
+                    icon: "pin-tear",
+                    id: "change-incident-points"
+                },
+                {
+                    title: "View as clusters",
+                    icon: "",
+                    id: "change-incident-clusters"
+                },
+                {
+                    title: "View as heatmap",
+                    id: "change-incident-heatmap",
+                    icon: "classify-pixels"
+                }
+            ]
+        ]
+    }
+
     
 }

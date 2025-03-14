@@ -45,7 +45,7 @@ function IncidentRenderer(props: props) {
     )
 }
 
-export default function addCountRenderPanel(sublayer: any) {
+export default function addIncidentRenderPanel(sublayer: any) {
 
     const container = document.createElement("div")
     const root = createRoot(container)

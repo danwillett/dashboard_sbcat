@@ -66,7 +66,7 @@ export default function addCountRenderPanel(sublayer: any) {
 
     sublayer.panel = {
         content: container,
-        iconClass: "layer-graphics",
-        title: "filter fields"
+        icon: "sliders-horizontal",
+        title: "Visualization Fields"
     }
 }

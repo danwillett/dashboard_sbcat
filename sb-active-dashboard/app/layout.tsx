@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 
-import { NextAppProvider } from '@toolpad/core/nextjs';
 import "./globals.css";
 import '@esri/calcite-components/dist/calcite/calcite.css';
 

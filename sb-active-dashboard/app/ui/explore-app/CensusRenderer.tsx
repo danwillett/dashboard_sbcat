@@ -3,7 +3,7 @@
 import React, {  useRef, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 
-import { Radio, RadioGroup, FormControl, FormControlLabel, FormLabel } from '@mui/material';
+import RenderOptionsForm from "../dashboard/LayerList/RenderOptionsForm";
 import * as math from 'mathjs'
 
 interface props {
@@ -104,40 +104,7 @@ function CensusRenderer(props: props) {
     }
     
     return (
-        <FormControl>
-            <FormLabel id="demo-radio-buttons-group-label">Select an attribute</FormLabel>
-            <RadioGroup
-            aria-labelledby="demo-radio-buttons-group-label"
-            defaultValue={fields[0].name}
-            name="radio-buttons-group"
-            >
-                { fields.map((attribute) => (
-                    <FormControlLabel 
-                        key={attribute.name} 
-                        value={attribute.name} 
-                        control={<Radio onClick={changeRenderField} />} 
-                        label={attribute.name} 
-                        />
-                ))}
-                
-            </RadioGroup>
-      </FormControl>
-
-        
-        // <CalciteRadioButtonGroup
-        //     name="Visibility"
-        //     layout="vertical"
-        //     defaultValue={fields[0].name}
-        // >
-        //     { fields.map((attribute) => (
-        //         <CalciteLabel layout="inline" key={attribute.name}>
-        //             <CalciteRadioButton value={attribute.name} onClick={changeRenderField} />
-        //             {attribute.name}
-        //         </CalciteLabel>
-        //     ))}
-            
-
-        // </CalciteRadioButtonGroup>
+        <RenderOptionsForm fields={fields} changeRenderField={changeRenderField} />
     )
 }
 
@@ -151,8 +118,8 @@ export default function addCensusRenderPanel(sublayer: any) {
     // set panel layerlist panel
     sublayer.panel = {
         content: container,
-        iconClass: "layer-graphics",
-        title: "visualization fields",
+        icon: "sliders-horizontal",
+        title: "Visualization Fields",
     }
     
 }

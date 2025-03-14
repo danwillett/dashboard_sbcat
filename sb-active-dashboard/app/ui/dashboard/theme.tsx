@@ -10,7 +10,33 @@ import { createTheme } from '@mui/material/styles'
 
 //   }
 
+
+const fonts = ['"Avenir Next"', '"Helvetica Neue"', 'helvetica', 'Arial', 'sans-serif'].join(',')
 export const dashboardTheme = createTheme({
+    typography: { fontFamily: fonts },
+    components: {
+        MuiCssBaseline: {
+            styleOverrides: {
+                root: { fontFamily: fonts } ,
+            },
+        },
+        MuiFormControl: {
+            styleOverrides: {
+                root: { fontFamily: fonts } ,
+            },
+        },
+        MuiFormControlLabel: {
+            styleOverrides: {
+                root: { fontFamily: fonts } ,
+            },
+        },
+        MuiFormLabel: {
+            styleOverrides: {
+                root: { fontFamily: fonts } ,
+            },
+        },
+        
+    },
     palette: {
         aqua: {
             main: "#047C91",

@@ -1,11 +1,9 @@
 'use client';
 
-import React, {  useRef, useState, useEffect } from "react";
-import { createRoot } from "react-dom/client";
+import React, { useRef, useState, useEffect } from "react";
 import "@esri/calcite-components"
 import "@arcgis/map-components/dist/components/arcgis-map";
 import "@arcgis/map-components/dist/components/arcgis-legend";
-import "@arcgis/map-components/dist/components/arcgis-expand";
 import "@arcgis/map-components/dist/components/arcgis-layer-list";
 import "@arcgis/map-components/dist/components/arcgis-time-slider";
 import Map from "@arcgis/core/map"
@@ -13,31 +11,23 @@ import MapView from "@arcgis/core/views/MapView"
 import LayerList from "@arcgis/core/widgets/LayerList"
 import Legend from "@arcgis/core/widgets/Legend"
 import TimeSlider from "@arcgis/core/widgets/TimeSlider"
-import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
 
-import Menu from "./Menu";
-import FilterPanel from "./FilterPanel";
-
-
-import { styled, useTheme, Theme, CSSObject } from '@mui/material/styles'
 
 import { ArcgisMap } from "@arcgis/map-components-react";
 import { CssBaseline, Box, Popover, Typography, Toolbar } from "@mui/material";
-import Grid from "@mui/material/Grid2"
 
 import { setAssetPath as setCalciteComponentsAssetPath } from '@esri/calcite-components/dist/components';
 setCalciteComponentsAssetPath("https://js.arcgis.com/calcite-components/2.13.2/assets");
 
-import { createCensusGroupLayer } from "@/app/lib/displayCensus";
-import { createCountGroupLayer } from "@/app/lib/displayCounts";
-import { createIncidentGroupLayer } from "@/app/lib/displayIncidents";
-import { addVisualizationOptions } from "@/app/lib/utils";
-import GroupLayer from "@arcgis/core/layers/GroupLayer";
+import { createHeatmaps, createSafetyLayers, addHeatmapVisOptions } from "@/app/lib/safety-app/handleSafety";
 
+import SafetyMenu from "./SafetyMenu";
+import SafetyFilterPanel from "./SafetyFilterPanel";
+import Grid from "@mui/material/Grid2"
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 
-export default function DashboardMap() {
+export default function SafetyMap() {
 
-    const theme = useTheme();
 
     const [showWidgetPanel, setShowWidgetPanel] = useState<Boolean>(false)
     const [showLegend, setShowLegend] = useState<Boolean>(false)
@@ -46,8 +36,7 @@ export default function DashboardMap() {
     const [ mapElRef, setMapElRef ] = useState(null)
     const [ mapRef, setMapRef ] = useState<Map | null>(null)
     const [ viewRef, setViewRef ] = useState<MapView | null>(null)
-    const [ countGroupLayer, setCountGroupLayer ] = useState<GroupLayer | null>(null)
-    const [ incidentGroupLayer, setIncidentGroupLayer ] = useState<GroupLayer | null>(null)
+    const [ heatmapLayer, setHeatmapLayer ] = useState<FeatureLayer | null>(null)
     const [timeSlider, setTimeSlider] = useState<TimeSlider | null>(null)
 
     const menuProps = {
@@ -60,13 +49,15 @@ export default function DashboardMap() {
         setShowLayerList,
         showFilter,
         setShowFilter
+
+        
     }
 
     const filterProps = {
         timeSlider,
         viewRef,
-        countGroupLayer,
-        incidentGroupLayer
+        heatmapLayer
+     
     }
 
     // once map is generated, load feature layers and add to the map
@@ -74,17 +65,15 @@ export default function DashboardMap() {
         if (mapRef !== null) {
 
             const createLayers = async () => {
-                const censusGroupLayer = await createCensusGroupLayer()
-                const countGroupLayer = await createCountGroupLayer()
-                const incidentGroupLayer = await createIncidentGroupLayer()
-
+                // const safetyLayer = await createSafetyLayers()
+                const safetyHeatmapLayer = await createHeatmaps()
+                mapRef.add(safetyHeatmapLayer)
                 
-                mapRef.add(censusGroupLayer)
-                mapRef.add(countGroupLayer)
-                mapRef.add(incidentGroupLayer)
+                setHeatmapLayer(safetyHeatmapLayer)
+                // setCensusGroupLayer(censusGroupLayer)
+                // setCountGroupLayer(countGroupLayer)
+                // setIncidentGroupLayer(incidentGroupLayer)
                 
-                setCountGroupLayer(countGroupLayer)
-                setIncidentGroupLayer(incidentGroupLayer)
             }
             
             createLayers()
@@ -93,7 +82,6 @@ export default function DashboardMap() {
         
     }, [mapRef])
 
-    
 
     // set map center and zoom once view has been set and add custom widgets
     useEffect(() => {
@@ -103,41 +91,53 @@ export default function DashboardMap() {
                 zoom: 9
             })
 
-            const layerList = new LayerList({
-                view: viewRef,
-                container: 'layer-list-container',
-                listItemCreatedFunction: addVisualizationOptions
-            })
-            const legend = new Legend({
-                view: viewRef,
-                container: 'legend-container'
-            })
+            if (heatmapLayer !== null){
+                
+                // const layerList = new LayerList({
+                //     view: viewRef,
+                //     container: 'layer-list-container',
+                //     listItemCreatedFunction: addHeatmapVisOptions
+                // })
 
-            const timeSlider = new TimeSlider({
-                view: viewRef,
-                container: 'time-slider-container',
-                mode: 'time-window',
-                timeZone: 'system',
-                stops: {
-                    interval: {
-                        value: 1,
-                        unit: "years"
+                const legend = new Legend({
+                    view: viewRef,
+                    container: 'legend-container'
+                })
+                console.log(heatmapLayer)
+                
+
+                // time filter
+                const timeSlider = new TimeSlider({
+                    container: 'safety-time-slider-container',
+                    mode: 'time-window',
+                    timeZone: 'system',
+                    stops: {
+                        interval: {
+                            value: 1,
+                            unit: "years"
+                        }
+                    },
+                    fullTimeExtent: {
+                        start: heatmapLayer.timeInfo.fullTimeExtent.start,
+                        end: heatmapLayer.timeInfo.fullTimeExtent.end
+                    },
+                    timeExtent: {
+                        start: heatmapLayer.timeInfo.fullTimeExtent.start,
+                        end: heatmapLayer.timeInfo.fullTimeExtent.end
                     }
-                },
-                fullTimeExtent: {
-                    start: new Date(2012, 1, 1),
-                    end: new Date()
-                },
-                timeExtent: {
-                    start: new Date(2012, 1, 1),
-                    end: new Date()
-                }
-            })
-            setTimeSlider(timeSlider)
+                })
+                setTimeSlider(timeSlider)
+
+                setShowLegend(true)
+                setShowLayerList(true)
+                setShowFilter(true)
+                
+            }
+            
             
         }
         
-    }, [viewRef])
+    }, [viewRef, heatmapLayer])
     
     
 
@@ -155,11 +155,12 @@ export default function DashboardMap() {
             <CssBaseline />
             {/* <Header open={open} handleDrawerOpen={handleDrawerOpen} /> */}
             <Box sx={{height: "100%"}}>
-                <Menu {...menuProps} />
+                <SafetyMenu {...menuProps} />
             </Box>
             
             
             {/* Widget Panel */}
+
             <Box sx={{
                 display: showLegend || showLayerList || showFilter ? 'flex' : 'none',  // Always render, visibility controlled via `display`
                 flexDirection: 'column', // Stack vertically first
@@ -172,25 +173,22 @@ export default function DashboardMap() {
                 maxHeight: "calc(100vh - 70px)", // Prevents it from growing indefinitely
                 maxWidth: "none",
                 }}>
-                
-                      
-                {/* Layer List Panel */}
-                <Grid justifyContent="center" className="esri-widget" sx={{display: showLayerList ? 'block': 'none'}}>
+
+                {/* Layer List */}
+                {/* <Grid justifyContent="center" className="esri-widget" sx={{display: showLayerList ? 'block': 'none'}}>
                     <Grid size={12} my={2}>
-                            <Typography align='center' variant='h5'>Layers</Typography>
-                            
-                        </Grid>
+                        <Typography align='center' variant='h5'>Layers</Typography>
+                    </Grid>
                     <div id="layer-list-container"></div>
-                </Grid>
+                </Grid>   */}
 
                 {/* Filter Panel */}
-                <Grid className="esri-widget" justifyContent="center" sx={{display: showFilter ? 'block': 'none'}}>
-                    <Grid size={12} my={2} >
-                            <Typography align='center' variant='h5'>Filters</Typography>
+                <Grid justifyContent="center" className="esri-widget" sx={{display: showFilter ? 'block': 'none'}}>
+                    <Grid size={12} my={2}>
+                        <Typography align='center' variant='h5'>Filters</Typography>
                     </Grid>
-                    
-                    <FilterPanel {...filterProps} />
-                </Grid>
+                    <SafetyFilterPanel {...filterProps} />
+                </Grid>  
 
                 {/* Legend Panel */}
                 <Grid justifyContent="center" className="esri-widget" sx={{display: showLegend ? 'block': 'none'}}>
@@ -199,7 +197,12 @@ export default function DashboardMap() {
                     </Grid>
                     <div id="legend-container"></div>
                 </Grid>
+
+                
+
+                
             </Box>
+            
             <Box component="main" sx={{ flexGrow: 1, flexShrink: 1 }}>
                 
 
