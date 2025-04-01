@@ -500,7 +500,6 @@ export async function createHeatmaps(){
 }
 
 import addHeatmapRenderPanel from "@/app/ui/safety-app/HeatmapRenderer";
-import Field from "@arcgis/core/layers/support/Field";
 
 export const addHeatmapVisOptions = (event: any) => {
     const { item } = event
