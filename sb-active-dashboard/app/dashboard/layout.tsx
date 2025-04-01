@@ -1,4 +1,5 @@
 'use client';
+import { ReactNode } from "react";
 import Header from "../ui/dashboard/Header"
 
 import { Container } from "@mui/material"
@@ -6,8 +7,11 @@ import { ThemeProvider } from '@mui/material/styles'
 
 import { appTheme } from "../ui/theme";
 
+interface DashboardLayoutProps {
+    children: ReactNode;
+}
 
-export default function DashboardLayout({children}){
+export default function DashboardLayout({children}: DashboardLayoutProps){
     const appRoutes = [
         {
             link: "/dashboard/explore",
