@@ -12,7 +12,7 @@ import { createTheme } from '@mui/material/styles'
 
 
 const fonts = ['"Avenir Next"', '"Helvetica Neue"', 'helvetica', 'Arial', 'sans-serif'].join(',')
-export const dashboardTheme = createTheme({
+export const appTheme = createTheme({
     typography: { fontFamily: fonts },
     components: {
         MuiCssBaseline: {
@@ -63,6 +63,11 @@ export const dashboardTheme = createTheme({
         white: {
             main: "#FFFFFF",
             contrastText: "#3D4952"
+        },
+        coral: {
+            main: "#EF5645",
+            dark: "#C43424",
+            contrastText: "#011517",
         }
     }
 })

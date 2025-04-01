@@ -5,7 +5,7 @@ import { useTheme } from '@mui/material/styles'
 import { Toolbar, Box, List, Typography, Button, AppBar } from "@mui/material";
 import Grid from '@mui/material/Grid2'
 
-import { dashboardTheme } from "./theme";
+import { dashboardTheme } from "../theme";
 
 
 export default function Header(props) {

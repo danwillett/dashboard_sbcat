@@ -6,11 +6,13 @@ import "@arcgis/map-components/dist/components/arcgis-map";
 import "@arcgis/map-components/dist/components/arcgis-legend";
 import "@arcgis/map-components/dist/components/arcgis-layer-list";
 import "@arcgis/map-components/dist/components/arcgis-time-slider";
+import "@arcgis/map-components/dist/components/arcgis-print";
 import Map from "@arcgis/core/map"
 import MapView from "@arcgis/core/views/MapView"
 import LayerList from "@arcgis/core/widgets/LayerList"
 import Legend from "@arcgis/core/widgets/Legend"
 import TimeSlider from "@arcgis/core/widgets/TimeSlider"
+import Print from "@arcgis/core/widgets/Print"
 
 
 import { ArcgisMap } from "@arcgis/map-components-react";
@@ -32,6 +34,7 @@ export default function SafetyMap() {
     const [showWidgetPanel, setShowWidgetPanel] = useState<Boolean>(false)
     const [showLegend, setShowLegend] = useState<Boolean>(false)
     const [showLayerList, setShowLayerList] = useState<Boolean>(false)
+    const [showPrint, setShowPrint] = useState<Boolean>(false)
     const [showFilter, setShowFilter] = useState<Boolean>(false)
     const [ mapElRef, setMapElRef ] = useState(null)
     const [ mapRef, setMapRef ] = useState<Map | null>(null)
@@ -48,7 +51,9 @@ export default function SafetyMap() {
         showLayerList,
         setShowLayerList,
         showFilter,
-        setShowFilter
+        setShowFilter,
+        showPrint,
+        setShowPrint
 
         
     }
@@ -103,7 +108,14 @@ export default function SafetyMap() {
                     view: viewRef,
                     container: 'legend-container'
                 })
-                console.log(heatmapLayer)
+                
+                const print = new Print({
+                    view: viewRef,
+                    container: 'safety-print-container',
+                    
+                    printServiceUrl:
+                       "https://spatialcenter.grit.ucsb.edu/server/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task"
+                  });
                 
 
                 // time filter
@@ -162,7 +174,7 @@ export default function SafetyMap() {
             {/* Widget Panel */}
 
             <Box sx={{
-                display: showLegend || showLayerList || showFilter ? 'flex' : 'none',  // Always render, visibility controlled via `display`
+                display: showLegend || showLayerList || showFilter || showPrint ? 'flex' : 'none',  // Always render, visibility controlled via `display`
                 flexDirection: 'column', // Stack vertically first
                 flexWrap: 'wrap', // Wrap into another column when needed
                 alignItems: "stretch", // Aligns properly to the left
@@ -196,6 +208,14 @@ export default function SafetyMap() {
                         <Typography align='center' variant='h5'>Legend</Typography>
                     </Grid>
                     <div id="legend-container"></div>
+                </Grid>
+
+                {/* Print Panel */}
+                <Grid justifyContent="center" className="esri-widget" sx={{display: showPrint ? 'block': 'none'}}>
+                    <Grid size={12} my={2}>
+                        <Typography align='center' variant='h5'>Print Map</Typography>
+                    </Grid>
+                    <div id="safety-print-container"></div>
                 </Grid>
 
                 

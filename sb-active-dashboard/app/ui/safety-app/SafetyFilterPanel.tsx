@@ -4,7 +4,7 @@ import FeatureLayerView from "@arcgis/core/views/layers/FeatureLayerView";
 import FeatureFilter from '@arcgis/core/layers/support/FeatureFilter'
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
 
-import { RadioGroup, FormLabel, FormControlLabel, Radio, Box, Typography } from "@mui/material";
+import { FormControl, RadioGroup, FormLabel, FormControlLabel, Radio, Box, Typography } from "@mui/material";
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 
 
@@ -104,20 +104,41 @@ export default function SafetyFilterPanel(props) {
         <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
 
             
-            <Box sx={{width: 200}}>
+            <Box sx={{width: 300}}>
 
                 {/* Peds vs Bicyclists */}
-                <FormLabel sx={{ fontSize: '14px', fontFamily: fonts}} id="select-road-user-label">Select a road user</FormLabel>
-                <RadioGroup
-                    row
-                    aria-labelledby="select-road-user-label"
-                    name="select-road-user"
-                    value={userType}
-                >
-                    <FormControlLabel value="bicyclist" control={<Radio onClick={filterUser} />} label="Bicyclist" />
-                    <FormControlLabel value="pedestrian" disabled control={<Radio onClick={filterUser} />} label="Pedestrian" />
-                    
-                </RadioGroup>
+                <FormControl fullWidth sx={{mb: 3}}>
+                    <FormLabel sx={{ fontSize: '14px', fontFamily: fonts}} id="select-road-user-label">Select a road user</FormLabel>
+                    <RadioGroup
+                        row
+                        aria-labelledby="select-road-user-label"
+                        name="select-road-user"
+                        value={userType}
+                    >
+                        <FormControlLabel 
+                            value="bicyclist" 
+                            control={<Radio onClick={filterUser} />} 
+                            label="Bicyclist" 
+                            slotProps={{
+                                    typography: {
+                                      sx: { fontSize: '14px', fontFamily: "Avenir Next, Helvetica Neue, helvetica, Arial, sans-serif" },
+                                    },
+                                  }}
+                            />
+                        <FormControlLabel 
+                            value="pedestrian" 
+                            disabled 
+                            control={<Radio onClick={filterUser} />} 
+                            label="Pedestrian" 
+                            slotProps={{
+                                typography: {
+                                  sx: { fontSize: '14px', fontFamily: "Avenir Next, Helvetica Neue, helvetica, Arial, sans-serif" },
+                                },
+                              }}
+                            />
+                        
+                    </RadioGroup>
+                </FormControl>
 
                 <FormLabel sx={{ fontSize: '14px', fontFamily: fonts}} id="render-options">Normalize incidents by:</FormLabel>
                 { weightFields && (

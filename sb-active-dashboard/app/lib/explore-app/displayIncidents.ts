@@ -40,23 +40,23 @@ const heatmapRenderer = new HeatmapRenderer({
 
 const pointRenderer = new UniqueValueRenderer({
     type: "unique-value",
-    field: "p_type",
+    field: "incident_type",
     uniqueValueInfos: [
         {
-            value: "collision",
+            value: "Collision",
             symbol: {
                 type: "picture-marker",
-                url: "/icons/collision_icon.png",
-                width: "18px",
+                url: "/icons/incident_marker.svg",
+                width: "10px",
                 height: "18px"
             }
         },
         {
-            value: "nearmiss",
+            value: "Near Collision",
             symbol: {
                 type: "picture-marker",
-                url: "/icons/nearmiss_icon.png",
-                width: "18px",
+                url: "/icons/hazard_marker.svg",
+                width: "10px",
                 height: "18px"
             }
         },
@@ -109,15 +109,22 @@ const clusterReduction = {
     }
 }
 
-
 async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query: string, title: string) {
 
     const incidentsQuery = incidentPoints.createQuery();
     incidentsQuery.where = query
     incidentsQuery.outFields = ["*"]
+    incidentsQuery.maxRecordCountFactor = 5
 
-    const queryResults = await incidentPoints.queryFeatures(incidentsQuery)
-    const incidentFeatures = queryResults.features
+    // paginate query since over 2000 records
+    let queryResultLength = 10000
+    let incidentFeatures: Graphic[] = []
+    while (queryResultLength === 10000) {
+        const queryResults = await incidentPoints.queryFeatures(incidentsQuery)
+        incidentFeatures.push(...queryResults.features)
+        queryResultLength = queryResults.features.length
+    }
+    
     const graphics: Graphic[] = []
     let graphic
 
@@ -131,6 +138,7 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
         graphics.push(graphic)
     })
 
+    console.log(graphics)
     const layerFields = [
         {
             name: "OBJECTID",
@@ -154,17 +162,75 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
         },
         {
             name: "pedestrian",
-            type: "string"
+            type: "double"
         },
         {
             name: "bicyclist",
-            type: "string"
+            type: "double"
         },
         {
             name: "timestamp",
             type: "date"
         }
     ]
+
+    const popupTemplate = {
+        // autocasts as new PopupTemplate()
+        title: `{incident_type} Safety Incident`,
+        content: [
+          {
+            type: "fields",
+            fieldInfos: [
+              {
+                fieldName: "incident_type",
+                label: "Type of Incident"
+              },
+              {
+                fieldName: "timestamp",
+                label: "Date & Time",
+                format: {
+                    dateFormat: 'long-date-short-time'
+                }
+              },
+            //   {
+            //     fieldName: "expression/pedestrianStatus",
+            //     label: "Pedestrian Involved"
+            //   },
+            //   {
+            //     fieldName: "expression/bicyclistStatus",
+            //     label: "Bicyclist Involved"
+            //   },
+              {
+                fieldName: "pedestrian",
+                label: "Pedestrian Involved"
+              },
+              {
+                fieldName: "bicyclist",
+                label: "Bicyclist Involved"
+              },
+              {
+                fieldName: "data_source",
+                label: "Data Source"
+              }
+              
+            
+            ],
+            // expressionInfos: [
+            //     {
+            //         name: "pedestrianStatus",
+            //         title: "Pedestrian Involved",
+            //         // expression: "IIF($feature.pedestrian == 1, 'True', 'False')"
+            //         expression: "$feature.pedestrian"
+            //     },
+            //     {
+            //         name: "bicyclistStatus",
+            //         title: "Bicyclist Involved",
+            //         expression: "IIF($feature.bicyclist == 1, 'True', 'False')"
+            //     }
+            // ]
+          }
+        ]
+      };
     
     const layer = new FeatureLayer({
         source: graphics,
@@ -178,8 +244,9 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
                 value: 1
             }
         },
-        // renderer: heatmapRenderer 
-        renderer: pointRenderer,
+        popupTemplate: popupTemplate,
+        renderer: clusterRenderer,
+        featureReduction: clusterReduction
 
     })
 
@@ -201,13 +268,14 @@ export function changeIncidentRenderer(groupLayer: __esri.GroupLayer, type: stri
         } else if (type === "simple") {
             layer.featureReduction = null
             layer.renderer = pointRenderer
-            layer.opacity = 0.8
+            layer.opacity = 1
             
             console.log(layer)
            
         } else if (type === "cluster") {
             layer.renderer = clusterRenderer
             layer.featureReduction = clusterReduction
+            layer.opacity = 1
         }
 
     })
@@ -221,8 +289,8 @@ export async function createIncidentGroupLayer() {
     const incidentsLayer = new FeatureLayer({url: 'https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Saftey_Incidents/FeatureServer'})
 
     const combinedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "", "All Incidents")
-    const bikeIncidentsLayer = await createIncidentGraphics(incidentsLayer, "bicyclist = 1", "Bike Incidents")
-    const pedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "pedestrian = 1", "Pedestrian Incidents")
+    const bikeIncidentsLayer = await createIncidentGraphics(incidentsLayer, "bicyclist = 1", "Biking Incidents")
+    const pedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "pedestrian = 1", "Walking Incidents")
 
     const incidentGroupLayer = new GroupLayer({
         layers: [

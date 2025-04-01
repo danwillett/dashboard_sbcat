@@ -12,25 +12,18 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 export default function FilterPanel(props) {
 
     const { countGroupLayer, incidentGroupLayer, timeSlider, viewRef } = props
-    const [ userType, setUserType ] = useState("both")
+    const [ dow, setDow ] = useState("all")
+    const [ tod, setTod ] = useState("anytime")
     
-    const handleTypeChange = (event: SelectChangeEvent) => {
-        setUserType(event.target.value)
-        console.log(countGroupLayer)
-        console.log(incidentGroupLayer)
+    const handleDowChange = (event: SelectChangeEvent) => {
+        setDow(event.target.value)
         
-        incidentGroupLayer.layers.items.map((sublayer) => {
-            // sublayer.
-        })
-
-
-        let { start, end } = incidentGroupLayer.timeInfo.fullTimeExtent
-        console.log(start, end)
-
-        // countGroupLayer.filter = new FeatureFilter({
-        //     timeExtent: 
-        // })
+    //    add dow filtering
     };
+
+    const handleTodChange = (event: SelectChangeEvent) => {
+        setTod(event.target.value)
+    }
 
     const setFilters = async () => {
         if (incidentGroupLayer !== null && countGroupLayer !== null && timeSlider !== null && viewRef !==null) {
@@ -84,8 +77,6 @@ export default function FilterPanel(props) {
         }
     }
 
-    
-
     // filters
     useEffect(() => {
         if (timeSlider !== null) {
@@ -97,22 +88,39 @@ export default function FilterPanel(props) {
     return (
         <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
 
-            
-            <Box sx={{width: 200}}>
+            <Box sx={{width: '100%'}}>
+
+                <Typography variant='body1' align="left" my={2} sx={{width: '100%', px: '20px'}}>Time Filters</Typography>
                 
+                <FormControl fullWidth sx={{mb: 3}}>
+                    <InputLabel id="dow-select-label">Day of Week</InputLabel>
+                    <Select
+                        labelId="dow-select-label"
+                        id="dow-select"
+                        value={dow}
+                        label="Day of Week"
+                        onChange={handleDowChange}
+                    >
+                        <MenuItem value="all">All Days</MenuItem>
+                        <MenuItem value="weekdays">Weekdays</MenuItem>
+                        <MenuItem value="weekends">Weekends</MenuItem>
+                    </Select>
+                </FormControl>
+
                 <FormControl fullWidth>
-                    <InputLabel id="user-type-select-label">Age</InputLabel>
-                        <Select
-                            labelId="user-type-select-label"
-                            id="user-type-select"
-                            value={userType}
-                            label="Road User"
-                            onChange={handleTypeChange}
-                        >
-                            <MenuItem value="both">Bikes & Peds</MenuItem>
-                            <MenuItem value="bikes">Bikes</MenuItem>
-                            <MenuItem value="peds">Peds</MenuItem>
-                        </Select>
+                    <InputLabel id="tod-select-label">Time of Day</InputLabel>
+                    <Select
+                        labelId="tod-select-label"
+                        id="tod-select"
+                        value={tod}
+                        label="Time of Day"
+                        onChange={handleTodChange}
+                    >
+                        <MenuItem value="anytime">Anytime</MenuItem>
+                        <MenuItem value="morning">6AM - 10AM</MenuItem>
+                        <MenuItem value="midday">11AM - 3PM</MenuItem>
+                        <MenuItem value="evening">4PM - 8PM</MenuItem>
+                    </Select>
 
                     {/* <Typography align='left' variant='body1'>Time</Typography>
                     <InputLabel id="user-type-select-label">Time</InputLabel> */}
@@ -120,7 +128,7 @@ export default function FilterPanel(props) {
                 </FormControl>
 
             </Box>
-            <Typography variant='body2' align="left" my={2} sx={{width: '100%', px: '20px'}} >Select a timeframe</Typography>
+            <Typography variant='body2' align="left" my={2} sx={{width: '100%', px: '20px'}} >Select a year range</Typography>
             <div id="explore-time-slider-container"></div>
             
         </Box>

@@ -8,11 +8,13 @@ import "@arcgis/map-components/dist/components/arcgis-legend";
 import "@arcgis/map-components/dist/components/arcgis-expand";
 import "@arcgis/map-components/dist/components/arcgis-layer-list";
 import "@arcgis/map-components/dist/components/arcgis-time-slider";
+import "@arcgis/map-components/dist/components/arcgis-print";
 import Map from "@arcgis/core/map"
 import MapView from "@arcgis/core/views/MapView"
 import LayerList from "@arcgis/core/widgets/LayerList"
 import Legend from "@arcgis/core/widgets/Legend"
 import TimeSlider from "@arcgis/core/widgets/TimeSlider"
+import Print from "@arcgis/core/widgets/Print"
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
 
 import ExploreMenu from "./ExploreMenu";
@@ -41,6 +43,7 @@ export default function ExploreMap() {
     const [showLegend, setShowLegend] = useState<Boolean>(false)
     const [showLayerList, setShowLayerList] = useState<Boolean>(false)
     const [showFilter, setShowFilter] = useState<Boolean>(false)
+    const [showPrint, setShowPrint] = useState<Boolean>(false)
     const [ mapElRef, setMapElRef ] = useState(null)
     const [ mapRef, setMapRef ] = useState<Map | null>(null)
     const [ viewRef, setViewRef ] = useState<MapView | null>(null)
@@ -58,7 +61,9 @@ export default function ExploreMap() {
         showLayerList,
         setShowLayerList,
         showFilter,
-        setShowFilter
+        setShowFilter,
+        showPrint,
+        setShowPrint
     }
 
     const filterProps = {
@@ -76,7 +81,6 @@ export default function ExploreMap() {
                 const censusGroupLayer = await createCensusGroupLayer()
                 const countGroupLayer = await createCountGroupLayer()
                 const incidentGroupLayer = await createIncidentGroupLayer()
-                
                 
                 mapRef.add(censusGroupLayer)
                 mapRef.add(countGroupLayer)
@@ -128,7 +132,16 @@ export default function ExploreMap() {
                     view: viewRef,
                     container: 'legend-container'
                 })
-    
+
+                const print = new Print({
+                    view: viewRef,
+                    container: 'print-container',
+                    
+                    printServiceUrl:
+                       "https://spatialcenter.grit.ucsb.edu/server/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task"
+                  });
+                  
+                
                 const timeSlider = new TimeSlider({
                     view: viewRef,
                     container: 'explore-time-slider-container',
@@ -153,6 +166,7 @@ export default function ExploreMap() {
 
                 setShowLegend(true)
                 setShowLayerList(true)
+                setShowPrint(false)
                 setShowWidgetPanel(true)
             }
             
@@ -183,7 +197,7 @@ export default function ExploreMap() {
             
             {/* Widget Panel */}
             <Box sx={{
-                display: showLegend || showLayerList || showFilter ? 'flex' : 'none',  // Always render, visibility controlled via `display`
+                display: showLegend || showLayerList || showFilter || showPrint ? 'flex' : 'none',  // Always render, visibility controlled via `display`
                 flexDirection: 'column', // Stack vertically first
                 flexWrap: 'wrap', // Wrap into another column when needed
                 alignItems: "stretch", // Aligns properly to the left
@@ -221,6 +235,15 @@ export default function ExploreMap() {
                     </Grid>
                     <div id="legend-container"></div>
                 </Grid>
+
+                {/* Print Panel */}
+                <Grid justifyContent="center" className="esri-widget" sx={{display: showPrint ? 'block': 'none'}}>
+                    <Grid size={12} my={2}>
+                        <Typography align='center' variant='h5'>Print Map</Typography>
+                    </Grid>
+                    <div id="print-container"></div>
+                </Grid>
+
             </Box>
             <Box component="main" sx={{ flexGrow: 1, flexShrink: 1 }}>
                 
