@@ -1,6 +1,6 @@
 'use client';
 
-import FieldProperties from "@arcgis/core/layers/support/Field";
+import Field from "@arcgis/core/layers/support/Field";
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import * as bufferOperator from "@arcgis/core/geometry/operators/bufferOperator";
@@ -382,46 +382,46 @@ export async function createHeatmaps(){
     }
 
     const layerFields = [
-        {
+        new Field({
             name: "OBJECTID",
             alias: "ObjectId",
             type: "oid"  
-        },
-        {
+        }),
+        new Field({
             name: "incident_type",
             alias: "Incident Type",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "timestamp",
             alias: "Timestamp",
             type: "date"
-        },
-        {
+        }),
+        new Field({
             name: "pedestrian",
             alias: "Pedestrian Involved",
             type: "small-integer"  
-        },
-        {
+        }),
+        new Field({
             name: "bicyclist",
             alias: "Bicyclist Involved",
             type: "small-integer"
-        },
-        {
+        }),
+        new Field({
             name: "ebike",
             alias: "E-Bike Involved",
             type: "small-integer"
-        },
-        {
+        }),
+        new Field({
             name: "age",
             alias: "Age",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "gender",
             alias: "Gender",
             type: "string"
-        },
+        }),
         // {
         //     name: "x",
         //     alias: "Longitude",
@@ -432,21 +432,21 @@ export async function createHeatmaps(){
         //     alias: "Latitude",
         //     type: "double"
         // },
-        {
+        new Field({
             name: "location",
             alias: "Location",
             type: "geometry"  
-        },
-        {
+        }),
+        new Field({
             name: "data_source",
             alias: "Data Source",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "exposure",
             alias: "Bike Counts",
             type: "double"
-        }
+        })
     ];
     
 

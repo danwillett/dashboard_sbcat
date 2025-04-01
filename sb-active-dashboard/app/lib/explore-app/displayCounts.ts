@@ -1,6 +1,6 @@
 'use client';
 
-import FieldProperties from "@arcgis/core/layers/support/Field";
+import Field from "@arcgis/core/layers/support/Field";
 import FeatureSet from "@arcgis/core/rest/support/FeatureSet"
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
@@ -251,72 +251,72 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
         graphics.push(graphic)
     }
     
-    const layerFields: FieldProperties[] = [
-        {
+    const layerFields = [
+        new Field({
             name: "OBJECTID",
             alias: "ObjectId",
             type: "oid"
-        },
-        {
+        }),
+        new Field({
             name: "name",
             alias: "Count Site",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "source",
             alias: "Survey",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "locality",
             alias: "Locality",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "edges",
             alias: "Replica Edge Ids",
             type: "double"
-        },
-        {
+        }),
+        new Field({
             name: "start_date",
             alias: "First Date",
             type: "date-only"
-        },
-        {
+        }),
+        new Field({
             name: "end_date",
             alias: "Last Date",
             type: "date-only"
-        },
-        {
+        }),
+        new Field({
             name: "year",
             alias: "Year",
             type: "double"
-        },
-        {
+        }),
+        new Field({
             name: "count_type",
             alias: "User",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "subset",
             alias: "Survey Limitations",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "all_aadt",
             alias: "Everyday AADT",
             type: "double"
-        },
-        {
+        }),
+        new Field({
             name: "weekday_aadt",
             alias: "Weekday AADT",
             type: "double"
-        },
-        {
+        }),
+        new Field({
             name: "weekend_aadt",
             alias: "Weekend AADT",
             type: "double"
-        },
+        }),
 
     ]
 

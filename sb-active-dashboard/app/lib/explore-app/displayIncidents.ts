@@ -1,5 +1,5 @@
 'use client';
-import FieldProperties from "@arcgis/core/layers/support/Field";
+import Field from "@arcgis/core/layers/support/Field";
 import FeatureSet from "@arcgis/core/rest/support/FeatureSet"
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
@@ -140,40 +140,17 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
     })
 
     console.log(graphics)
-    const layerFields: FieldProperties[] = [
-        {
-            name: "OBJECTID",
-            type: "oid"
-        },
-        {
-            name: "data_source",
-            type: "string"
-        },
-        {
-            name: "age",
-            type: "double"
-        },
-        {
-            name: "gender",
-            type: "string"
-        },
-        {
-            name: "incident_type",
-            type: "string"
-        },
-        {
-            name: "pedestrian",
-            type: "double"
-        },
-        {
-            name: "bicyclist",
-            type: "double"
-        },
-        {
-            name: "timestamp",
-            type: "date"
-        }
-    ]
+    const layerFields = [
+        new Field({ name: "OBJECTID", type: "oid" }),
+        new Field({ name: "data_source", type: "string" }),
+        new Field({ name: "age", type: "double" }),
+        new Field({ name: "gender", type: "string" }),
+        new Field({ name: "incident_type", type: "string" }),
+        new Field({ name: "pedestrian", type: "double" }),
+        new Field({ name: "bicyclist", type: "double" }),
+        new Field({ name: "timestamp", type: "date" }),
+        new Field({ name: "new_field", type: "string" }) // Add your new field here!
+    ];
 
     const popupTemplate = {
         // autocasts as new PopupTemplate()

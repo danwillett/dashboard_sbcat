@@ -1,7 +1,7 @@
 'use client';
 
 import FeatureSet from "@arcgis/core/rest/support/FeatureSet"
-import FieldProperties from "@arcgis/core/layers/support/Field";
+import Field from "@arcgis/core/layers/support/Field";
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
@@ -64,19 +64,19 @@ async function createCensusGraphics(geomLayer: any, tableLayer: any, layerName: 
         graphics.push(graphic)
     }
     
-    const layerFields: FieldProperties[] = [
-        {
+    const layerFields = [
+        new Field({
             name: "OBJECTID",
             type: "oid"
-        },
-        {
+        }),
+        new Field({
             name: "tract",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "block_group",
             type: "string"
-        },
+        }),
     ]
 
     tableAttributes = tableAttributes.filter(name => !new Set(["objectid", "geo_id", "tract", "block_group"]).has(name)) 
