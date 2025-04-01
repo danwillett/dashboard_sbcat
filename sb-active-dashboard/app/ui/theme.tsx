@@ -1,14 +1,4 @@
 import { createTheme } from '@mui/material/styles'
-// declare module '@mui/material/styles' {
-//     interface CustomPalette {
-//       lightgray: Palette['primary'];
-
-//     }
-  
-//     interface Palette extends CustomPalette {}
-//     interface PaletteOptions extends CustomPalette {}
-
-//   }
 
 
 const fonts = ['"Avenir Next"', '"Helvetica Neue"', 'helvetica', 'Arial', 'sans-serif'].join(',')
