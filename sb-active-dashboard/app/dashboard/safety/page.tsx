@@ -1,8 +1,12 @@
-import SafetyMap from "../../ui/safety-app/SafetyMap"
+import dynamic from 'next/dynamic'
+const SafetyMapNoSSR = dynamic(
+  () => import ("../../ui/safety-app/SafetyMap"),
+  {ssr: false}
+)
 
-export default function QueryVis() {
+export default function Safety() {
   return (
     
-    <SafetyMap />
+    <SafetyMapNoSSR />
   );
 }

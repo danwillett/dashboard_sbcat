@@ -132,7 +132,6 @@ async function createCensusGraphics(geomLayer: any, tableLayer: any, layerName: 
         opacity: 0.6,
         renderer: new SimpleRenderer({
             symbol: new SimpleFillSymbol({
-                type: "simple-fill",
                 outline: {
                     color: "lightgray",
                     width: 0.5

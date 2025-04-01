@@ -7,7 +7,7 @@ import "@arcgis/map-components/dist/components/arcgis-legend";
 import "@arcgis/map-components/dist/components/arcgis-layer-list";
 import "@arcgis/map-components/dist/components/arcgis-time-slider";
 import "@arcgis/map-components/dist/components/arcgis-print";
-import Map from "@arcgis/core/map"
+import Map from "@arcgis/core/Map"
 import MapView from "@arcgis/core/views/MapView"
 import LayerList from "@arcgis/core/widgets/LayerList"
 import TimeInterval from "@arcgis/core/time/TimeInterval";

@@ -9,7 +9,7 @@ import "@arcgis/map-components/dist/components/arcgis-expand";
 import "@arcgis/map-components/dist/components/arcgis-layer-list";
 import "@arcgis/map-components/dist/components/arcgis-time-slider";
 import "@arcgis/map-components/dist/components/arcgis-print";
-import Map from "@arcgis/core/map"
+import Map from "@arcgis/core/Map"
 import MapView from "@arcgis/core/views/MapView"
 import LayerList from "@arcgis/core/widgets/LayerList"
 import Legend from "@arcgis/core/widgets/Legend"
