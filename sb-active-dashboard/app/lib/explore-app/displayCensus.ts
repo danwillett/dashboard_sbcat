@@ -5,6 +5,9 @@ import Field from "@arcgis/core/layers/support/Field";
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
+import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
+import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
+import ColorVariable from "@arcgis/core/renderers/visualVariables/ColorVariable";
 
 const censusTitle = "ACS 2023 5-Year Demographics"
 // function creates a graphics layer for the census data based on a chosen table
@@ -127,19 +130,17 @@ async function createCensusGraphics(geomLayer: any, tableLayer: any, layerName: 
         //     content: "<p>heyo! '{tract}' '{block_group}'</p>"
         // },
         opacity: 0.6,
-        renderer: {
-            type: "simple",
-            symbol: {
+        renderer: new SimpleRenderer({
+            symbol: new SimpleFillSymbol({
                 type: "simple-fill",
                 outline: {
                     color: "lightgray",
                     width: 0.5
                 }
-            },
+            }),
             label: "fill this in later",
             visualVariables: [
-                {
-                    type: "color",
+                new ColorVariable({
                     field: displayField,
                     normalizationField: normField,
                     stops: [
@@ -154,10 +155,10 @@ async function createCensusGraphics(geomLayer: any, tableLayer: any, layerName: 
                           label: highLabel
                         }
                     ]
-                }
+                })
             
             ]
-        }
+        })
     })
 
     return layer

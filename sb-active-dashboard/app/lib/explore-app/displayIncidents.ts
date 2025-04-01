@@ -7,6 +7,10 @@ import GroupLayer from "@arcgis/core/layers/GroupLayer"
 import HeatmapRenderer from "@arcgis/core/renderers/HeatmapRenderer.js";
 import UniqueValueRenderer from "@arcgis/core/renderers/UniqueValueRenderer"
 import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer"
+import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
+import TextSymbol from "@arcgis/core/symbols/TextSymbol"
+import PictureMarkerSymbol from "@arcgis/core/symbols/PictureMarkerSymbol";
+import FeatureReductionCluster from "@arcgis/core/layers/support/FeatureReductionCluster";
 
 
 const colors = ["rgba(115, 0, 115, 0)", "#820082", "#910091", "#a000a0", "#af00af", "#c300c3", "#d700d7", "#eb00eb", "#ff00ff", "#ff58a0", "#ff896b", "#ffb935", "#ffea00"];
@@ -27,7 +31,6 @@ const heatmapRenderer = new HeatmapRenderer({
         { color: colors[11], ratio: 0.913 },
         { color: colors[12], ratio: 1 }
         ],
-    type: 'heatmap',
     radius: 15,
     maxDensity: .015,
     minDensity: .005,
@@ -37,29 +40,28 @@ const heatmapRenderer = new HeatmapRenderer({
         minLabel: "Few crashes",
         maxLabel: "Frequent crashes"
         }
-    })
+})
 
 const pointRenderer = new UniqueValueRenderer({
-    type: "unique-value",
     field: "incident_type",
     uniqueValueInfos: [
         {
             value: "Collision",
-            symbol: {
-                type: "picture-marker",
+            symbol: new PictureMarkerSymbol({
+               
                 url: "/icons/incident_marker.svg",
                 width: "10px",
                 height: "18px"
-            }
+            })
         },
         {
             value: "Near Collision",
-            symbol: {
-                type: "picture-marker",
+            symbol: new PictureMarkerSymbol({
+                
                 url: "/icons/hazard_marker.svg",
                 width: "10px",
                 height: "18px"
-            }
+            })
         },
 ]
    
@@ -67,16 +69,14 @@ const pointRenderer = new UniqueValueRenderer({
 })
 
 const clusterRenderer = new SimpleRenderer({
-    type: "simple",
-    symbol: {
-        type: "simple-marker",
+    symbol: new SimpleMarkerSymbol({
+        
         size: 6,
         color: 'red'
-    }
+    })
         
 })
-const clusterReduction = {
-    type: "cluster",
+const clusterReduction = new FeatureReductionCluster({
     clusterMinSize: 16.5,
     // defines the label within each cluster
     labelingInfo: [
@@ -85,14 +85,13 @@ const clusterReduction = {
         labelExpressionInfo: {
             expression: "Text($feature.cluster_count, '#,###')"
         },
-        symbol: {
-            type: "text",
+        symbol: new TextSymbol({
             color: "white",
             font: {
             family: "Noto Sans",
             size: "12px"
             }
-        },
+        }),
         labelPlacement: "center-center"
         }
     ],
@@ -108,7 +107,7 @@ const clusterReduction = {
         }
         }]
     }
-}
+})
 
 async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query: string, title: string) {
 
@@ -235,26 +234,29 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
 
 export function changeIncidentRenderer(groupLayer: __esri.GroupLayer, type: string) {
 
-    groupLayer.layers.items.forEach((layer: FeatureLayer) => {
+    groupLayer.layers.forEach((layer: __esri.Layer) => {
 
-        if (type === "heatmap") {
-            layer.featureReduction = null
-            layer.renderer = heatmapRenderer
-            layer.opacity = 0.6
-            console.log(layer)
-            
-        } else if (type === "simple") {
-            layer.featureReduction = null
-            layer.renderer = pointRenderer
-            layer.opacity = 1
-            
-            console.log(layer)
-           
-        } else if (type === "cluster") {
-            layer.renderer = clusterRenderer
-            layer.featureReduction = clusterReduction
-            layer.opacity = 1
+        if (layer instanceof FeatureLayer ){
+            if (type === "heatmap") {
+                layer.featureReduction = null as unknown as FeatureReductionCluster;
+                layer.renderer = heatmapRenderer
+                layer.opacity = 0.6
+                console.log(layer)
+                
+            } else if (type === "simple") {
+                layer.featureReduction = null as unknown as FeatureReductionCluster;
+                layer.renderer = pointRenderer
+                layer.opacity = 1
+                
+                console.log(layer)
+               
+            } else if (type === "cluster") {
+                layer.renderer = clusterRenderer
+                layer.featureReduction = clusterReduction
+                layer.opacity = 1
+            }
         }
+        
 
     })
 

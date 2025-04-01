@@ -10,6 +10,7 @@ import "@arcgis/map-components/dist/components/arcgis-print";
 import Map from "@arcgis/core/map"
 import MapView from "@arcgis/core/views/MapView"
 import LayerList from "@arcgis/core/widgets/LayerList"
+import TimeInterval from "@arcgis/core/time/TimeInterval";
 import Legend from "@arcgis/core/widgets/Legend"
 import TimeSlider from "@arcgis/core/widgets/TimeSlider"
 import Print from "@arcgis/core/widgets/Print"
@@ -21,7 +22,7 @@ import { CssBaseline, Box, Popover, Typography, Toolbar } from "@mui/material";
 import { setAssetPath as setCalciteComponentsAssetPath } from '@esri/calcite-components/dist/components';
 setCalciteComponentsAssetPath("https://js.arcgis.com/calcite-components/2.13.2/assets");
 
-import { createHeatmaps, createSafetyLayers, addHeatmapVisOptions } from "@/app/lib/safety-app/handleSafety";
+import { createHeatmaps } from "@/app/lib/safety-app/handleSafety";
 
 import SafetyMenu from "./SafetyMenu";
 import SafetyFilterPanel from "./SafetyFilterPanel";
@@ -124,10 +125,10 @@ export default function SafetyMap() {
                     mode: 'time-window',
                     timeZone: 'system',
                     stops: {
-                        interval: {
+                        interval:  new TimeInterval({
                             value: 1,
                             unit: "years"
-                        }
+                        })
                     },
                     fullTimeExtent: {
                         start: heatmapLayer.timeInfo.fullTimeExtent.start,
