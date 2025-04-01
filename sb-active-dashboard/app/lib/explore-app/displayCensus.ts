@@ -1,7 +1,7 @@
 'use client';
 
 import FeatureSet from "@arcgis/core/rest/support/FeatureSet"
-import type { FieldProperties } from "@arcgis/core/layers/support/Field"; 
+import FieldProperties from "@arcgis/core/layers/support/Field";
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
