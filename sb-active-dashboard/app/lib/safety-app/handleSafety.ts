@@ -1,19 +1,14 @@
 'use client';
 
+import type { FieldProperties } from "@arcgis/core/layers/support/Field";
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
-import GroupLayer from "@arcgis/core/layers/GroupLayer"
-import * as intersectionOperator from "@arcgis/core/geometry/operators/intersectionOperator"
-import * as unionOperator from "@arcgis/core/geometry/operators/unionOperator";
 import * as bufferOperator from "@arcgis/core/geometry/operators/bufferOperator";
 import * as projection from "@arcgis/core/geometry/projection";
 import StatisticDefinition from "@arcgis/core/rest/support/StatisticDefinition"
 
-import SpatialReference from "@arcgis/core/geometry/SpatialReference";
-
 import HeatmapRenderer from "@arcgis/core/renderers/HeatmapRenderer.js";
-import UniqueValueRenderer from "@arcgis/core/renderers/UniqueValueRenderer"
-import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer"
+
 
 
 const colors = ["rgba(115, 0, 115, 0)", "#820082", "#910091", "#a000a0", "#af00af", "#c300c3", "#d700d7", "#eb00eb", "#ff00ff", "#ff58a0", "#ff896b", "#ffb935", "#ffea00"];
@@ -200,7 +195,7 @@ export async function createSafetyLayers() {
         countIncidentsInCensusPolygons(feature)
     })
 
-    let graphics = []
+    let graphics: Graphic[] = []
     
     // query table features and merged with graphics
     // let tableQuery = tableLayer.createQuery();
@@ -226,25 +221,26 @@ export async function createSafetyLayers() {
         graphics.push(graphic)
     })
     
+    const layerFields: FieldProperties[] = [
+        {
+            name: "OBJECTID",
+            type: "oid"
+        },
+        {
+            name: "tract",
+            type: "string"
+        },
+        {
+            name: "block_group",
+            type: "string"
+        },
+    ]
 
     const layer = new FeatureLayer({
         source: graphics,
         title: "Buggered GRaphics",
         objectIdField: "OBJECTID",
-        fields: [
-            {
-                name: "OBJECTID",
-                type: "oid"
-            },
-            {
-                name: "tract",
-                type: "string"
-            },
-            {
-                name: "block_group",
-                type: "string"
-            },
-        ],
+        fields: layerFields,
        
         // renderer: heatmapRenderer 
         renderer: {
@@ -504,6 +500,7 @@ export async function createHeatmaps(){
 }
 
 import addHeatmapRenderPanel from "@/app/ui/safety-app/HeatmapRenderer";
+import Field from "@arcgis/core/layers/support/Field";
 
 export const addHeatmapVisOptions = (event: any) => {
     const { item } = event

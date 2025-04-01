@@ -1,5 +1,6 @@
 'use client';
 
+import type { FieldProperties } from "@arcgis/core/layers/support/Field"; 
 import FeatureSet from "@arcgis/core/rest/support/FeatureSet"
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
@@ -250,7 +251,7 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
         graphics.push(graphic)
     }
     
-    const layerFields = [
+    const layerFields: FieldProperties[] = [
         {
             name: "OBJECTID",
             alias: "ObjectId",
