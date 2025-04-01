@@ -1,5 +1,6 @@
 'use client';
 
+import FeatureSet from "@arcgis/core/FeatureSet"
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
@@ -7,15 +8,15 @@ import GroupLayer from "@arcgis/core/layers/GroupLayer"
 const censusTitle = "ACS 2023 5-Year Demographics"
 // function creates a graphics layer for the census data based on a chosen table
 
-async function createCensusGraphics(geomLayer, tableLayer, layerName) {
+async function createCensusGraphics(geomLayer: any, tableLayer: any, layerName: any) {
     
     // create an array of graphics and array of table attribute fields
     let tableQuery = tableLayer.createQuery();
     tableQuery.where = "" // No filter, query all records
     tableQuery.outFields = ["*"]
 
-    let tableArr = []
-    const tableResults = await tableLayer.queryFeatures(tableQuery)
+    let tableArr: Record<string, any>[] = [];  // Array of attribute objects
+    const tableResults: FeatureSet = await tableLayer.queryFeatures(tableQuery)
         
     let tableFeatures = tableResults.features
     tableFeatures.forEach((feature: any) => {
@@ -30,11 +31,11 @@ async function createCensusGraphics(geomLayer, tableLayer, layerName) {
     geomQuery.outFields = ["id"]
     geomQuery.returnGeometry = true
 
-    let geomArr = []
-    const geomResults = await geomLayer.queryFeatures(geomQuery)
+    let geomArr: Record<string, any>[] = [];  // Array of attribute objects
+    const geomResults: FeatureSet  = await geomLayer.queryFeatures(geomQuery)
 
     let geomFeatures = geomResults.features
-    geomFeatures.forEach((feature) => {
+    geomFeatures.forEach((feature: any) => {
         
         let id = feature.attributes.id
         let geometry = feature.geometry

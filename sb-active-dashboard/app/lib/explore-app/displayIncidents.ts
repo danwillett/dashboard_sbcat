@@ -257,7 +257,7 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
 
 export function changeIncidentRenderer(groupLayer: __esri.GroupLayer, type: string) {
 
-    groupLayer.layers.items.forEach((layer) => {
+    groupLayer.layers.items.forEach((layer: FeatureLayer) => {
 
         if (type === "heatmap") {
             layer.featureReduction = null

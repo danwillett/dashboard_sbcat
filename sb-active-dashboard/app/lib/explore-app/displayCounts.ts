@@ -186,7 +186,7 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
     tableQuery.where = query // query either only bikes or only peds
     tableQuery.outFields = ["*"]
     
-    let tableArr = []
+    let tableArr: Record<string, any>[] = []
     const tableResults = await countTable.queryFeatures(tableQuery)
 
     let tableFeatures = tableResults.features
@@ -200,7 +200,7 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
     geomQuery.outFields = ["*"]
     geomQuery.returnGeometry = true
 
-    let geomArr = []
+    let geomArr: Record<string, any>[] = []
     const geomResults = await countPoints.queryFeatures(geomQuery)
 
     let geomFeatures = geomResults.features

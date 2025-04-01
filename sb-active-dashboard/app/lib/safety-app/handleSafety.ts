@@ -303,8 +303,8 @@ export async function createHeatmaps(){
 
     // paginate queries since over 2000 records
     let weightResultLength = 10000
-    let weightArr = []
-    let weightObjectIds = []
+    let weightArr: Record<string, any>[] = []
+    let weightObjectIds : string[] = []
     while (weightResultLength === 10000) {
         
         let queryWeights = safetyWeights.createQuery()
@@ -330,8 +330,8 @@ export async function createHeatmaps(){
 
     let earliestIncidentDate = new Date()
     let pointResultLength = 10000
-    let pointArr = []
-    let pointObjectIds = []
+    let pointArr: Record<string, any>[] = []
+    let pointObjectIds:string[] = []
     while (pointResultLength === 10000) {
 
         let pointQuery = safetyPoints.createQuery()
@@ -505,7 +505,7 @@ export async function createHeatmaps(){
 
 import addHeatmapRenderPanel from "@/app/ui/safety-app/HeatmapRenderer";
 
-export const addHeatmapVisOptions = (event) => {
+export const addHeatmapVisOptions = (event: any) => {
     const { item } = event
     console.log(item)
 
