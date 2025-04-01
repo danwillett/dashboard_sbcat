@@ -82,10 +82,10 @@ async function createCensusGraphics(geomLayer: any, tableLayer: any, layerName: 
     tableAttributes = tableAttributes.filter(name => !new Set(["objectid", "geo_id", "tract", "block_group"]).has(name)) 
     let medianField = ""
     tableAttributes.forEach((attr) => {
-        let field = {
+        let field = new Field({
             name: attr,
             type: "double"
-        }
+        })
 
         layerFields.push(field)
         if (attr.includes("median")) {
