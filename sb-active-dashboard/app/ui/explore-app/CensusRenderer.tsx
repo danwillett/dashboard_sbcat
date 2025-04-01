@@ -23,7 +23,7 @@ function CensusRenderer(props: props) {
     fields = fields.filter((field: any) => field.name !== normField.name)
     
 
-    const changeRenderField = async (event) => {
+    const changeRenderField = async (event: any) => {
 
         event.stopPropagation()
         // event.preventDefault()
@@ -69,7 +69,7 @@ function CensusRenderer(props: props) {
 
             const statResults = await sublayer.layer.queryFeatures(field_query)
             console.log(statResults)
-            let normField = statResults.features.map((feature) => feature.attributes[field]/feature.attributes[normDisplayField])
+            let normField = statResults.features.map((feature: any) => feature.attributes[field]/feature.attributes[normDisplayField])
             normField = normField.filter((record: number) => record > 0 && record !== null)
             const mean = math.mean(normField)
             const stddev = math.std(normField)

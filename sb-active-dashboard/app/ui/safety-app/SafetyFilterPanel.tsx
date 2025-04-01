@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from "react";
 
 import FeatureLayerView from "@arcgis/core/views/layers/FeatureLayerView";
-import FeatureFilter from '@arcgis/core/layers/support/FeatureFilter'
+import FeatureFilter from '@arcgis/core/layers/support/FeatureFilter';
+import FeatureEffect from "@arcgis/core/layers/support/FeatureEffect";
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
 
 import { FormControl, RadioGroup, FormLabel, FormControlLabel, Radio, Box, Typography } from "@mui/material";
-import Select, { SelectChangeEvent } from '@mui/material/Select';
 
 
 // changes size visualVariables of counts and incidents
-export default function SafetyFilterPanel(props) {
+export default function SafetyFilterPanel(props: any) {
 
     const { heatmapLayer, timeSlider, viewRef } = props
     const [ incidentLayerView, setIncidentLayerView ] = useState<null | FeatureLayerView>(null)
     const [ weightFields, setWeightFields ] = useState<null | Record<string, any>[]>(null)
     const [ userType, setUserType ] = useState<null | string>(null)
     
-    const filterUser = (event: SelectChangeEvent) => {
-        const newUser = event.target.value
+    const filterUser = (event: React.MouseEvent<HTMLButtonElement>) => {
+        const newUser = (event.target as HTMLInputElement).value
         setUserType(newUser)
 
     };
@@ -25,9 +25,9 @@ export default function SafetyFilterPanel(props) {
     // weighting factors
     // heatmap weights field
     
-    const changeWeightField = (event) => {      
+    const changeWeightField = (event: React.MouseEvent<HTMLButtonElement>) => {      
         if (heatmapLayer !== null ) {
-            heatmapLayer.renderer['field'] = event.target.value
+            heatmapLayer.renderer['field'] = (event.target as HTMLInputElement).value
         }  
     }
 
@@ -47,13 +47,13 @@ export default function SafetyFilterPanel(props) {
                 
                     heatmapLayer.definitionExpression =  "timestamp <= Timestamp '" + date + "'";
                    
-                    incidentLayerView.featureEffect = {
+                    incidentLayerView.featureEffect = new FeatureEffect({
                         filter: {
                             timeExtent: timeSlider.timeExtent,
                             geometry: viewRef.extent
                         },
                         excludedEffect: "grayscale(20%) opacity(12%)"
-                    };
+                    });
                     
                 }
             )

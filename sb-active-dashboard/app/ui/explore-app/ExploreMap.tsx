@@ -15,6 +15,7 @@ import LayerList from "@arcgis/core/widgets/LayerList"
 import Legend from "@arcgis/core/widgets/Legend"
 import TimeSlider from "@arcgis/core/widgets/TimeSlider"
 import Print from "@arcgis/core/widgets/Print"
+import TimeInterval from "@arcgis/core/time/TimeInterval"
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
 
 import ExploreMenu from "./ExploreMenu";
@@ -148,10 +149,10 @@ export default function ExploreMap() {
                     mode: 'time-window',
                     timeZone: 'system',
                     stops: {
-                        interval: {
+                        interval: new TimeInterval({
                             value: 1,
                             unit: "years"
-                        }
+                        })
                     },
                     fullTimeExtent: {
                         start: new Date(2012, 1, 1),

@@ -6,7 +6,7 @@ import MenuItem from "../dashboard/Menu/MenuItem";
 import MenuPanel from "../dashboard/Menu/MenuPanel";
 
 
-export default function ExploreMenu(props) {
+export default function ExploreMenu(props: any) {
 
     const { setShowLegend, showLegend, setShowLayerList, showLayerList, setShowFilter, showFilter, setShowPrint, showPrint } = props
   

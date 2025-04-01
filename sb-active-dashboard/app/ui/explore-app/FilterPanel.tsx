@@ -6,10 +6,13 @@ import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
 import { FormControl, InputLabel, MenuItem, Box, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2"
 import Select, { SelectChangeEvent } from '@mui/material/Select';
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
+import FeatureLayerView from "@arcgis/core/views/layers/FeatureLayerView";
+import FeatureEffect from "@arcgis/core/layers/support/FeatureEffect";
 
 
 // changes size visualVariables of counts and incidents
-export default function FilterPanel(props) {
+export default function FilterPanel(props: any) {
 
     const { countGroupLayer, incidentGroupLayer, timeSlider, viewRef } = props
     const [ dow, setDow ] = useState("all")
@@ -43,33 +46,33 @@ export default function FilterPanel(props) {
                 async () => {
                     const date = new Date(timeSlider.timeExtent.end).toISOString().replace("T", " ").replace("Z", "")
                 
-                    incidentLayers.map((layer) => {
+                    incidentLayers.map((layer: FeatureLayer) => {
                         layer.definitionExpression =  "timestamp <= Timestamp '" + date + "'";
                     })
 
-                    incidentLayerViews.map((layerView) => {
-                        layerView.featureEffect = {
+                    incidentLayerViews.map((layerView: FeatureLayerView) => {
+                        layerView.featureEffect = new FeatureEffect({
                             filter: {
                             timeExtent: timeSlider.timeExtent,
                             geometry: viewRef.extent
                             },
                             excludedEffect: "grayscale(20%) opacity(12%)"
-                        };
+                        });
                     })
 
-                    countLayers.map((layer) => {
+                    countLayers.map((layer: FeatureLayer) => {
                         console.log(layer)
                         layer.definitionExpression =  `end_date <=  Timestamp '${date}'`;
                     })
 
-                    countLayerViews.map((layerView) => {
-                        layerView.featureEffect = {
+                    countLayerViews.map((layerView: FeatureLayerView) => {
+                        layerView.featureEffect = new FeatureEffect({
                             filter: {
                             timeExtent: timeSlider.timeExtent,
                             geometry: viewRef.extent
                             },
                             excludedEffect: "grayscale(20%) opacity(12%)"
-                        };
+                        });
                     })
                 }
             )
