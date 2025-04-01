@@ -2,6 +2,7 @@
 
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
+
 import addCensusRenderPanel from "../ui/explore-app/CensusRenderer";
 import addCountRenderPanel from "../ui/explore-app/CountRenderer";
 import addIncidentRenderPanel from "../ui/explore-app/IncidentRenderer";
@@ -67,7 +68,7 @@ import addIncidentRenderPanel from "../ui/explore-app/IncidentRenderer";
 //     return {graphics, tableAttributes, mergedData}
 // }
 
-export function addVisualizationOptions(event) {
+export const addVisualizationOptions: __esri.ListItemCreatedHandler = (event) => {
     
     // if the item is Demographics, add rendering actions for each attribute
 
