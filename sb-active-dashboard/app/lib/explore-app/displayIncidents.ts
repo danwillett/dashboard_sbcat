@@ -1,5 +1,6 @@
 'use client';
 
+import FeatureSet from "@arcgis/core/rest/support/FeatureSet"
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
@@ -120,7 +121,7 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
     let queryResultLength = 10000
     let incidentFeatures: Graphic[] = []
     while (queryResultLength === 10000) {
-        const queryResults = await incidentPoints.queryFeatures(incidentsQuery)
+        const queryResults: FeatureSet = await incidentPoints.queryFeatures(incidentsQuery)
         incidentFeatures.push(...queryResults.features)
         queryResultLength = queryResults.features.length
     }

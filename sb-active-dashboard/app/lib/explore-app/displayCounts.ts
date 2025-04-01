@@ -1,5 +1,6 @@
 'use client';
 
+import FeatureSet from "@arcgis/core/rest/support/FeatureSet"
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
@@ -187,7 +188,7 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
     tableQuery.outFields = ["*"]
     
     let tableArr: Record<string, any>[] = []
-    const tableResults = await countTable.queryFeatures(tableQuery)
+    const tableResults: FeatureSet = await countTable.queryFeatures(tableQuery)
 
     let tableFeatures = tableResults.features
     tableFeatures.forEach((feature: any) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import FeatureSet from "@arcgis/core/FeatureSet"
+import FeatureSet from "@arcgis/core/rest/support/FeatureSet"
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
