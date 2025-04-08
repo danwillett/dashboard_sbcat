@@ -3,7 +3,7 @@ import { Box, IconButton } from "@mui/material";
 import { styled, Theme } from "@mui/material/styles";
 import { CalciteIcon } from "@esri/calcite-components-react";
 import { appTheme } from "../../theme";
-const drawerWidth = 180;
+const drawerWidth = 250;
 
 const DrawerFooter = styled('div')(({ theme }) => ({
   display: 'flex',

@@ -425,15 +425,15 @@ export async function createCountGroupLayer() {
     const aadtTable = new FeatureLayer({url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Bicycle_and_Pedestrian_Counts/FeatureServer/2"})
 
 
-    const bikeLayer = await createAADTGraphics(countPoints, aadtTable, "count_type = 'bike'", "Biking Counts")
-    const pedLayer = await createAADTGraphics(countPoints, aadtTable, "count_type = 'ped'", "Walking Counts")
+    const bikeLayer = await createAADTGraphics(countPoints, aadtTable, "count_type = 'bike'", "Biking Volumes")
+    const pedLayer = await createAADTGraphics(countPoints, aadtTable, "count_type = 'ped'", "Walking Volumes")
 
     const countGroupLayer = new GroupLayer({
         layers: [
             bikeLayer,
             pedLayer
         ],
-        title: "Traffic Counts",
+        title: "Volumes",
         visibilityMode: "exclusive"
 
     })

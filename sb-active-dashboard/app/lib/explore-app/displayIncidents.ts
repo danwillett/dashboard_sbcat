@@ -226,7 +226,6 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
         featureReduction: clusterReduction
 
     })
-
     
     return layer
     
@@ -257,7 +256,6 @@ export function changeIncidentRenderer(groupLayer: __esri.GroupLayer, type: stri
             }
         }
         
-
     })
 
 }
@@ -268,17 +266,17 @@ export async function createIncidentGroupLayer() {
     
     const incidentsLayer = new FeatureLayer({url: 'https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Saftey_Incidents/FeatureServer'})
 
-    const combinedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "", "All Incidents")
+    // const combinedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "", "All Incidents")
     const bikeIncidentsLayer = await createIncidentGraphics(incidentsLayer, "bicyclist = 1", "Biking Incidents")
     const pedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "pedestrian = 1", "Walking Incidents")
 
     const incidentGroupLayer = new GroupLayer({
         layers: [
-            combinedIncidentsLayer,
+            // combinedIncidentsLayer,
             bikeIncidentsLayer,
             pedIncidentsLayer
         ],
-        title: "Safety Incidents",
+        title: "Safety",
         visibilityMode: "exclusive"
     })
     console.log(incidentGroupLayer)

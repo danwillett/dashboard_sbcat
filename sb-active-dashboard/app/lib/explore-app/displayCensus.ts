@@ -9,7 +9,7 @@ import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
 import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
 import ColorVariable from "@arcgis/core/renderers/visualVariables/ColorVariable";
 
-const censusTitle = "ACS 2023 5-Year Demographics"
+const censusTitle = "Demographics"
 // function creates a graphics layer for the census data based on a chosen table
 
 async function createCensusGraphics(geomLayer: any, tableLayer: any, layerName: any) {
@@ -169,22 +169,22 @@ export async function createCensusGroupLayer() {
     const censusPolygons = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer"})
             
     const censusIncomeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/1"})
-    const incomeLayer = await createCensusGraphics(censusPolygons, censusIncomeTable, "Income Distribution")
+    const incomeLayer = await createCensusGraphics(censusPolygons, censusIncomeTable, "Income")
     
     const censusRaceTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/2"})
-    const raceLayer = await createCensusGraphics(censusPolygons, censusRaceTable, "Race Distribution")
+    const raceLayer = await createCensusGraphics(censusPolygons, censusRaceTable, "Race")
     
     const censusAgeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/3"})
-    const ageLayer = await createCensusGraphics(censusPolygons, censusAgeTable, "Age Distribution")
+    const ageLayer = await createCensusGraphics(censusPolygons, censusAgeTable, "Age")
 
     const censusTransportationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/4"})
-    const transportationLayer = await createCensusGraphics(censusPolygons, censusTransportationTable, "Transportation Distribution")
+    const transportationLayer = await createCensusGraphics(censusPolygons, censusTransportationTable, "Transportation")
 
     const censusEducationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/5"})
     const educationLayer = await createCensusGraphics(censusPolygons, censusEducationTable, "Education")
 
     const censusGenderTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/6"})
-    const genderLayer = await createCensusGraphics(censusPolygons, censusGenderTable, "Gender Distribution")
+    const genderLayer = await createCensusGraphics(censusPolygons, censusGenderTable, "Gender")
     
 
     const censusGroupLayer = new GroupLayer({

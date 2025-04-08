@@ -74,7 +74,7 @@ export const addVisualizationOptions: __esri.ListItemCreatedHandler = (event) =>
 
     const { item } = event
 
-    if (item.title === "ACS 2023 5-Year Demographics") { // need to make this title a universal variable
+    if (item.title === "Demographics") { // need to make this title a universal variable
         item.open = true
         item.children.items.forEach((sublayer: any, index: any) => {
 
@@ -83,7 +83,7 @@ export const addVisualizationOptions: __esri.ListItemCreatedHandler = (event) =>
 
     }
 
-    if (item.title === "Bike & Ped Counts") {
+    if (item.title === "Volumes") {
         item.open = true
         item.children.items.forEach((sublayer: any, index: any) => {
 
@@ -91,7 +91,7 @@ export const addVisualizationOptions: __esri.ListItemCreatedHandler = (event) =>
         })
     }
 
-    if (item.title == "Safety Incidents") {
+    if (item.title == "Safety") {
         item.open = true
         // item.children.items.forEach((sublayer: any) => {
 
