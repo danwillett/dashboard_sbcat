@@ -18,7 +18,7 @@ export default function RenderOptionsForm(props: props) {
                 defaultValue={fields[0].name}
                 name="radio-buttons-group"
                 >
-                    { fields.map((attribute) => (
+                    { fields.map((attribute: any) => (
                         <FormControlLabel 
                            
                             key={attribute.name} 

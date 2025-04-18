@@ -18,7 +18,7 @@ function CountRenderer(props: props) {
     console.log(fields)
     fields = fields.filter((field: any) => field.name.includes("_aadt"))
 
-     const changeRenderField = async (event) => {
+     const changeRenderField = async (event: any) => {
     
             event.stopPropagation()
             // event.preventDefault()
@@ -43,7 +43,7 @@ function CountRenderer(props: props) {
             defaultValue={fields[0].name}
             name="radio-buttons-group"
             >
-                { fields.map((attribute) => (
+                { fields.map((attribute: any) => (
                     <FormControlLabel 
                         key={attribute.name} 
                         value={attribute.name} 

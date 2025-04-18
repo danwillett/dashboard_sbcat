@@ -1,7 +1,22 @@
 'use client';
-
 import React, {  useRef, useState, useEffect } from "react";
-import { createRoot } from "react-dom/client";
+
+// import global state variables
+import { useMapContext } from "@/app/lib/context/MapContext";
+
+// import custom components
+import ExploreMenu from "./ExploreMenu";
+import FilterPanel from "./TimeFilterPanel";
+
+// import custom functions
+import { createCensusGroupLayer } from "@/app/lib/explore-app/displayCensus";
+import { createCountGroupLayer } from "@/app/lib/explore-app/displayCounts";
+import { createIncidentGroupLayer } from "@/app/lib/explore-app/displayIncidents";
+import { addVisualizationOptions } from "@/app/lib/utils";
+import { changeIncidentRenderer } from "@/app/lib/explore-app/displayIncidents";
+
+
+// import arcgis and calcite components
 import "@esri/calcite-components"
 import "@arcgis/map-components/dist/components/arcgis-map";
 import "@arcgis/map-components/dist/components/arcgis-legend";
@@ -9,35 +24,26 @@ import "@arcgis/map-components/dist/components/arcgis-expand";
 import "@arcgis/map-components/dist/components/arcgis-layer-list";
 import "@arcgis/map-components/dist/components/arcgis-time-slider";
 import "@arcgis/map-components/dist/components/arcgis-print";
-import Map from "@arcgis/core/map"
-import MapView from "@arcgis/core/views/MapView"
 import LayerList from "@arcgis/core/widgets/LayerList"
 import Legend from "@arcgis/core/widgets/Legend"
-import TimeSlider from "@arcgis/core/widgets/TimeSlider"
 import Print from "@arcgis/core/widgets/Print"
-import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
-
-import ExploreMenu from "./ExploreMenu";
-import FilterPanel from "./FilterPanel";
-
-
+import TimeSlider from "@arcgis/core/widgets/TimeSlider"
+import TimeInterval from "@arcgis/core/time/TimeInterval"
 import { ArcgisMap } from "@arcgis/map-components-react";
+
+
+import GroupLayer from "@arcgis/core/layers/GroupLayer";
+
+// import mui components
 import { CssBaseline, Box, Popover, Typography, Toolbar } from "@mui/material";
 import Grid from "@mui/material/Grid2"
 
-import { setAssetPath as setCalciteComponentsAssetPath } from '@esri/calcite-components/dist/components';
-setCalciteComponentsAssetPath("https://js.arcgis.com/calcite-components/2.13.2/assets");
-
-import { createCensusGroupLayer } from "@/app/lib/explore-app/displayCensus";
-import { createCountGroupLayer } from "@/app/lib/explore-app/displayCounts";
-import { createIncidentGroupLayer } from "@/app/lib/explore-app/displayIncidents";
-import { addVisualizationOptions } from "@/app/lib/utils";
-import { changeIncidentRenderer } from "@/app/lib/explore-app/displayIncidents";
-import GroupLayer from "@arcgis/core/layers/GroupLayer";
-
+// import { setAssetPath as setCalciteComponentsAssetPath } from '@esri/calcite-components/dist/components';
+// setCalciteComponentsAssetPath("https://js.arcgis.com/calcite-components/2.13.2/assets");
 
 export default function ExploreMap() {
 
+    const { mapRef, setMapRef, viewRef, setViewRef, countGroupLayer, setCountGroupLayer, censusGroupLayer, setCensusGroupLayer, incidentGroupLayer, setIncidentGroupLayer, setLayerList, setTimeSlider } = useMapContext()
 
     const [showWidgetPanel, setShowWidgetPanel] = useState<Boolean>(false)
     const [showLegend, setShowLegend] = useState<Boolean>(false)
@@ -45,12 +51,8 @@ export default function ExploreMap() {
     const [showFilter, setShowFilter] = useState<Boolean>(false)
     const [showPrint, setShowPrint] = useState<Boolean>(false)
     const [ mapElRef, setMapElRef ] = useState(null)
-    const [ mapRef, setMapRef ] = useState<Map | null>(null)
-    const [ viewRef, setViewRef ] = useState<MapView | null>(null)
-    const [ censusGroupLayer, setCensusGroupLayer ] = useState<GroupLayer | null>(null)
-    const [ countGroupLayer, setCountGroupLayer ] = useState<GroupLayer | null>(null)
-    const [ incidentGroupLayer, setIncidentGroupLayer ] = useState<GroupLayer | null>(null)
-    const [timeSlider, setTimeSlider] = useState<TimeSlider | null>(null)
+    
+    
 
     const menuProps = {
 
@@ -66,13 +68,6 @@ export default function ExploreMap() {
         setShowPrint
     }
 
-    const filterProps = {
-        timeSlider,
-        viewRef,
-        countGroupLayer,
-        incidentGroupLayer
-    }
-
     // once map is generated, load feature layers and add to the map
     useEffect(() => {
         if (mapRef !== null) {
@@ -81,15 +76,13 @@ export default function ExploreMap() {
                 const censusGroupLayer = await createCensusGroupLayer()
                 const countGroupLayer = await createCountGroupLayer()
                 const incidentGroupLayer = await createIncidentGroupLayer()
-                
-                mapRef.add(censusGroupLayer)
-                mapRef.add(countGroupLayer)
-                mapRef.add(incidentGroupLayer)
-                
+                                
                 setCensusGroupLayer(censusGroupLayer)
                 setCountGroupLayer(countGroupLayer)
                 setIncidentGroupLayer(incidentGroupLayer)
-                
+
+                // add map layers in LayerSearch
+                // mapRef.add(censusGroupLayer)
             }
             
             createLayers()
@@ -99,7 +92,6 @@ export default function ExploreMap() {
     }, [mapRef])
 
     
-
     // set map center and zoom once view has been set and add custom widgets
     useEffect(() => {
         if (viewRef !== null) {
@@ -108,17 +100,20 @@ export default function ExploreMap() {
                 zoom: 9
             })
 
-            if (createCensusGroupLayer !== null && countGroupLayer !== null && incidentGroupLayer !== null){
+            if (censusGroupLayer !== null && countGroupLayer !== null && incidentGroupLayer !== null){
+                console.log(censusGroupLayer)
                 const layerList = new LayerList({
                     view: viewRef,
                     container: 'layer-list-container',
-                    listItemCreatedFunction: addVisualizationOptions
+                    listItemCreatedFunction: addVisualizationOptions,
+                    visible: false,
+                    dragEnabled: true
                 })
     
                 layerList.on("trigger-action", (event) => {
                     console.log("pressed")
                     const id = event.action.id;
-                    console.log(id)
+                    
                     if (id === "change-incident-points") {
                         changeIncidentRenderer(incidentGroupLayer, "simple")
                     } else if (id === "change-incident-heatmap") {
@@ -127,31 +122,31 @@ export default function ExploreMap() {
                         changeIncidentRenderer(incidentGroupLayer, "cluster")
                     }
                 })
+                setLayerList(layerList)
                 
                 const legend = new Legend({
                     view: viewRef,
                     container: 'legend-container'
                 })
 
-                const print = new Print({
-                    view: viewRef,
-                    container: 'print-container',
+                // const print = new Print({
+                //     view: viewRef,
+                //     container: 'print-container',
                     
-                    printServiceUrl:
-                       "https://spatialcenter.grit.ucsb.edu/server/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task"
-                  });
-                  
-                
+                //     printServiceUrl:
+                //        "https://spatialcenter.grit.ucsb.edu/server/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task"
+                //   });
+                                
                 const timeSlider = new TimeSlider({
                     view: viewRef,
                     container: 'explore-time-slider-container',
                     mode: 'time-window',
                     timeZone: 'system',
                     stops: {
-                        interval: {
+                        interval: new TimeInterval({
                             value: 1,
                             unit: "years"
-                        }
+                        })
                     },
                     fullTimeExtent: {
                         start: new Date(2012, 1, 1),
@@ -164,18 +159,16 @@ export default function ExploreMap() {
                 })
                 setTimeSlider(timeSlider)
 
-                setShowLegend(true)
+                setShowLegend(false)
                 setShowLayerList(true)
                 setShowPrint(false)
                 setShowWidgetPanel(true)
+
+                viewRef.ui.add([layerList, legend], "top-right")
             }
-            
-            
         }
         
     }, [viewRef, incidentGroupLayer, countGroupLayer, censusGroupLayer])
-    
-    
 
     const assignMap = (event: any) => {
 
@@ -185,15 +178,13 @@ export default function ExploreMap() {
         
     }
 
-
     return (
         <Box id="app-container" sx={{ display: 'flex', height: "calc(100vh - 70px)"}}>
             <CssBaseline />
-            {/* <Header open={open} handleDrawerOpen={handleDrawerOpen} /> */}
+            
             <Box sx={{height: "100%"}}>
                 <ExploreMenu {...menuProps} />
             </Box>
-            
             
             {/* Widget Panel */}
             <Box sx={{
@@ -211,54 +202,49 @@ export default function ExploreMap() {
                 
                       
                 {/* Layer List Panel */}
-                <Grid justifyContent="center" className="esri-widget" sx={{display: showLayerList ? 'block': 'none'}}>
+                {/* <Grid justifyContent="center" className="esri-widget" sx={{display: showLayerList ? 'block': 'none'}}>
                     <Grid size={12} my={2}>
                             <Typography align='center' variant='h5'>Layers</Typography>
                             
                         </Grid>
                     <div id="layer-list-container"></div>
-                </Grid>
+                </Grid> */}
 
                 {/* Filter Panel */}
-                <Grid className="esri-widget" justifyContent="center" sx={{display: showFilter ? 'block': 'none'}}>
+                {/* <Grid className="esri-widget" justifyContent="center" sx={{display: showFilter ? 'block': 'none'}}>
                     <Grid size={12} my={2} >
                             <Typography align='center' variant='h5'>Filters</Typography>
                     </Grid>
                     
                     <FilterPanel {...filterProps} />
-                </Grid>
+                </Grid> */}
 
                 {/* Legend Panel */}
-                <Grid justifyContent="center" className="esri-widget" sx={{display: showLegend ? 'block': 'none'}}>
+                {/* <Grid justifyContent="center" className="esri-widget" sx={{display: showLegend ? 'block': 'none'}}>
                     <Grid size={12} my={2}>
                         <Typography align='center' variant='h5'>Legend</Typography>
                     </Grid>
                     <div id="legend-container"></div>
-                </Grid>
+                </Grid> */}
 
                 {/* Print Panel */}
-                <Grid justifyContent="center" className="esri-widget" sx={{display: showPrint ? 'block': 'none'}}>
+                {/* <Grid justifyContent="center" className="esri-widget" sx={{display: showPrint ? 'block': 'none'}}>
                     <Grid size={12} my={2}>
                         <Typography align='center' variant='h5'>Print Map</Typography>
                     </Grid>
                     <div id="print-container"></div>
-                </Grid>
+                </Grid> */}
 
             </Box>
             <Box component="main" sx={{ flexGrow: 1, flexShrink: 1 }}>
-                
-
                 <ArcgisMap
                     basemap="topo-vector"
                     // itemId="d5dda743788a4b0688fe48f43ae7beb9"
                     onArcgisViewReadyChange={assignMap}
                     >
-
                 </ArcgisMap>
                
-                
             </Box>
-            
             
         </Box>
     )

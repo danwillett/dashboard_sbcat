@@ -1,8 +1,12 @@
-import ExploreMap from "../../ui/explore-app/ExploreMap";
+import dynamic from 'next/dynamic'
+const ExploreMapNoSSR = dynamic(
+  () => import ("../../ui/explore-app/ExploreMap"),
+  {ssr: false}
+)
 
-export default function QueryVis() {
+export default function Explore() {
   return (
     
-    <ExploreMap />
+    <ExploreMapNoSSR />
   );
 }

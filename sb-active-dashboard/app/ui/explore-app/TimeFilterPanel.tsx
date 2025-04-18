@@ -1,17 +1,26 @@
+'use client';
 import React, { useState, useEffect } from "react";
 
-import FeatureFilter from '@arcgis/core/layers/support/FeatureFilter'
-import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
+// map context and types
+import { useMapContext } from "@/app/lib/context/MapContext";
 
+// arcgis js
+import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
+import FeatureLayerView from "@arcgis/core/views/layers/FeatureLayerView";
+import FeatureEffect from "@arcgis/core/layers/support/FeatureEffect";
+
+// mui
 import { FormControl, InputLabel, MenuItem, Box, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2"
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 
 
-// changes size visualVariables of counts and incidents
-export default function FilterPanel(props) {
 
-    const { countGroupLayer, incidentGroupLayer, timeSlider, viewRef } = props
+// changes size visualVariables of counts and incidents
+export default function TimeFilterPanel() {
+
+    const { countGroupLayer, incidentGroupLayer, timeSlider, viewRef } = useMapContext()
     const [ dow, setDow ] = useState("all")
     const [ tod, setTod ] = useState("anytime")
     
@@ -41,35 +50,36 @@ export default function FilterPanel(props) {
             reactiveUtils.watch(
                 () => timeSlider?.timeExtent,
                 async () => {
+                    
                     const date = new Date(timeSlider.timeExtent.end).toISOString().replace("T", " ").replace("Z", "")
                 
-                    incidentLayers.map((layer) => {
+                    incidentLayers.map((layer: FeatureLayer) => {
                         layer.definitionExpression =  "timestamp <= Timestamp '" + date + "'";
                     })
 
-                    incidentLayerViews.map((layerView) => {
-                        layerView.featureEffect = {
+                    incidentLayerViews.map((layerView: FeatureLayerView) => {
+                        layerView.featureEffect = new FeatureEffect({
                             filter: {
                             timeExtent: timeSlider.timeExtent,
                             geometry: viewRef.extent
                             },
                             excludedEffect: "grayscale(20%) opacity(12%)"
-                        };
+                        });
                     })
 
-                    countLayers.map((layer) => {
+                    countLayers.map((layer: FeatureLayer) => {
                         console.log(layer)
                         layer.definitionExpression =  `end_date <=  Timestamp '${date}'`;
                     })
 
-                    countLayerViews.map((layerView) => {
-                        layerView.featureEffect = {
+                    countLayerViews.map((layerView: FeatureLayerView) => {
+                        layerView.featureEffect = new FeatureEffect({
                             filter: {
                             timeExtent: timeSlider.timeExtent,
                             geometry: viewRef.extent
                             },
                             excludedEffect: "grayscale(20%) opacity(12%)"
-                        };
+                        });
                     })
                 }
             )

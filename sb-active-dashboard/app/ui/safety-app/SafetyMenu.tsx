@@ -8,7 +8,7 @@ import MenuItem from "../dashboard/Menu/MenuItem";
 import MenuPanel from "../dashboard/Menu/MenuPanel";
 
 
-export default function SafetyMenu(props) {
+export default function SafetyMenu(props: any) {
 
     const { setShowLegend, showLegend, setShowLayerList, showLayerList, setShowFilter, showFilter, setShowPrint, showPrint } = props
   

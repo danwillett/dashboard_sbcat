@@ -3,12 +3,13 @@ import { createRoot } from "react-dom/client";
 
 import RenderOptionsForm from "../dashboard/LayerList/RenderOptionsForm";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
+import { HeatmapRenderer} from '@arcgis/core/renderers';
 
 interface props {
     layer: FeatureLayer
 }
 
-function HeatmapRenderer(props: props) { 
+function HeatmapRendering(props: props) { 
 
     const { layer } = props
 
@@ -19,8 +20,12 @@ function HeatmapRenderer(props: props) {
         "name": "",
         "alias": "No Weight"
     })
-    const changeRenderField = (event) => {        
-        layer.renderer['field'] = event.target.value
+    const changeRenderField = (event: React.ChangeEvent<HTMLInputElement>) => {  
+        
+        if (layer.renderer instanceof HeatmapRenderer) {
+            layer.renderer.field = event.target.value
+        }
+        
     }
 
     // ped vs bike safety
@@ -41,7 +46,7 @@ export default function addHeatmapRenderPanel(item: any) {
 
     const container = document.createElement("div")
     const root = createRoot(container)
-    root.render(<HeatmapRenderer layer={item.layer} />)
+    root.render(<HeatmapRendering layer={item.layer} />)
 
     // set panel layerlist panel
     item.panel = {

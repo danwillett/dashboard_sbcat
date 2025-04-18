@@ -1,19 +1,15 @@
 import React from "react"
-import Link from "next/link";
 
-import { useTheme } from '@mui/material/styles'
-import { Toolbar, Box, List, Typography, Button, AppBar } from "@mui/material";
-import Grid from '@mui/material/Grid2'
-
-import { dashboardTheme } from "../theme";
+import { Toolbar, Box, Typography, Button, AppBar } from "@mui/material";
+import { useTheme } from '@mui/material/styles';
 
 
-export default function Header(props) {
+export default function Header(props: any) {
 
     const { apps } = props
-    
+    const theme = useTheme()  
     return (
-        <AppBar position="sticky" color="navy">
+        <AppBar position="sticky"  style={{ backgroundColor: theme.palette.navy.main }}>
           <Toolbar
             sx={{height: '70px'}}
             >
@@ -32,7 +28,7 @@ export default function Header(props) {
               </Typography>
 
             <Box sx={{width: '50%', flexShrink: 1, textAlign: 'end', display: 'flex', gap: 2, flexDirection: 'row', justifyContent: 'end', alignItems: 'center'}}>
-              {apps?.map((appInfo, index) => (
+              {apps?.map((appInfo: any, index: any) => (
                 
                 <Button 
                   key={index} 
@@ -45,7 +41,7 @@ export default function Header(props) {
                   //   },
                   // }}
                   variant="text"
-                  color="mist"
+                  style={{ backgroundColor: theme.palette.mist.main }}
                   
                   >{appInfo['name']}</Button>
               ))}

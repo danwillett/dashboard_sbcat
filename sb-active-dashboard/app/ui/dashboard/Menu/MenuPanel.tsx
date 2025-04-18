@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { Box, IconButton } from "@mui/material";
 import { styled, Theme } from "@mui/material/styles";
 import { CalciteIcon } from "@esri/calcite-components-react";
-
-const drawerWidth = 180;
+import { appTheme } from "../../theme";
+const drawerWidth = 450;
 
 const DrawerFooter = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -16,27 +16,32 @@ const DrawerFooter = styled('div')(({ theme }) => ({
 
 const DrawerBox = styled(Box, { shouldForwardProp: (prop) => prop !== "open" })<
   { open?: boolean; color?: keyof Theme["palette"] }
->(({ theme, open, color = "primary" }) => ({
-  width: open ? drawerWidth : `calc(${theme.spacing(7)} + 1px)`,
-  transition: theme.transitions.create("width", {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.standard,
-  }),
-  overflowX: "hidden",
-  height: "100%",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "space-between",
+>(({ theme, open }) => {
+  // Ensuring that 'color' is a valid palette key.
+  
+  
 
-  // Colors
-  borderRight: `1px solid ${theme.palette[color].contrastText}`,
-  backgroundColor: theme.palette[color].main,
-  color: theme.palette[color].contrastText,
-}));
+  return {
+    width: open ? drawerWidth : `calc(${theme.spacing(7)} + 1px)`,
+    transition: theme.transitions.create("width", {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.standard,
+    }),
+    overflowX: "hidden",
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "space-between",
+
+    borderRight: `1px solid ${theme.palette.white.contrastText}`,
+    backgroundColor: theme.palette.white.main,
+    color: theme.palette.white.contrastText,
+  };
+});
 
 interface MenuPanelProps {
-  children: (drawerOpen: boolean) => React.ReactNode;
+  children: React.ReactNode;
 }
 
 const MenuPanel: React.FC<MenuPanelProps> = ({ children }) => {
@@ -47,10 +52,10 @@ const MenuPanel: React.FC<MenuPanelProps> = ({ children }) => {
   };
 
   return (
-    <DrawerBox open={drawerOpen} color="white">
+    <DrawerBox open={drawerOpen}>
       {/* Dynamic List Items will be passed as children */}
 
-      {children(drawerOpen)}
+      {children}
 
       {/* Drawer Toggle Button */}
       <DrawerFooter>

@@ -1,21 +1,26 @@
 'use client';
 
+import FeatureSet from "@arcgis/core/rest/support/FeatureSet"
+import Field from "@arcgis/core/layers/support/Field";
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
+import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
+import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
+import ColorVariable from "@arcgis/core/renderers/visualVariables/ColorVariable";
 
-const censusTitle = "ACS 2023 5-Year Demographics"
+const censusTitle = "Demographics"
 // function creates a graphics layer for the census data based on a chosen table
 
-async function createCensusGraphics(geomLayer, tableLayer, layerName) {
+async function createCensusGraphics(geomLayer: any, tableLayer: any, layerName: any) {
     
     // create an array of graphics and array of table attribute fields
     let tableQuery = tableLayer.createQuery();
     tableQuery.where = "" // No filter, query all records
     tableQuery.outFields = ["*"]
 
-    let tableArr = []
-    const tableResults = await tableLayer.queryFeatures(tableQuery)
+    let tableArr: Record<string, any>[] = [];  // Array of attribute objects
+    const tableResults: FeatureSet = await tableLayer.queryFeatures(tableQuery)
         
     let tableFeatures = tableResults.features
     tableFeatures.forEach((feature: any) => {
@@ -30,11 +35,11 @@ async function createCensusGraphics(geomLayer, tableLayer, layerName) {
     geomQuery.outFields = ["id"]
     geomQuery.returnGeometry = true
 
-    let geomArr = []
-    const geomResults = await geomLayer.queryFeatures(geomQuery)
+    let geomArr: Record<string, any>[] = [];  // Array of attribute objects
+    const geomResults: FeatureSet  = await geomLayer.queryFeatures(geomQuery)
 
     let geomFeatures = geomResults.features
-    geomFeatures.forEach((feature) => {
+    geomFeatures.forEach((feature: any) => {
         
         let id = feature.attributes.id
         let geometry = feature.geometry
@@ -63,27 +68,27 @@ async function createCensusGraphics(geomLayer, tableLayer, layerName) {
     }
     
     const layerFields = [
-        {
+        new Field({
             name: "OBJECTID",
             type: "oid"
-        },
-        {
+        }),
+        new Field({
             name: "tract",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "block_group",
             type: "string"
-        },
+        }),
     ]
 
     tableAttributes = tableAttributes.filter(name => !new Set(["objectid", "geo_id", "tract", "block_group"]).has(name)) 
     let medianField = ""
     tableAttributes.forEach((attr) => {
-        let field = {
+        let field = new Field({
             name: attr,
             type: "double"
-        }
+        })
 
         layerFields.push(field)
         if (attr.includes("median")) {
@@ -125,19 +130,16 @@ async function createCensusGraphics(geomLayer, tableLayer, layerName) {
         //     content: "<p>heyo! '{tract}' '{block_group}'</p>"
         // },
         opacity: 0.6,
-        renderer: {
-            type: "simple",
-            symbol: {
-                type: "simple-fill",
+        renderer: new SimpleRenderer({
+            symbol: new SimpleFillSymbol({
                 outline: {
                     color: "lightgray",
                     width: 0.5
                 }
-            },
+            }),
             label: "fill this in later",
             visualVariables: [
-                {
-                    type: "color",
+                new ColorVariable({
                     field: displayField,
                     normalizationField: normField,
                     stops: [
@@ -152,10 +154,10 @@ async function createCensusGraphics(geomLayer, tableLayer, layerName) {
                           label: highLabel
                         }
                     ]
-                }
+                })
             
             ]
-        }
+        })
     })
 
     return layer
@@ -167,22 +169,22 @@ export async function createCensusGroupLayer() {
     const censusPolygons = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer"})
             
     const censusIncomeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/1"})
-    const incomeLayer = await createCensusGraphics(censusPolygons, censusIncomeTable, "Income Distribution")
+    const incomeLayer = await createCensusGraphics(censusPolygons, censusIncomeTable, "Income")
     
     const censusRaceTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/2"})
-    const raceLayer = await createCensusGraphics(censusPolygons, censusRaceTable, "Race Distribution")
+    const raceLayer = await createCensusGraphics(censusPolygons, censusRaceTable, "Race")
     
     const censusAgeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/3"})
-    const ageLayer = await createCensusGraphics(censusPolygons, censusAgeTable, "Age Distribution")
+    const ageLayer = await createCensusGraphics(censusPolygons, censusAgeTable, "Age")
 
     const censusTransportationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/4"})
-    const transportationLayer = await createCensusGraphics(censusPolygons, censusTransportationTable, "Transportation Distribution")
+    const transportationLayer = await createCensusGraphics(censusPolygons, censusTransportationTable, "Transportation")
 
     const censusEducationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/5"})
     const educationLayer = await createCensusGraphics(censusPolygons, censusEducationTable, "Education")
 
     const censusGenderTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/6"})
-    const genderLayer = await createCensusGraphics(censusPolygons, censusGenderTable, "Gender Distribution")
+    const genderLayer = await createCensusGraphics(censusPolygons, censusGenderTable, "Gender")
     
 
     const censusGroupLayer = new GroupLayer({

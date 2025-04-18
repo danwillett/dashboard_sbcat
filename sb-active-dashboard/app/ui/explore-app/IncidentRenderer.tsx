@@ -30,7 +30,7 @@ function IncidentRenderer(props: props) {
             defaultValue={fields[0].name}
             name="radio-buttons-group"
             >
-                { fields.map((attribute) => (
+                { fields.map((attribute: any) => (
                     <FormControlLabel 
                         key={attribute.source} 
                         value={attribute.source} 

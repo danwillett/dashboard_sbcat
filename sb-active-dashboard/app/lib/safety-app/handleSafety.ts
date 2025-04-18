@@ -1,19 +1,15 @@
 'use client';
 
+import Field from "@arcgis/core/layers/support/Field";
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
-import GroupLayer from "@arcgis/core/layers/GroupLayer"
-import * as intersectionOperator from "@arcgis/core/geometry/operators/intersectionOperator"
-import * as unionOperator from "@arcgis/core/geometry/operators/unionOperator";
 import * as bufferOperator from "@arcgis/core/geometry/operators/bufferOperator";
 import * as projection from "@arcgis/core/geometry/projection";
 import StatisticDefinition from "@arcgis/core/rest/support/StatisticDefinition"
 
-import SpatialReference from "@arcgis/core/geometry/SpatialReference";
-
 import HeatmapRenderer from "@arcgis/core/renderers/HeatmapRenderer.js";
-import UniqueValueRenderer from "@arcgis/core/renderers/UniqueValueRenderer"
-import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer"
+import FeatureReductionCluster from "@arcgis/core/layers/support/FeatureReductionCluster";
+
 
 
 const colors = ["rgba(115, 0, 115, 0)", "#820082", "#910091", "#a000a0", "#af00af", "#c300c3", "#d700d7", "#eb00eb", "#ff00ff", "#ff58a0", "#ff896b", "#ffb935", "#ffea00"];
@@ -34,7 +30,6 @@ const heatmapRenderer = new HeatmapRenderer({
         { color: colors[11], ratio: 0.913 },
         { color: colors[12], ratio: 1 }
         ],
-    type: 'heatmap',
     radius: 15,
     maxDensity: .015,
     minDensity: .005,
@@ -46,256 +41,242 @@ const heatmapRenderer = new HeatmapRenderer({
         }
     })
 
-async function createSafetyCensusGraphics(safetyPoints: __esri.FeatureLayer, censusBlocks: __esri.FeatureLayer, query: string, title: string) {
+// async function createSafetyCensusGraphics(safetyPoints: __esri.FeatureLayer, censusBlocks: __esri.FeatureLayer, query: string, title: string) {
 
-    const incidentsQuery = safetyPoints.createQuery();
+//     const incidentsQuery = safetyPoints.createQuery();
 
-    incidentsQuery.where = query
-    incidentsQuery.outFields = ["*"]
+//     incidentsQuery.where = query
+//     incidentsQuery.outFields = ["*"]
 
-    const queryResults = await safetyPoints.queryFeatures(incidentsQuery)
-    const incidentFeatures = queryResults.features
-    const graphics: Graphic[] = []
-    let graphic
+//     const queryResults = await safetyPoints.queryFeatures(incidentsQuery)
+//     const incidentFeatures = queryResults.features
+//     const graphics: Graphic[] = []
+//     let graphic
 
-    incidentFeatures.forEach((incident) => {
-        // const timestamp = new Date(incident.attributes.timestamp)
-        // incident.attributes.timestamp = timestamp
-        graphic = new Graphic({
-            geometry: incident.geometry,
-            attributes: incident.attributes
-        })
-        graphics.push(graphic)
-    })
+//     incidentFeatures.forEach((incident) => {
+//         // const timestamp = new Date(incident.attributes.timestamp)
+//         // incident.attributes.timestamp = timestamp
+//         graphic = new Graphic({
+//             geometry: incident.geometry,
+//             attributes: incident.attributes
+//         })
+//         graphics.push(graphic)
+//     })
 
-    const layerFields = [
-        {
-            name: "OBJECTID",
-            type: "oid"
-        },
-        {
-            name: "data_source",
-            type: "string"
-        },
-        {
-            name: "age",
-            type: "double"
-        },
-        {
-            name: "gender",
-            type: "string"
-        },
-        {
-            name: "incident_type",
-            type: "string"
-        },
-        {
-            name: "pedestrian",
-            type: "string"
-        },
-        {
-            name: "bicyclist",
-            type: "string"
-        },
-        {
-            name: "timestamp",
-            type: "date"
-        }
-    ]
+//     const layerFields = [
+//         {
+//             name: "OBJECTID",
+//             type: "oid"
+//         },
+//         {
+//             name: "data_source",
+//             type: "string"
+//         },
+//         {
+//             name: "age",
+//             type: "double"
+//         },
+//         {
+//             name: "gender",
+//             type: "string"
+//         },
+//         {
+//             name: "incident_type",
+//             type: "string"
+//         },
+//         {
+//             name: "pedestrian",
+//             type: "string"
+//         },
+//         {
+//             name: "bicyclist",
+//             type: "string"
+//         },
+//         {
+//             name: "timestamp",
+//             type: "date"
+//         }
+//     ]
     
-    const layer = new FeatureLayer({
-        source: graphics,
-        title: title,
-        objectIdField: "OBJECTID",
-        fields: layerFields,
-        timeInfo: {
-            startField: "timestamp",
-            interval: {
-                unit: "days",
-                value: 1
-            }
-        },
-        // renderer: heatmapRenderer 
-        renderer: pointRenderer,
+//     const layer = new FeatureLayer({
+//         source: graphics,
+//         title: title,
+//         objectIdField: "OBJECTID",
+//         fields: layerFields,
+//         timeInfo: {
+//             startField: "timestamp",
+//             interval: {
+//                 unit: "days",
+//                 value: 1
+//             }
+//         },
+//         // renderer: heatmapRenderer 
+//         renderer: pointRenderer,
 
-    })
+//     })
 
-    return layer
+//     return layer
     
-}
+// }
 
 export function changeIncidentRenderer(groupLayer: __esri.GroupLayer, type: string) {
 
-    groupLayer.layers.items.forEach((layer) => {
+    groupLayer.layers.forEach((layer: __esri.Layer) => {
 
-        if (type === "heatmap") {
-            layer.featureReduction = null
-            layer.renderer = heatmapRenderer
-            layer.opacity = 0.6
-            console.log(layer)
-        }
-        // } else if (type === "simple") {
-        //     layer.featureReduction = null
-        //     layer.renderer = pointRenderer
-        //     layer.opacity = 0.8
-            
-        //     console.log(layer)
-           
-        // } else if (type === "cluster") {
-        //     layer.renderer = clusterRenderer
-        //     layer.featureReduction = clusterReduction
-        // }
-
-    })
-
-}
-
-export async function createSafetyLayers() {
-
-    
-    // count number of pedestrian and bike incidents occuring within each Census tract
-    const censusPolygons = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer"})
-    const safetyPoints = new FeatureLayer({url: 'https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Saftey_Incidents/FeatureServer'})
-
-    // query census polygons then buffer by 10m
-    const censusQuery = censusPolygons.createQuery();
-    censusQuery.where = ""
-    censusQuery.outFields = ["id"]
-    censusQuery.returnGeometry = true
-
-    // spatial stats
-    const countStats = new StatisticDefinition({
-        onStatisticField: "objectid",
-        outStatisticFieldName: "incident_count",
-        statisticType: "count"
-    })
-
-    // function counts number of incidents within the polygon
-    const countIncidentsInCensusPolygons = async (polygon) => {
-        let query = safetyPoints.createQuery();
-        query.geometry = polygon.geometry;
-        query.spatialRelationship = "intersects";
-        query.returnGeometry = false;
-        query.outStatistics = [countStats];
-
-        const safetyCountResults = await safetyPoints.queryFeatures(query)
-
-        if (safetyCountResults.features.length > 0) {
-            let incidentCount = safetyCountResults.features[0].attributes.incident_count || 0
-            polygon.attributes.incident_count = incidentCount
-        } else {
-            polygon.attributes.incident_count = 0
-        }
-        
-    }
-
-    const censusResults = await censusPolygons.queryFeatures(censusQuery)
-    const bufferedCensusResults = censusResults
-
-    // load projection module
-    await projection.load()
-    bufferedCensusResults.features.forEach(feature => {
-        const geometry = projection.project(feature.geometry, {wkid: 2229})
-        feature.geometry = bufferOperator.execute(geometry, 10)
-        countIncidentsInCensusPolygons(feature)
-    })
-
-    let graphics = []
-    
-    // query table features and merged with graphics
-    // let tableQuery = tableLayer.createQuery();
-    // tableQuery.where = "" // No filter, query all records
-    // tableQuery.outFields = ["*"]
-
-    // let tableArr = []
-    // const tableResults = await tableLayer.queryFeatures(tableQuery)
-        
-    // let tableFeatures = tableResults.features
-    // tableFeatures.forEach((feature: any) => {
-    //     tableArr.push(feature.attributes)    
-    // })
-    // let tableAttributes = Object.keys(tableFeatures[0].attributes)
-             
-    
-
-    bufferedCensusResults.features.forEach(feature => {
-        const graphic = new Graphic({
-            geometry: feature.geometry,
-            attributes: feature.attributes
-        })
-        graphics.push(graphic)
-    })
-    
-
-    const layer = new FeatureLayer({
-        source: graphics,
-        title: "Buggered GRaphics",
-        objectIdField: "OBJECTID",
-        fields: [
-            {
-                name: "OBJECTID",
-                type: "oid"
-            },
-            {
-                name: "tract",
-                type: "string"
-            },
-            {
-                name: "block_group",
-                type: "string"
-            },
-        ],
-       
-        // renderer: heatmapRenderer 
-        renderer: {
-            type: "simple",
-            symbol: {
-                type: "simple-fill",
+        if (layer instanceof FeatureLayer ){
+            if (type === "heatmap") {
+                layer.featureReduction = null as unknown as FeatureReductionCluster;
+                layer.renderer = heatmapRenderer
+                layer.opacity = 0.6
+                console.log(layer)
+            }
+            // } else if (type === "simple") {
+            //     layer.featureReduction = null
+            //     layer.renderer = pointRenderer
+            //     layer.opacity = 0.8
                 
-                color: 'red'
-            }}
+            //     console.log(layer)
+            
+            // } else if (type === "cluster") {
+            //     layer.renderer = clusterRenderer
+            //     layer.featureReduction = clusterReduction
+            // }
+        }
 
     })
-    
-    return layer
-    
-    // const intersectionBufferedGeoms = bufferedCensusGeoms.forEach(geom => {
-
-    // })
-    // bufferedCensusGeoms.forEach()
-    // graphic = new Graphic({
-    //     geometry: incident.geometry,
-    //     attributes: incident.attributes
-    // })
-    // graphics.push(graphic)
-
-
-
-    // const censusIncomeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/1"})
-    // const censusRaceTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/2"})
-    // const censusAgeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/3"})
-    // const censusTransportationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/4"})
-    // const censusEducationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/5"})
-    // const censusGenderTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/6"})
-
-    // const incidentsLayer = new FeatureLayer({url: 'https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Saftey_Incidents/FeatureServer'})
-
-    // const bikeIncidentsLayer = await createIncidentSafetyGraphics(incidentsLayer, "bicyclist = 1", "Bike Incidents")
-    // const pedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "pedestrian = 1", "Pedestrian Incidents")
-
-    // const incidentGroupLayer = new GroupLayer({
-    //     layers: [
-    //         bikeIncidentsLayer,
-    //         // pedIncidentsLayer
-    //     ],
-    //     title: "Safety Incidents",
-    //     visibilityMode: "exclusive"
-    // })
-    // console.log(incidentGroupLayer)
-    
-    // return bikeIncidentsLayer
 
 }
+
+// export async function createSafetyLayers() {
+
+    
+//     // count number of pedestrian and bike incidents occuring within each Census tract
+//     const censusPolygons = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer"})
+//     const safetyPoints = new FeatureLayer({url: 'https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Saftey_Incidents/FeatureServer'})
+
+//     // query census polygons then buffer by 10m
+//     const censusQuery = censusPolygons.createQuery();
+//     censusQuery.where = ""
+//     censusQuery.outFields = ["id"]
+//     censusQuery.returnGeometry = true
+
+//     // spatial stats
+//     const countStats = new StatisticDefinition({
+//         onStatisticField: "objectid",
+//         outStatisticFieldName: "incident_count",
+//         statisticType: "count"
+//     })
+
+//     // function counts number of incidents within the polygon
+//     const countIncidentsInCensusPolygons = async (polygon) => {
+//         let query = safetyPoints.createQuery();
+//         query.geometry = polygon.geometry;
+//         query.spatialRelationship = "intersects";
+//         query.returnGeometry = false;
+//         query.outStatistics = [countStats];
+
+//         const safetyCountResults = await safetyPoints.queryFeatures(query)
+
+//         if (safetyCountResults.features.length > 0) {
+//             let incidentCount = safetyCountResults.features[0].attributes.incident_count || 0
+//             polygon.attributes.incident_count = incidentCount
+//         } else {
+//             polygon.attributes.incident_count = 0
+//         }
+        
+//     }
+
+//     const censusResults = await censusPolygons.queryFeatures(censusQuery)
+//     const bufferedCensusResults = censusResults
+
+//     // load projection module
+//     await projection.load()
+//     bufferedCensusResults.features.forEach(feature => {
+//         const geometry = projection.project(feature.geometry, {wkid: 2229})
+//         feature.geometry = bufferOperator.execute(geometry, 10)
+//         countIncidentsInCensusPolygons(feature)
+//     })
+
+//     let graphics: Graphic[] = []
+    
+  
+
+//     bufferedCensusResults.features.forEach(feature => {
+//         const graphic = new Graphic({
+//             geometry: feature.geometry,
+//             attributes: feature.attributes
+//         })
+//         graphics.push(graphic)
+//     })
+    
+//     const layerFields = [
+//         new Field({
+//             name: "OBJECTID",
+//             type: "oid"
+//         }),
+//         new Field({
+//             name: "tract",
+//             type: "string"
+//         }),
+//         new Field({
+//             name: "block_group",
+//             type: "string"
+//         }),
+//     ]
+
+//     const layer = new FeatureLayer({
+//         source: graphics,
+//         title: "Buggered GRaphics",
+//         objectIdField: "OBJECTID",
+//         fields: layerFields,
+
+//         renderer: new SimpleRenderer({
+//             symbol: new SimpleFillSymbol({
+//                 color: 'red'
+//             })
+//         })
+
+//     })
+    
+//     return layer
+    
+//     // const intersectionBufferedGeoms = bufferedCensusGeoms.forEach(geom => {
+
+//     // })
+//     // bufferedCensusGeoms.forEach()
+//     // graphic = new Graphic({
+//     //     geometry: incident.geometry,
+//     //     attributes: incident.attributes
+//     // })
+//     // graphics.push(graphic)
+
+
+
+//     // const censusIncomeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/1"})
+//     // const censusRaceTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/2"})
+//     // const censusAgeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/3"})
+//     // const censusTransportationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/4"})
+//     // const censusEducationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/5"})
+//     // const censusGenderTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/6"})
+
+//     // const incidentsLayer = new FeatureLayer({url: 'https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Saftey_Incidents/FeatureServer'})
+
+//     // const bikeIncidentsLayer = await createIncidentSafetyGraphics(incidentsLayer, "bicyclist = 1", "Bike Incidents")
+//     // const pedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "pedestrian = 1", "Pedestrian Incidents")
+
+//     // const incidentGroupLayer = new GroupLayer({
+//     //     layers: [
+//     //         bikeIncidentsLayer,
+//     //         // pedIncidentsLayer
+//     //     ],
+//     //     title: "Safety Incidents",
+//     //     visibilityMode: "exclusive"
+//     // })
+//     // console.log(incidentGroupLayer)
+    
+//     // return bikeIncidentsLayer
+
+// }
 
 export async function createHeatmaps(){
     const safetyPoints = new FeatureLayer({url: 'https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Safety_Incidents/FeatureServer/0'})
@@ -303,8 +284,8 @@ export async function createHeatmaps(){
 
     // paginate queries since over 2000 records
     let weightResultLength = 10000
-    let weightArr = []
-    let weightObjectIds = []
+    let weightArr: Record<string, any>[] = []
+    let weightObjectIds : string[] = []
     while (weightResultLength === 10000) {
         
         let queryWeights = safetyWeights.createQuery()
@@ -330,8 +311,8 @@ export async function createHeatmaps(){
 
     let earliestIncidentDate = new Date()
     let pointResultLength = 10000
-    let pointArr = []
-    let pointObjectIds = []
+    let pointArr: Record<string, any>[] = []
+    let pointObjectIds:string[] = []
     while (pointResultLength === 10000) {
 
         let pointQuery = safetyPoints.createQuery()
@@ -359,7 +340,7 @@ export async function createHeatmaps(){
         })
         pointResultLength = pointFeatures.length
         pointObjectIds = pointObjectIds.map((id) => id + pointResultLength)
-        console.log(pointObjectIds)
+        
     }      
     
     console.log(pointArr.length)
@@ -370,9 +351,7 @@ export async function createHeatmaps(){
             ...point
         }
     })
-    console.log(mergedData.length)
-    console.log(mergedData)
-
+    
     const graphics: Graphic[] = []
     let graphic
 
@@ -386,46 +365,46 @@ export async function createHeatmaps(){
     }
 
     const layerFields = [
-        {
+        new Field({
             name: "OBJECTID",
             alias: "ObjectId",
             type: "oid"  
-        },
-        {
+        }),
+        new Field({
             name: "incident_type",
             alias: "Incident Type",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "timestamp",
             alias: "Timestamp",
             type: "date"
-        },
-        {
+        }),
+        new Field({
             name: "pedestrian",
             alias: "Pedestrian Involved",
             type: "small-integer"  
-        },
-        {
+        }),
+        new Field({
             name: "bicyclist",
             alias: "Bicyclist Involved",
             type: "small-integer"
-        },
-        {
+        }),
+        new Field({
             name: "ebike",
             alias: "E-Bike Involved",
             type: "small-integer"
-        },
-        {
+        }),
+        new Field({
             name: "age",
             alias: "Age",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "gender",
             alias: "Gender",
             type: "string"
-        },
+        }),
         // {
         //     name: "x",
         //     alias: "Longitude",
@@ -436,21 +415,21 @@ export async function createHeatmaps(){
         //     alias: "Latitude",
         //     type: "double"
         // },
-        {
+        new Field({
             name: "location",
             alias: "Location",
             type: "geometry"  
-        },
-        {
+        }),
+        new Field({
             name: "data_source",
             alias: "Data Source",
             type: "string"
-        },
-        {
+        }),
+        new Field({
             name: "exposure",
             alias: "Bike Counts",
             type: "double"
-        }
+        })
     ];
     
 
@@ -469,7 +448,7 @@ export async function createHeatmaps(){
                 end: new Date()
             }
         },
-        renderer: {
+        renderer: new HeatmapRenderer({
             field: "exposure",
             colorStops: [
                 { color: colors[0], ratio: 0 },
@@ -486,7 +465,6 @@ export async function createHeatmaps(){
                 { color: colors[10], ratio: 0.913 },
                 { color: colors[12], ratio: 1 }
                 ],
-            type: 'heatmap',
             
             radius: 15,
             maxDensity: .015,
@@ -497,15 +475,17 @@ export async function createHeatmaps(){
                 minLabel: "",
                 maxLabel: "Greatest Risk"
                 }
-        }
+        })
     })
 
     return layer
 }
 
 import addHeatmapRenderPanel from "@/app/ui/safety-app/HeatmapRenderer";
+import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
+import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
 
-export const addHeatmapVisOptions = (event) => {
+export const addHeatmapVisOptions = (event: any) => {
     const { item } = event
     console.log(item)
 

@@ -1,11 +1,16 @@
 'use client';
-
+import Field from "@arcgis/core/layers/support/Field";
+import FeatureSet from "@arcgis/core/rest/support/FeatureSet"
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
 import HeatmapRenderer from "@arcgis/core/renderers/HeatmapRenderer.js";
 import UniqueValueRenderer from "@arcgis/core/renderers/UniqueValueRenderer"
 import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer"
+import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
+import TextSymbol from "@arcgis/core/symbols/TextSymbol"
+import PictureMarkerSymbol from "@arcgis/core/symbols/PictureMarkerSymbol";
+import FeatureReductionCluster from "@arcgis/core/layers/support/FeatureReductionCluster";
 
 
 const colors = ["rgba(115, 0, 115, 0)", "#820082", "#910091", "#a000a0", "#af00af", "#c300c3", "#d700d7", "#eb00eb", "#ff00ff", "#ff58a0", "#ff896b", "#ffb935", "#ffea00"];
@@ -26,7 +31,6 @@ const heatmapRenderer = new HeatmapRenderer({
         { color: colors[11], ratio: 0.913 },
         { color: colors[12], ratio: 1 }
         ],
-    type: 'heatmap',
     radius: 15,
     maxDensity: .015,
     minDensity: .005,
@@ -36,29 +40,28 @@ const heatmapRenderer = new HeatmapRenderer({
         minLabel: "Few crashes",
         maxLabel: "Frequent crashes"
         }
-    })
+})
 
 const pointRenderer = new UniqueValueRenderer({
-    type: "unique-value",
     field: "incident_type",
     uniqueValueInfos: [
         {
             value: "Collision",
-            symbol: {
-                type: "picture-marker",
+            symbol: new PictureMarkerSymbol({
+               
                 url: "/icons/incident_marker.svg",
                 width: "10px",
                 height: "18px"
-            }
+            })
         },
         {
             value: "Near Collision",
-            symbol: {
-                type: "picture-marker",
+            symbol: new PictureMarkerSymbol({
+                
                 url: "/icons/hazard_marker.svg",
                 width: "10px",
                 height: "18px"
-            }
+            })
         },
 ]
    
@@ -66,16 +69,14 @@ const pointRenderer = new UniqueValueRenderer({
 })
 
 const clusterRenderer = new SimpleRenderer({
-    type: "simple",
-    symbol: {
-        type: "simple-marker",
+    symbol: new SimpleMarkerSymbol({
+        
         size: 6,
         color: 'red'
-    }
+    })
         
 })
-const clusterReduction = {
-    type: "cluster",
+const clusterReduction = new FeatureReductionCluster({
     clusterMinSize: 16.5,
     // defines the label within each cluster
     labelingInfo: [
@@ -84,14 +85,13 @@ const clusterReduction = {
         labelExpressionInfo: {
             expression: "Text($feature.cluster_count, '#,###')"
         },
-        symbol: {
-            type: "text",
+        symbol: new TextSymbol({
             color: "white",
             font: {
             family: "Noto Sans",
             size: "12px"
             }
-        },
+        }),
         labelPlacement: "center-center"
         }
     ],
@@ -107,7 +107,7 @@ const clusterReduction = {
         }
         }]
     }
-}
+})
 
 async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query: string, title: string) {
 
@@ -120,7 +120,7 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
     let queryResultLength = 10000
     let incidentFeatures: Graphic[] = []
     while (queryResultLength === 10000) {
-        const queryResults = await incidentPoints.queryFeatures(incidentsQuery)
+        const queryResults: FeatureSet = await incidentPoints.queryFeatures(incidentsQuery)
         incidentFeatures.push(...queryResults.features)
         queryResultLength = queryResults.features.length
     }
@@ -140,39 +140,16 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
 
     console.log(graphics)
     const layerFields = [
-        {
-            name: "OBJECTID",
-            type: "oid"
-        },
-        {
-            name: "data_source",
-            type: "string"
-        },
-        {
-            name: "age",
-            type: "double"
-        },
-        {
-            name: "gender",
-            type: "string"
-        },
-        {
-            name: "incident_type",
-            type: "string"
-        },
-        {
-            name: "pedestrian",
-            type: "double"
-        },
-        {
-            name: "bicyclist",
-            type: "double"
-        },
-        {
-            name: "timestamp",
-            type: "date"
-        }
-    ]
+        new Field({ name: "OBJECTID", type: "oid" }),
+        new Field({ name: "data_source", type: "string" }),
+        new Field({ name: "age", type: "double" }),
+        new Field({ name: "gender", type: "string" }),
+        new Field({ name: "incident_type", type: "string" }),
+        new Field({ name: "pedestrian", type: "double" }),
+        new Field({ name: "bicyclist", type: "double" }),
+        new Field({ name: "timestamp", type: "date" }),
+        new Field({ name: "new_field", type: "string" }) // Add your new field here!
+    ];
 
     const popupTemplate = {
         // autocasts as new PopupTemplate()
@@ -249,7 +226,6 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
         featureReduction: clusterReduction
 
     })
-
     
     return layer
     
@@ -257,27 +233,29 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
 
 export function changeIncidentRenderer(groupLayer: __esri.GroupLayer, type: string) {
 
-    groupLayer.layers.items.forEach((layer) => {
+    groupLayer.layers.forEach((layer: __esri.Layer) => {
 
-        if (type === "heatmap") {
-            layer.featureReduction = null
-            layer.renderer = heatmapRenderer
-            layer.opacity = 0.6
-            console.log(layer)
-            
-        } else if (type === "simple") {
-            layer.featureReduction = null
-            layer.renderer = pointRenderer
-            layer.opacity = 1
-            
-            console.log(layer)
-           
-        } else if (type === "cluster") {
-            layer.renderer = clusterRenderer
-            layer.featureReduction = clusterReduction
-            layer.opacity = 1
+        if (layer instanceof FeatureLayer ){
+            if (type === "heatmap") {
+                layer.featureReduction = null as unknown as FeatureReductionCluster;
+                layer.renderer = heatmapRenderer
+                layer.opacity = 0.6
+                console.log(layer)
+                
+            } else if (type === "simple") {
+                layer.featureReduction = null as unknown as FeatureReductionCluster;
+                layer.renderer = pointRenderer
+                layer.opacity = 1
+                
+                console.log(layer)
+               
+            } else if (type === "cluster") {
+                layer.renderer = clusterRenderer
+                layer.featureReduction = clusterReduction
+                layer.opacity = 1
+            }
         }
-
+        
     })
 
 }
@@ -288,17 +266,17 @@ export async function createIncidentGroupLayer() {
     
     const incidentsLayer = new FeatureLayer({url: 'https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Saftey_Incidents/FeatureServer'})
 
-    const combinedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "", "All Incidents")
+    // const combinedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "", "All Incidents")
     const bikeIncidentsLayer = await createIncidentGraphics(incidentsLayer, "bicyclist = 1", "Biking Incidents")
     const pedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "pedestrian = 1", "Walking Incidents")
 
     const incidentGroupLayer = new GroupLayer({
         layers: [
-            combinedIncidentsLayer,
+            // combinedIncidentsLayer,
             bikeIncidentsLayer,
             pedIncidentsLayer
         ],
-        title: "Safety Incidents",
+        title: "Safety",
         visibilityMode: "exclusive"
     })
     console.log(incidentGroupLayer)
