@@ -3,7 +3,7 @@
 import React, {useState, useEffect} from "react"
 
 // map context and types
-import { SafetyChecks, VolumeChecks } from "@/app/lib/explore-app/types"
+import { DemographicChecks, SafetyChecks, VolumeChecks } from "@/app/lib/explore-app/types"
 
 // custom components
 import TimeFilterPanel from "./TimeFilterPanel";
@@ -59,11 +59,13 @@ const StyledTab = styled((props: StyledTabProps) => (
 interface FilterTabsProps {
     safetyChecks: SafetyChecks;
     volumeChecks: VolumeChecks;
+    demographicChecks: DemographicChecks;
 }
 export default function FilterTabs(props: FilterTabsProps) {
-    const { safetyChecks, volumeChecks } = props
+    const { safetyChecks, volumeChecks, demographicChecks } = props
     const [ safetyFalse, setSafetyFalse ] = useState(false)
     const [ volumeFalse, setVolumeFalse ] = useState(false)
+    const [ demographicsFalse, setDemographicsFalse ] = useState(false)
 
     useEffect(() => {
         if (safetyChecks !== null) {
@@ -81,6 +83,12 @@ export default function FilterTabs(props: FilterTabsProps) {
         console.log(volumeFalse)
        
     }, [volumeChecks])
+
+    useEffect(() => {
+        if (demographicChecks !== null ) {
+          setDemographicsFalse(Object.values(demographicChecks).every(value => value === false))
+        }
+    })
  
 
     const [value, setValue] = React.useState(0);
@@ -90,26 +98,42 @@ export default function FilterTabs(props: FilterTabsProps) {
 
     return (
         <Box sx={{ width: '100%' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs value={value} onChange={handleChange} aria-label="filtering options">
-                <StyledTab label="Safety" {...a11yProps(0)} />
-                <StyledTab label="Volumes" {...a11yProps(1)} />   
-            </Tabs>
-        </Box>
-        <CustomTabPanel value={value} index={0}>
-            { safetyFalse ? (
-                <Typography variant="body2">Add Safety data to the map <strong>(Step 1)</strong></Typography>
-            ): (
-                <TimeFilterPanel />
-            )}
-            
-        </CustomTabPanel>
-        <CustomTabPanel value={value} index={1}>
-        { volumeFalse ? (
-                <Typography variant="body2">Add Volume data to the map <strong>(Step 1)</strong></Typography>
-            ): (
-                <TimeFilterPanel />
-            )}
-        </CustomTabPanel>
+
+          <TimeFilterPanel />
+          
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tabs value={value} onChange={handleChange} aria-label="filtering options">
+                  <StyledTab label="Safety" {...a11yProps(0)} />
+                  <StyledTab label="Volumes" {...a11yProps(1)} />
+                  <StyledTab label="Demographics" {...a11yProps(2)} />   
+              </Tabs>
+          </Box>
+          <CustomTabPanel value={value} index={0}>
+              { safetyFalse ? (
+                  <Typography variant="body2">Add Safety data to the map <strong>(Step 1)</strong></Typography>
+              ): (
+                  // <TimeFilterPanel />
+                  <div>hey</div>
+              )}
+              
+          </CustomTabPanel>
+          <CustomTabPanel value={value} index={1}>
+            { volumeFalse ? (
+                    <Typography variant="body2">Add Volume data to the map <strong>(Step 1)</strong></Typography>
+                ): (
+                    // <TimeFilterPanel />
+                    <div>hey</div>
+                )}
+          </CustomTabPanel>
+          <CustomTabPanel value={value} index={2}>
+              {/* <TimeFilterPanel /> */}
+              { demographicChecks ? (
+                  <Typography variant="body2">Add Demographic data to the map <strong>(Step 1)</strong></Typography>
+              ): (
+                <div>sliders for salary ranges?</div>
+              )}
+              
+          </CustomTabPanel>
+          
         </Box>
     )};

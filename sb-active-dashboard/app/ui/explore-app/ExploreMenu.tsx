@@ -56,7 +56,7 @@ export default function ExploreMenu(props: any) {
             <Typography my={2} variant="body2">
               <strong>Step 2:</strong> Apply filters.
             </Typography>
-            <FilterTabs safetyChecks={safetyChecks} volumeChecks={volumeChecks} />
+            <FilterTabs safetyChecks={safetyChecks} volumeChecks={volumeChecks} demographicChecks={demographicChecks}/>
 
           </Box> 
 
