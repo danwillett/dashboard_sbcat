@@ -3,7 +3,7 @@ import { Box, IconButton } from "@mui/material";
 import { styled, Theme } from "@mui/material/styles";
 import { CalciteIcon } from "@esri/calcite-components-react";
 import { appTheme } from "../../theme";
-const drawerWidth = 250;
+const drawerWidth = 450;
 
 const DrawerFooter = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -41,7 +41,7 @@ const DrawerBox = styled(Box, { shouldForwardProp: (prop) => prop !== "open" })<
 });
 
 interface MenuPanelProps {
-  children: (drawerOpen: boolean) => React.ReactNode;
+  children: React.ReactNode;
 }
 
 const MenuPanel: React.FC<MenuPanelProps> = ({ children }) => {
@@ -55,7 +55,7 @@ const MenuPanel: React.FC<MenuPanelProps> = ({ children }) => {
     <DrawerBox open={drawerOpen}>
       {/* Dynamic List Items will be passed as children */}
 
-      {children(drawerOpen)}
+      {children}
 
       {/* Drawer Toggle Button */}
       <DrawerFooter>

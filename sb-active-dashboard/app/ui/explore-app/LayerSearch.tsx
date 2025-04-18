@@ -1,9 +1,9 @@
 'use client';
-
 import React, { useEffect, useState } from "react"
 
-// map context
+// map context and types
 import { useMapContext } from "@/app/lib/context/MapContext";
+import { SafetyChecks, VolumeChecks, DemographicChecks } from "@/app/lib/explore-app/types"
 
 // arcgis js
 import LayerList from "@arcgis/core/widgets/LayerList";
@@ -22,15 +22,20 @@ import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 
-export default function LayerSearch() {
 
-    
+interface LayerSearchProps {
+    safetyChecks: SafetyChecks;
+    setSafetyChecks: React.Dispatch<React.SetStateAction<SafetyChecks>>;
+    volumeChecks: VolumeChecks;
+    setVolumeChecks: React.Dispatch<React.SetStateAction<VolumeChecks>>;
+    demographicChecks: DemographicChecks;
+    setDemographicChecks: React.Dispatch<React.SetStateAction<DemographicChecks>>;
+}
+
+export default function LayerSearch(props: LayerSearchProps) {
+
     const { mapRef, incidentGroupLayer, censusGroupLayer, countGroupLayer, layerList } = useMapContext()
-
-    const [safetyChecks, setSafetyChecks] = useState({
-        "Biking Incidents": false,
-        "Walking Incidents": false
-    })
+    const { safetyChecks, setSafetyChecks, volumeChecks, setVolumeChecks, demographicChecks, setDemographicChecks } = props
 
     const handleSafetyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 
@@ -68,12 +73,7 @@ export default function LayerSearch() {
         
     }, [safetyChecks])
 
-    const [volumeChecks, setVolumeChecks] = useState({
-        "Biking Volumes": false,
-        "Modeled Biking Volumes": false,
-        "Walking Volumes": false,
-        "Modeled Walking Volumes": false
-    })
+    
 
     const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setVolumeChecks({
@@ -108,11 +108,7 @@ export default function LayerSearch() {
         }
     }, [volumeChecks])
 
-    const [demographicChecks, setDemographicChecks] = useState({
-        "Income": false,
-        "Race": false,
-        "Education": false
-    })
+    
 
     const handleDemographicChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setDemographicChecks({
@@ -166,13 +162,13 @@ export default function LayerSearch() {
         <div>
             {incidentGroupLayer && (
                 <Accordion>
-                        <AccordionSummary
-                        expandIcon={<ExpandMoreIcon />}
-                        aria-controls="safety-content"
-                        id="safety-header"
-                        >
-                            <Typography component="span">Safety</Typography>
-                        </AccordionSummary>
+                    <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    aria-controls="safety-content"
+                    id="safety-header"
+                    >
+                        <Typography component="span">Safety</Typography>
+                    </AccordionSummary>
                     
                     <AccordionDetails>
                         <FormGroup>

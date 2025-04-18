@@ -6,7 +6,7 @@ import { useMapContext } from "@/app/lib/context/MapContext";
 
 // import custom components
 import ExploreMenu from "./ExploreMenu";
-import FilterPanel from "./FilterPanel";
+import FilterPanel from "./TimeFilterPanel";
 
 // import custom functions
 import { createCensusGroupLayer } from "@/app/lib/explore-app/displayCensus";
@@ -24,11 +24,10 @@ import "@arcgis/map-components/dist/components/arcgis-expand";
 import "@arcgis/map-components/dist/components/arcgis-layer-list";
 import "@arcgis/map-components/dist/components/arcgis-time-slider";
 import "@arcgis/map-components/dist/components/arcgis-print";
-import MapView from "@arcgis/core/views/MapView"
 import LayerList from "@arcgis/core/widgets/LayerList"
 import Legend from "@arcgis/core/widgets/Legend"
-import TimeSlider from "@arcgis/core/widgets/TimeSlider"
 import Print from "@arcgis/core/widgets/Print"
+import TimeSlider from "@arcgis/core/widgets/TimeSlider"
 import TimeInterval from "@arcgis/core/time/TimeInterval"
 import { ArcgisMap } from "@arcgis/map-components-react";
 
@@ -44,7 +43,7 @@ import Grid from "@mui/material/Grid2"
 
 export default function ExploreMap() {
 
-    const { mapRef, setMapRef, countGroupLayer, setCountGroupLayer, censusGroupLayer, setCensusGroupLayer, incidentGroupLayer, setIncidentGroupLayer, layerList, setLayerList } = useMapContext()
+    const { mapRef, setMapRef, viewRef, setViewRef, countGroupLayer, setCountGroupLayer, censusGroupLayer, setCensusGroupLayer, incidentGroupLayer, setIncidentGroupLayer, setLayerList, setTimeSlider } = useMapContext()
 
     const [showWidgetPanel, setShowWidgetPanel] = useState<Boolean>(false)
     const [showLegend, setShowLegend] = useState<Boolean>(false)
@@ -52,8 +51,8 @@ export default function ExploreMap() {
     const [showFilter, setShowFilter] = useState<Boolean>(false)
     const [showPrint, setShowPrint] = useState<Boolean>(false)
     const [ mapElRef, setMapElRef ] = useState(null)
-    const [ viewRef, setViewRef ] = useState<MapView | null>(null)
-    const [timeSlider, setTimeSlider] = useState<TimeSlider | null>(null)
+    
+    
 
     const menuProps = {
 
@@ -67,13 +66,6 @@ export default function ExploreMap() {
         setShowFilter,
         showPrint,
         setShowPrint
-    }
-
-    const filterProps = {
-        timeSlider,
-        viewRef,
-        countGroupLayer,
-        incidentGroupLayer
     }
 
     // once map is generated, load feature layers and add to the map
@@ -114,7 +106,8 @@ export default function ExploreMap() {
                     view: viewRef,
                     container: 'layer-list-container',
                     listItemCreatedFunction: addVisualizationOptions,
-                    visible: false
+                    visible: false,
+                    dragEnabled: true
                 })
     
                 layerList.on("trigger-action", (event) => {
