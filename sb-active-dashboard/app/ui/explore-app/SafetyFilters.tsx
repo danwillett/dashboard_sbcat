@@ -17,16 +17,50 @@ import TimeInterval from "@arcgis/core/time/TimeInterval";
 
 
 // mui
-import { FormControl, InputLabel, MenuItem, Slider, Box, Typography, FormControlLabel, Checkbox } from "@mui/material";
+import { FormControl, FormGroup, InputLabel, MenuItem, Slider, Box, Typography, FormControlLabel, Checkbox } from "@mui/material";
 import Grid from "@mui/material/Grid2"
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 
-
+type Filters = {
+    timeOfDay: string | null,
+    dayOfWeek: string | null,
+    incidentType: string | null,
+    dataSource: string | null
+  };
 
 // changes size visualVariables of counts and incidents
 export default function SafetyFilters() {
 
     const { incidentGroupLayer, viewRef, mapRef } = useMapContext()
+
+    const [ filters, setFilters ] = useState<Filters>({
+        timeOfDay: null,
+        dayOfWeek: null,
+        incidentType: null,
+        dataSource: null
+    });
+    const createFilter = async () => {
+        const filterParams = Object.values(filters)
+        const usableFilters = filterParams.filter((val) => val !== null)
+        const filterStr = usableFilters.join(' AND ')
+ 
+        // filter incidents by day of week
+        if (incidentGroupLayer !== null && mapRef !== null && viewRef !== null) {
+            const safetyGroup = mapRef.allLayers.find((layer): layer is GroupLayer => layer.title === "Safety" && layer.type === "group")
+            if (safetyGroup) {
+                const groupIncidentView = await viewRef?.whenLayerView(incidentGroupLayer) as GroupLayerView;
+                const incidentLayerViews = groupIncidentView.layerViews
+                incidentLayerViews.map((incidentView: FeatureLayerView) => {
+                    incidentView.filter = new FeatureFilter({
+                        where: filterStr
+                    })
+                                        
+                })
+                
+            }
+        }
+
+    }
 
     // Time of day filters
     // Slider and select UI
@@ -146,19 +180,10 @@ export default function SafetyFilters() {
     // time of day filter
     const filterTOD = async () => {
         const todFilter = `EXTRACT(HOUR FROM timestamp) BETWEEN ${todValue[0]} AND ${todValue[1]}`
-        if (incidentGroupLayer !== null && mapRef !== null && viewRef !== null) {
-            const safetyGroup = mapRef.allLayers.find((layer): layer is GroupLayer => layer.title === "Safety" && layer.type === "group")
-            if (safetyGroup) {
-                const groupIncidentView = await viewRef?.whenLayerView(incidentGroupLayer) as GroupLayerView;
-                const incidentLayerViews = groupIncidentView.layerViews
-                incidentLayerViews.map((incidentView: FeatureLayerView) => {
-                    incidentView.filter = new FeatureFilter({
-                        where: todFilter
-                    })
-                })
-                
-            }
-        }
+        setFilters({
+            ...filters,
+            timeOfDay: todFilter
+        })
     }
 
     useEffect(() => {
@@ -169,7 +194,7 @@ export default function SafetyFilters() {
     // Day of week filters
     // Day of week UI
     // weekdays
-    const [wdChecked, setWdChecked] = useState([true, true, true, true, true]);
+    const [wdChecked, setWdChecked] = useState([false, false, false, false, false]);
     const handleChangeWeekdays= (event: React.ChangeEvent<HTMLInputElement>) => {
         setWdChecked([event.target.checked, event.target.checked, event.target.checked, event.target.checked, event.target.checked]);
     };
@@ -213,7 +238,7 @@ export default function SafetyFilters() {
         </Box>
       );
     // weekends
-    const [weChecked, setWeChecked] = useState([true, true]);
+    const [weChecked, setWeChecked] = useState([false, false]);
     const handleChangeWeekends = (event: React.ChangeEvent<HTMLInputElement>) => {
         setWeChecked([event.target.checked, event.target.checked])
     };
@@ -240,31 +265,92 @@ export default function SafetyFilters() {
     const filterDOW = async () => {
 
         // create day of week filter from checkbox form
+        let weekdayFilter = null
         const checks = [weChecked[1], ...wdChecked, weChecked[0]]
         const weekdays = [0, 1, 2, 3, 4, 5, 6] // ordered sunday (0) through saturday (6)
-        const included_days = weekdays.filter((_, i) => checks[i])
-        const weekdayFilter = `dow IN (${included_days.join(", ")})`
-
-        // filter incidents by day of week
-        if (incidentGroupLayer !== null && mapRef !== null && viewRef !== null) {
-            const safetyGroup = mapRef.allLayers.find((layer): layer is GroupLayer => layer.title === "Safety" && layer.type === "group")
-            if (safetyGroup) {
-                const groupIncidentView = await viewRef?.whenLayerView(incidentGroupLayer) as GroupLayerView;
-                const incidentLayerViews = groupIncidentView.layerViews
-                incidentLayerViews.map((incidentView: FeatureLayerView) => {
-                    incidentView.filter = new FeatureFilter({
-                        where: weekdayFilter
-                    })
-                })
-                
-            }
-        }
-        
+        let included_days = weekdays.filter((_, i) => checks[i])
+        if (included_days.length !== 0) {
+            weekdayFilter = `dow IN (${included_days.join(", ")})`
+        } 
+        setFilters({
+            ...filters,
+            dayOfWeek: weekdayFilter
+            
+        }) 
     }
     
     useEffect(() => {
         filterDOW()
     }, [wdChecked, weChecked])
+
+    // Incident Type filtering
+    const [incidentTypes, setIncidentTypes] = useState({
+        "Collision": false,
+        "Near Collision": false
+    })
+
+    const handleTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setIncidentTypes({
+            ...incidentTypes,
+            [event.target.name]: event.target.checked
+        })
+    }
+
+    const filterType = () => {
+        if (incidentTypes["Collision"] !== incidentTypes["Near Collision"]) {
+            const trueType = Object.entries(incidentTypes).find(([_, val]) => Boolean(val))?.[0]
+            const typeFilter = `incident_type = '${trueType}'`
+            setFilters({
+                ...filters,
+                incidentType: typeFilter
+            })
+        } else {
+            setFilters({
+                ...filters,
+                incidentType: null
+            })
+        }
+    }
+    useEffect(() => {
+        filterType()
+    }, [incidentTypes])
+
+    // Data Source filtering
+    const [dataSources, setDataSources] = useState({
+        "SWITRS": false,
+        "BikeMaps": false
+    })
+
+    const handleSourceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setDataSources({
+            ...dataSources,
+            [event.target.name]: event.target.checked
+        })
+    }
+
+    const filterSource = () => {
+        if (dataSources.SWITRS !== dataSources.BikeMaps) {
+            const trueSource = Object.entries(dataSources).find(([_, val]) => Boolean(val))?.[0]
+            const sourceFilter = `data_source = '${trueSource}'`
+            setFilters({
+                ...filters,
+                dataSource: sourceFilter
+            })
+        } else {
+            setFilters({
+                ...filters,
+                dataSource: null
+            })
+        }
+    }
+    useEffect(() => {
+        filterSource()
+    }, [dataSources])
+
+
+    useEffect(() => {
+        createFilter()
+    }, [filters])
 
 
     return (
@@ -272,8 +358,8 @@ export default function SafetyFilters() {
 
             <Box sx={{width: '100%'}}>
 
-                <Typography variant='body1' align="left" my={2} sx={{width: '100%', px: '20px'}}>Day of Week</Typography>
-                
+                {/* Day of the week */}
+                <Typography variant='body1' align="left" my={1} sx={{width: '100%'}}>Filter by day of the week</Typography>
                 <FormControl fullWidth sx={{mb: 3}}>
                     <Box sx={{display: 'flex', width: '100%', justifyContent: 'space-around'}}>
                         
@@ -309,7 +395,9 @@ export default function SafetyFilters() {
                     
                 </FormControl>
                 
-                <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', width: '100%'}}>
+                {/* Time of day */}
+                <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', width: '100%', mb: 3}}>
+                    <Typography variant='body1' align="left" my={2} sx={{width: '100%'}}>Filter by time of day</Typography>
                     <FormControl >
                         <InputLabel id="tod-start-select-label">Start</InputLabel>
                         <Select
@@ -320,7 +408,7 @@ export default function SafetyFilters() {
                             onChange={handleTodStartChange}
                         >
                             {todLabels.map((hour) => (
-                                <MenuItem value={hour.value}>{hour.label}</MenuItem>
+                                <MenuItem key={hour.value} value={hour.value}>{hour.label}</MenuItem>
                             ))}
                         </Select>
                     </FormControl>
@@ -334,27 +422,51 @@ export default function SafetyFilters() {
                             onChange={handleTodEndChange}
                         >
                             {todLabelsEnd.map((hour) => (
-                                <MenuItem value={hour.value}>{hour.label}</MenuItem>
+                                <MenuItem key={hour.value} value={hour.value}>{hour.label}</MenuItem>
                             ))}
                             
                         </Select>
                     </FormControl>
-                    <Slider
-                        getAriaLabel={() => 'Time of day'}
-                        value={todValue}
-                        step={1}
-                        min={0}
-                        max={23}
-                        marks={todMarks}
-                        onChange={handleTodChange}
-                        valueLabelDisplay="auto"
-                        valueLabelFormat={todValueText}
-                        getAriaValueText={todValueText}
-                        sx={{width: '100%'}}
-                        />
+                    <Box mt={4} sx={{width: '100%'}}>
+                        <Slider
+                            getAriaLabel={() => 'Time of day'}
+                            value={todValue}
+                            step={1}
+                            min={0}
+                            max={23}
+                            marks={todMarks}
+                            onChange={handleTodChange}
+                            valueLabelDisplay="auto"
+                            valueLabelFormat={todValueText}
+                            getAriaValueText={todValueText}
+                            sx={{width: '100%'}}
+                            
+                            />
+                    </Box>
 
                 </Box>      
+                
+                {/* Type of incident */}
+                <Typography variant='body1' align="left" my={1} sx={{width: '100%'}}>Filter by type of incident</Typography>
+                <FormControl fullWidth sx={{mb: 3}}>
+                    <FormGroup>
+                        <FormControlLabel control={<Checkbox checked={incidentTypes["Collision"]} onChange={handleTypeChange} name="Collision" />} label="Collision" />
+                        <FormControlLabel control={<Checkbox checked = {incidentTypes["Near Collision"]} onChange={handleTypeChange} name="Near Collision" />} label="Near Collision" />
+                    </FormGroup>
 
+                </FormControl>
+                
+                {/* Data Source */}
+                <Typography variant='body1' align="left" my={1} sx={{width: '100%'}}>Filter by data source</Typography>
+                <FormControl fullWidth sx={{mb: 3}}>
+                    <FormGroup>
+                        <FormControlLabel control={<Checkbox checked={dataSources.SWITRS} onChange={handleSourceChange} name="SWITRS" />} label="SWITRS" />
+                        <FormControlLabel control={<Checkbox checked={dataSources.BikeMaps} onChange={handleSourceChange} name="BikeMaps" />} label="BikeMaps" />
+                    </FormGroup>
+
+                </FormControl>
+
+                
 
             </Box>
             

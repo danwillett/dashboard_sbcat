@@ -159,16 +159,14 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
           {
             type: "fields",
             fieldInfos: [
+            
               {
                 fieldName: "incident_type",
                 label: "Type of Incident"
               },
               {
-                fieldName: "timestamp",
-                label: "Date & Time",
-                format: {
-                    dateFormat: 'long-date-short-time'
-                }
+                fieldName: "expression/timestamp",
+                label: "Date & Time"
               },
               {
                 fieldName: "expression/dow",
@@ -189,6 +187,16 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
         }],
             
         expressionInfos: [
+            {
+                name: "timestamp",
+                title: "Date & Time (PST)",
+                expression: `
+                    var utcDate = $feature.timestamp;
+                    var offset = +7; // PST is UTC-8, PDT is UTC-7 — adjust as needed
+                    var localDate = DateAdd(utcDate, offset, 'hours');
+                    return Text(localDate, 'MMM D, YYYY, h:mm a');
+                `
+            },
             {
                 name: "dow",
                 title: "Day of Week",

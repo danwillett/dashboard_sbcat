@@ -99,6 +99,7 @@ export default function ExploreMap() {
                 center: [-120, 34.7],
                 zoom: 9
             })
+            
 
             if (censusGroupLayer !== null && countGroupLayer !== null && incidentGroupLayer !== null){
                 console.log(censusGroupLayer)
