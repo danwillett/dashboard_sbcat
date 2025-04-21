@@ -7,6 +7,7 @@ import { DemographicChecks, SafetyChecks, VolumeChecks } from "@/app/lib/explore
 
 // custom components
 import TimeFilterPanel from "./TimeFilterPanel";
+import SafetyFilters from "./SafetyFilters";
 
 // mui
 import { styled } from '@mui/material/styles';
@@ -99,9 +100,11 @@ export default function FilterTabs(props: FilterTabsProps) {
     return (
         <Box sx={{ width: '100%' }}>
 
+          {/* Time slider */}
+          <Typography variant='body2' align="left" my={2} sx={{width: '100%', px: '20px'}} >Select a time range.</Typography>
           <div id="explore-time-slider-container"></div>
          
-          
+         {/* Individual filter panels */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={value} onChange={handleChange} aria-label="filtering options">
                   <StyledTab label="Safety" {...a11yProps(0)} />
@@ -109,11 +112,12 @@ export default function FilterTabs(props: FilterTabsProps) {
                   <StyledTab label="Demographics" {...a11yProps(2)} />   
               </Tabs>
           </Box>
+
           <CustomTabPanel value={value} index={0}>
               { safetyFalse ? (
                   <Typography variant="body2">Add Safety data to the map <strong>(Step 1)</strong></Typography>
               ): (
-                  <TimeFilterPanel />
+                  <SafetyFilters />
                   
               )}
               

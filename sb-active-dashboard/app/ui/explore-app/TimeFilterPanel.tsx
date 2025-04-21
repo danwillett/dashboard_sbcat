@@ -26,20 +26,7 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 export default function TimeFilterPanel() {
 
     const { countGroupLayer, incidentGroupLayer, viewRef, timeSlider, mapRef } = useMapContext()
-    
-    useEffect(() => {
-        if (timeSlider){
-            timeSlider.container = 'explore-time-slider-container'
-        }
-        return () => {
-            if (timeSlider){
-            timeSlider.container = null
-        }
-    }
-
-    })
-    
-            
+                
 
     // Day of week filters
     // weekdays

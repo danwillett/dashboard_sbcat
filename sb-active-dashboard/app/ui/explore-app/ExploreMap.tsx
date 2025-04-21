@@ -139,7 +139,7 @@ export default function ExploreMap() {
                                 
                 const timeSlider = new TimeSlider({
                     view: viewRef,
-                    // container: 'explore-time-slider-container',
+                    container: 'explore-time-slider-container',
                     mode: 'time-window',
                     timeZone: 'system',
                     stops: {
