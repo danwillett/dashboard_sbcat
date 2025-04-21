@@ -6,7 +6,6 @@ import React, {useState, useEffect} from "react"
 import { DemographicChecks, SafetyChecks, VolumeChecks } from "@/app/lib/explore-app/types"
 
 // custom components
-import TimeFilterPanel from "./TimeFilterPanel";
 import SafetyFilters from "./SafetyFilters";
 
 // mui
