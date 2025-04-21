@@ -99,7 +99,8 @@ export default function FilterTabs(props: FilterTabsProps) {
     return (
         <Box sx={{ width: '100%' }}>
 
-          <TimeFilterPanel />
+          <div id="explore-time-slider-container"></div>
+         
           
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={value} onChange={handleChange} aria-label="filtering options">
@@ -112,8 +113,8 @@ export default function FilterTabs(props: FilterTabsProps) {
               { safetyFalse ? (
                   <Typography variant="body2">Add Safety data to the map <strong>(Step 1)</strong></Typography>
               ): (
-                  // <TimeFilterPanel />
-                  <div>hey</div>
+                  <TimeFilterPanel />
+                  
               )}
               
           </CustomTabPanel>

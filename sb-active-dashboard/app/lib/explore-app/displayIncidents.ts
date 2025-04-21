@@ -69,11 +69,12 @@ const pointRenderer = new UniqueValueRenderer({
 })
 
 const clusterRenderer = new SimpleRenderer({
+      
     symbol: new SimpleMarkerSymbol({
-        
+
         size: 6,
         color: 'red'
-    })
+    })  
         
 })
 const clusterReduction = new FeatureReductionCluster({
@@ -129,8 +130,8 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
     let graphic
 
     incidentFeatures.forEach((incident) => {
-        // const timestamp = new Date(incident.attributes.timestamp)
-        // incident.attributes.timestamp = timestamp
+        const timestamp = new Date(incident.attributes.timestamp)
+        incident.attributes.dow = timestamp.getDay()
         graphic = new Graphic({
             geometry: incident.geometry,
             attributes: incident.attributes
@@ -148,11 +149,11 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
         new Field({ name: "pedestrian", type: "double" }),
         new Field({ name: "bicyclist", type: "double" }),
         new Field({ name: "timestamp", type: "date" }),
-        new Field({ name: "new_field", type: "string" }) // Add your new field here!
+        new Field({ name: "dow", type: "double" })
     ];
 
     const popupTemplate = {
-        // autocasts as new PopupTemplate()
+
         title: `{incident_type} Safety Incident`,
         content: [
           {
@@ -169,21 +170,14 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
                     dateFormat: 'long-date-short-time'
                 }
               },
-            //   {
-            //     fieldName: "expression/pedestrianStatus",
-            //     label: "Pedestrian Involved"
-            //   },
-            //   {
-            //     fieldName: "expression/bicyclistStatus",
-            //     label: "Bicyclist Involved"
-            //   },
               {
-                fieldName: "pedestrian",
-                label: "Pedestrian Involved"
+                fieldName: "expression/dow",
               },
               {
-                fieldName: "bicyclist",
-                label: "Bicyclist Involved"
+                fieldName: "expression/pedestrianStatus",
+              },
+              {
+                fieldName: "expression/bicyclistStatus",
               },
               {
                 fieldName: "data_source",
@@ -192,21 +186,26 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
               
             
             ],
-            // expressionInfos: [
-            //     {
-            //         name: "pedestrianStatus",
-            //         title: "Pedestrian Involved",
-            //         // expression: "IIF($feature.pedestrian == 1, 'True', 'False')"
-            //         expression: "$feature.pedestrian"
-            //     },
-            //     {
-            //         name: "bicyclistStatus",
-            //         title: "Bicyclist Involved",
-            //         expression: "IIF($feature.bicyclist == 1, 'True', 'False')"
-            //     }
-            // ]
-          }
+        }],
+            
+        expressionInfos: [
+            {
+                name: "dow",
+                title: "Day of Week",
+                expression: "When( $feature.dow == 0, 'Sunday', $feature.dow == 1, 'Monday', $feature.dow == 2, 'Tuesday', $feature.dow == 3, 'Wednesday', $feature.dow == 4, 'Thursday', $feature.dow == 5, 'Friday', $feature.dow == 6, 'Saturday', 'NA')"
+            },
+            {
+                name: "pedestrianStatus",
+                title: "Pedestrian Involved",
+                expression: "IIF($feature.pedestrian == 1, 'Yes', 'No')"
+            },
+            {
+                name: "bicyclistStatus",
+                title: "Bicyclist Involved",
+                expression: "IIF($feature.bicyclist == 1, 'Yes', 'No')"
+            }
         ]
+          
       };
     
     const layer = new FeatureLayer({
@@ -264,7 +263,7 @@ export function changeIncidentRenderer(groupLayer: __esri.GroupLayer, type: stri
 export async function createIncidentGroupLayer() {
     
     
-    const incidentsLayer = new FeatureLayer({url: 'https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Saftey_Incidents/FeatureServer'})
+    const incidentsLayer = new FeatureLayer({url: 'https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Safety_Incidents/FeatureServer'})
 
     // const combinedIncidentsLayer = await createIncidentGraphics(incidentsLayer, "", "All Incidents")
     const bikeIncidentsLayer = await createIncidentGraphics(incidentsLayer, "bicyclist = 1", "Biking Incidents")

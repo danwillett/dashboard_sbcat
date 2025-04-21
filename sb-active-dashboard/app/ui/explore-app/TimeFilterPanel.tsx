@@ -7,8 +7,13 @@ import { useMapContext } from "@/app/lib/context/MapContext";
 // arcgis js
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
+import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import FeatureLayerView from "@arcgis/core/views/layers/FeatureLayerView";
+import GroupLayerView from "@arcgis/core/views/layers/GroupLayerView";
 import FeatureEffect from "@arcgis/core/layers/support/FeatureEffect";
+import FeatureFilter from "@arcgis/core/layers/support/FeatureFilter";
+import TimeSlider from "@arcgis/core/widgets/TimeSlider"
+import TimeInterval from "@arcgis/core/time/TimeInterval";
 
 // mui
 import { FormControl, InputLabel, MenuItem, Box, Typography, FormControlLabel, Checkbox } from "@mui/material";
@@ -20,12 +25,25 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 // changes size visualVariables of counts and incidents
 export default function TimeFilterPanel() {
 
-    const { countGroupLayer, incidentGroupLayer, timeSlider, viewRef, mapRef } = useMapContext()
+    const { countGroupLayer, incidentGroupLayer, viewRef, timeSlider, mapRef } = useMapContext()
+    
+    useEffect(() => {
+        if (timeSlider){
+            timeSlider.container = 'explore-time-slider-container'
+        }
+        return () => {
+            if (timeSlider){
+            timeSlider.container = null
+        }
+    }
 
+    })
+    
+            
 
     // Day of week filters
     // weekdays
-    const [wdChecked, setWdChecked] = React.useState([true, true, true, true, true]);
+    const [wdChecked, setWdChecked] = useState([true, true, true, true, true]);
     const handleChangeWeekdays= (event: React.ChangeEvent<HTMLInputElement>) => {
         setWdChecked([event.target.checked, event.target.checked, event.target.checked, event.target.checked, event.target.checked]);
     };
@@ -69,7 +87,7 @@ export default function TimeFilterPanel() {
         </Box>
       );
     // weekends
-    const [weChecked, setWeChecked] = React.useState([true, true]);
+    const [weChecked, setWeChecked] = useState([true, true]);
     const handleChangeWeekends = (event: React.ChangeEvent<HTMLInputElement>) => {
         setWeChecked([event.target.checked, event.target.checked])
     };
@@ -93,18 +111,45 @@ export default function TimeFilterPanel() {
       );
 
     const filterDOW = async () => {
+
+        // create day of week filter from checkbox form
+        const checks = [weChecked[1], ...wdChecked, weChecked[0]]
+        const weekdays = [0, 1, 2, 3, 4, 5, 6] // ordered sunday (0) through saturday (6)
+        const included_days = weekdays.filter((_, i) => checks[i])
+        const weekdayFilter = `dow IN (${included_days.join(", ")})`
+
+        // filter incidents by day of week
         if (incidentGroupLayer !== null && mapRef !== null && viewRef !== null) {
-            const safetyGroup = mapRef.allLayers.find((layer) => layer.title === "Safety")
+            const safetyGroup = mapRef.allLayers.find((layer): layer is GroupLayer => layer.title === "Safety" && layer.type === "group")
             if (safetyGroup) {
-                const groupIncidentView = await viewRef?.whenLayerView(incidentGroupLayer)
-                const incidentLayerViews = groupIncidentView.layerViews.items
-                console.log("safety views:", incidentLayerViews)
+                const groupIncidentView = await viewRef?.whenLayerView(incidentGroupLayer) as GroupLayerView;
+                const incidentLayerViews = groupIncidentView.layerViews
+                incidentLayerViews.map((incidentView: FeatureLayerView) => {
+                    incidentView.filter = new FeatureFilter({
+                        where: weekdayFilter
+                    })
+                })
+                
             }
         }
+        
+        // filter count sites by day of week
+        // if (countGroupLayer !== null && mapRef !== null && viewRef !== null) {
+        //     const countGroup = mapRef.allLayers.find((layer): layer is GroupLayer => layer.title === "Volumes" && layer.type === "group")
+        //     if (countGroup) {
+        //         const groupCountView = await viewRef?.whenLayerView(countGroupLayer) as GroupLayerView;
+        //         const countLayerViews = groupCountView.layerViews
+        //         countLayerViews.map((countView: FeatureLayerView) => {
+        //             countView.filter = new FeatureFilter({
+        //                 where: weekdayFilter
+        //             })
+        //         })
+
+        //     }
+        // }
     }
     
     useEffect(() => {
-        console.log(mapRef?.allLayers)
         filterDOW()
     }, [wdChecked, weChecked])
 
@@ -242,7 +287,7 @@ export default function TimeFilterPanel() {
 
             </Box>
             <Typography variant='body2' align="left" my={2} sx={{width: '100%', px: '20px'}} >Select a year range</Typography>
-            <div id="explore-time-slider-container"></div>
+            
             
         </Box>
         
