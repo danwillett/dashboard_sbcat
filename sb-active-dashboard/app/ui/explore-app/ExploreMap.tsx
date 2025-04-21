@@ -6,7 +6,6 @@ import { useMapContext } from "@/app/lib/context/MapContext";
 
 // import custom components
 import ExploreMenu from "./ExploreMenu";
-import FilterPanel from "./TimeFilterPanel";
 
 // import custom functions
 import { createCensusGroupLayer } from "@/app/lib/explore-app/displayCensus";
