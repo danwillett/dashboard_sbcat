@@ -7,6 +7,7 @@ import { DemographicChecks, SafetyChecks, VolumeChecks } from "@/app/lib/explore
 
 // custom components
 import SafetyFilters from "./SafetyFilters";
+import VolumeFilters from "./VolumeFilters";
 
 // mui
 import { styled } from '@mui/material/styles';
@@ -125,8 +126,7 @@ export default function FilterTabs(props: FilterTabsProps) {
             { volumeFalse ? (
                     <Typography variant="body2">Add Volume data to the map <strong>(Step 1)</strong></Typography>
                 ): (
-                    // <TimeFilterPanel />
-                    <div>hey</div>
+                    <VolumeFilters />
                 )}
           </CustomTabPanel>
           <CustomTabPanel value={value} index={2}>

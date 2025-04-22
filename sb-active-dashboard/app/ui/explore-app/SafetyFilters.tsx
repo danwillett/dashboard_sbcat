@@ -5,20 +5,14 @@ import React, { useState, useEffect, useRef } from "react";
 import { useMapContext } from "@/app/lib/context/MapContext";
 
 // arcgis js
-import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
-import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
+
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import FeatureLayerView from "@arcgis/core/views/layers/FeatureLayerView";
 import GroupLayerView from "@arcgis/core/views/layers/GroupLayerView";
-import FeatureEffect from "@arcgis/core/layers/support/FeatureEffect";
 import FeatureFilter from "@arcgis/core/layers/support/FeatureFilter";
-import TimeSlider from "@arcgis/core/widgets/TimeSlider"
-import TimeInterval from "@arcgis/core/time/TimeInterval";
-
 
 // mui
 import { FormControl, FormGroup, InputLabel, MenuItem, Slider, Box, Typography, FormControlLabel, Checkbox } from "@mui/material";
-import Grid from "@mui/material/Grid2"
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 
 type Filters = {
@@ -268,9 +262,9 @@ export default function SafetyFilters() {
         let weekdayFilter = null
         const checks = [weChecked[1], ...wdChecked, weChecked[0]]
         const weekdays = [0, 1, 2, 3, 4, 5, 6] // ordered sunday (0) through saturday (6)
-        let included_days = weekdays.filter((_, i) => checks[i])
-        if (included_days.length !== 0) {
-            weekdayFilter = `dow IN (${included_days.join(", ")})`
+        let includedDays = weekdays.filter((_, i) => checks[i])
+        if (includedDays.length !== 0) {
+            weekdayFilter = `dow IN (${includedDays.join(", ")})`
         } 
         setFilters({
             ...filters,

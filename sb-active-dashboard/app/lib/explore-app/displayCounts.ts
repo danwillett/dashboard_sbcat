@@ -307,17 +307,17 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
         }),
         new Field({
             name: "all_aadt",
-            alias: "Everyday AADT",
+            alias: "All Days",
             type: "double"
         }),
         new Field({
             name: "weekday_aadt",
-            alias: "Weekday AADT",
+            alias: "Weekdays",
             type: "double"
         }),
         new Field({
             name: "weekend_aadt",
-            alias: "Weekend AADT",
+            alias: "Weekends",
             type: "double"
         }),
 

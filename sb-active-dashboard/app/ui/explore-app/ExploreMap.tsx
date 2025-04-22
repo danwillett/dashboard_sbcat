@@ -105,7 +105,7 @@ export default function ExploreMap() {
                 const layerList = new LayerList({
                     view: viewRef,
                     container: 'layer-list-container',
-                    listItemCreatedFunction: addVisualizationOptions,
+                    // listItemCreatedFunction: addVisualizationOptions,
                     visible: false,
                     dragEnabled: true
                 })
@@ -187,7 +187,7 @@ export default function ExploreMap() {
             </Box>
             
             {/* Widget Panel */}
-            <Box sx={{
+            {/* <Box sx={{
                 display: showLegend || showLayerList || showFilter || showPrint ? 'flex' : 'none',  // Always render, visibility controlled via `display`
                 flexDirection: 'column', // Stack vertically first
                 flexWrap: 'wrap', // Wrap into another column when needed
@@ -198,7 +198,7 @@ export default function ExploreMap() {
                 flexShrink: 3,
                 maxHeight: "calc(100vh - 70px)", // Prevents it from growing indefinitely
                 maxWidth: "none",
-                }}>
+                }}> */}
                 
                       
                 {/* Layer List Panel */}
@@ -235,7 +235,7 @@ export default function ExploreMap() {
                     <div id="print-container"></div>
                 </Grid> */}
 
-            </Box>
+            {/* </Box> */}
             <Box component="main" sx={{ flexGrow: 1, flexShrink: 1 }}>
                 <ArcgisMap
                     basemap="topo-vector"
