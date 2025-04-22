@@ -118,8 +118,9 @@ export default function SafetyMap() {
                        "https://spatialcenter.grit.ucsb.edu/server/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task"
                   });
                 
-
+                
                 // time filter
+                
                 const timeSlider = new TimeSlider({
                     container: 'safety-time-slider-container',
                     mode: 'time-window',
@@ -130,15 +131,20 @@ export default function SafetyMap() {
                             unit: "years"
                         })
                     },
-                    fullTimeExtent: {
-                        start: heatmapLayer.timeInfo.fullTimeExtent.start,
-                        end: heatmapLayer.timeInfo.fullTimeExtent.end
-                    },
-                    timeExtent: {
-                        start: heatmapLayer.timeInfo.fullTimeExtent.start,
-                        end: heatmapLayer.timeInfo.fullTimeExtent.end
-                    }
+                
                 })
+                if (heatmapLayer.timeInfo?.fullTimeExtent) {
+                    const { start, end } = heatmapLayer.timeInfo.fullTimeExtent;
+                   
+                    timeSlider.fullTimeExtent = {
+                        start: start,
+                        end: end
+                    }
+                    timeSlider.timeExtent = {
+                        start: start,
+                        end: end
+                    }
+                }
                 setTimeSlider(timeSlider)
 
                 setShowLegend(true)
