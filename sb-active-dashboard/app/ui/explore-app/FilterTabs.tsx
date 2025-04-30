@@ -8,6 +8,7 @@ import { DemographicChecks, SafetyChecks, VolumeChecks } from "@/app/lib/explore
 // custom components
 import SafetyFilters from "./SafetyFilters";
 import VolumeFilters from "./VolumeFilters";
+import DemographicFilters from "./DemographicFilters";
 
 // mui
 import { styled } from '@mui/material/styles';
@@ -131,10 +132,10 @@ export default function FilterTabs(props: FilterTabsProps) {
           </CustomTabPanel>
           <CustomTabPanel value={value} index={2}>
               {/* <TimeFilterPanel /> */}
-              { demographicChecks ? (
+              { demographicsFalse ? (
                   <Typography variant="body2">Add Demographic data to the map <strong>(Step 1)</strong></Typography>
               ): (
-                <div>sliders for salary ranges?</div>
+                <DemographicFilters  />
               )}
               
           </CustomTabPanel>

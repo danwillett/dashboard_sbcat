@@ -117,14 +117,12 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
     incidentsQuery.outFields = ["*"]
     incidentsQuery.maxRecordCountFactor = 5
 
-    // paginate query since over 2000 records
-    let queryResultLength = 10000
+    
     let incidentFeatures: Graphic[] = []
-    while (queryResultLength === 10000) {
-        const queryResults: FeatureSet = await incidentPoints.queryFeatures(incidentsQuery)
-        incidentFeatures.push(...queryResults.features)
-        queryResultLength = queryResults.features.length
-    }
+    const queryResults: FeatureSet = await incidentPoints.queryFeatures(incidentsQuery)
+    incidentFeatures.push(...queryResults.features)
+
+    
     
     const graphics: Graphic[] = []
     let graphic

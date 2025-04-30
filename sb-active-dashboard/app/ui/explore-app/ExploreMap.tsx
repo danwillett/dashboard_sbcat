@@ -6,10 +6,12 @@ import { useMapContext } from "@/app/lib/context/MapContext";
 
 // import custom components
 import ExploreMenu from "./ExploreMenu";
+import ExploreDataDisplay from "./ExploreDataDisplay";
 
 // import custom functions
 import { createCensusGroupLayer } from "@/app/lib/explore-app/displayCensus";
 import { createCountGroupLayer } from "@/app/lib/explore-app/displayCounts";
+import { createModeledVolumeLayer } from "@/app/lib/explore-app/displayModeledVolumes";
 import { createIncidentGroupLayer } from "@/app/lib/explore-app/displayIncidents";
 import { addVisualizationOptions } from "@/app/lib/utils";
 import { changeIncidentRenderer } from "@/app/lib/explore-app/displayIncidents";
@@ -74,6 +76,7 @@ export default function ExploreMap() {
             const createLayers = async () => {
                 const censusGroupLayer = await createCensusGroupLayer()
                 const countGroupLayer = await createCountGroupLayer()
+                // const modeledVolumeLayer = await createModeledVolumeLayer()
                 const incidentGroupLayer = await createIncidentGroupLayer()
                                 
                 setCensusGroupLayer(censusGroupLayer)
@@ -164,7 +167,7 @@ export default function ExploreMap() {
                 setShowPrint(false)
                 setShowWidgetPanel(true)
 
-                viewRef.ui.add([layerList, legend], "top-right")
+                // viewRef.ui.add([layerList, legend], "top-right")
             }
         }
         
@@ -245,6 +248,11 @@ export default function ExploreMap() {
                 </ArcgisMap>
                
             </Box>
+            
+            <Box sx={{height: "100%"}}>
+                <ExploreDataDisplay />
+            </Box>
+            
             
         </Box>
     )

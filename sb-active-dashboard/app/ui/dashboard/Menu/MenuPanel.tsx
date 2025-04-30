@@ -17,10 +17,7 @@ const DrawerFooter = styled('div')(({ theme }) => ({
 const DrawerBox = styled(Box, { shouldForwardProp: (prop) => prop !== "open" })<
   { open?: boolean; color?: keyof Theme["palette"] }
 >(({ theme, open }) => {
-  // Ensuring that 'color' is a valid palette key.
   
-  
-
   return {
     width: open ? drawerWidth : `calc(${theme.spacing(7)} + 1px)`,
     transition: theme.transitions.create("width", {
