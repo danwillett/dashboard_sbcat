@@ -137,7 +137,6 @@ async function createIncidentGraphics(incidentPoints: __esri.FeatureLayer, query
         graphics.push(graphic)
     })
 
-    console.log(graphics)
     const layerFields = [
         new Field({ name: "OBJECTID", type: "oid" }),
         new Field({ name: "data_source", type: "string" }),
@@ -245,14 +244,12 @@ export function changeIncidentRenderer(groupLayer: __esri.GroupLayer, type: stri
                 layer.featureReduction = null as unknown as FeatureReductionCluster;
                 layer.renderer = heatmapRenderer
                 layer.opacity = 0.6
-                console.log(layer)
                 
             } else if (type === "simple") {
                 layer.featureReduction = null as unknown as FeatureReductionCluster;
                 layer.renderer = pointRenderer
                 layer.opacity = 1
                 
-                console.log(layer)
                
             } else if (type === "cluster") {
                 layer.renderer = clusterRenderer
@@ -284,7 +281,6 @@ export async function createIncidentGroupLayer() {
         title: "Safety",
         visibilityMode: "exclusive"
     })
-    console.log(incidentGroupLayer)
     
     return incidentGroupLayer
 

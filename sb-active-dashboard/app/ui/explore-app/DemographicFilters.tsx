@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 
 // map context and types
 import { useMapContext } from "@/app/lib/context/MapContext";
+import { DemographicChecks} from "@/app/lib/explore-app/types"
 
 // arcgis js
 
@@ -15,22 +16,64 @@ import { SimpleRenderer } from "@arcgis/core/renderers";
 import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
 
 // mui
-import { FormControl, FormLabel, FormGroup, Radio, RadioGroup, InputLabel, MenuItem, Slider, Box, Typography, FormControlLabel, Checkbox } from "@mui/material";
+import { FormControl, FormLabel, FormGroup, FormHelperText, Radio, RadioGroup, InputLabel, MenuItem, Slider, Box, Typography, FormControlLabel, Checkbox } from "@mui/material";
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import ColorVariable from "@arcgis/core/renderers/visualVariables/ColorVariable";
 
 
-type Filters = {
-    timeOfDay: string | null,
-    dayOfWeek: string | null,
-    incidentType: string | null,
-    dataSource: string | null
-  };
+interface DemographicFiltersProps {
+
+    demographicChecks: DemographicChecks;
+}
 
 // changes size visualVariables of counts and incidents
-export default function DemographicFilters() {
+export default function DemographicFilters(props: DemographicFiltersProps) {
 
+    const { demographicChecks } = props
     const { censusGroupLayer, viewRef, mapRef } = useMapContext()
+
+    // Scale settings
+    const [scale, setScale] = useState<string>("Tract")
+    const handleScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newScale = (event.target as HTMLInputElement).value
+        setScale(newScale);
+        if (newScale === "Block Group") {
+            // since hispanic population data is only available at the tract level, change if at blockgroup
+            if (race === "race_hispanic") {
+                setRace("race_white")
+            }
+            // disable Education filters if at the block group (see form controls)
+
+        }
+        
+
+    }
+    const createScaleFilter = async () => {
+        let filterStr = ''
+        if (scale === "Tract") {
+            filterStr = "block_group IS NULL"
+        } else {
+            filterStr = "block_group IS NOT NULL"
+        }
+
+        if (censusGroupLayer && viewRef && mapRef) {
+            const demographicGroup = mapRef.allLayers.find((layer): layer is GroupLayer => layer.title === "Demographics" && layer.type === "group")
+            if (demographicGroup) {
+                const groupCensusView = await viewRef.whenLayerView(demographicGroup) as GroupLayerView
+                const censusLayerViews = groupCensusView.layerViews;
+                censusLayerViews.map((censusView: FeatureLayerView) => {
+                    censusView.filter = new FeatureFilter({
+                        where: filterStr
+                    })
+                })
+            }
+        }
+    }
+    useEffect(() => {
+        
+        createScaleFilter()
+
+    }, [scale])
 
     // Income settings
     const [incomeAttribute, setIncomeAttribute] = useState<string>("Median")
@@ -93,9 +136,9 @@ export default function DemographicFilters() {
         }
     })
     
-    function incometext(value: number) {
-    const index = incomeMarks.findIndex((entry) => entry.value === value)    
-    return `${incomeMarks[index].label}`; 
+    const incometext = (value: number) => {
+        const index = incomeMarks.findIndex((entry) => entry.value === value)    
+        return `${incomeMarks[index].label}`; 
     }
 
     const [incomeValue, setIncomeValue] = useState<number[]>([50, 100])
@@ -241,39 +284,206 @@ export default function DemographicFilters() {
         }
     }, [incomeValue, incomeAttribute])
 
+    // Race settings
+    const [race, setRace] = useState('race_white')
+    const handleRaceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setRace((event.target as HTMLInputElement).value)
+    }
+    useEffect(() => {
+
+        const raceRenderer = new SimpleRenderer({
+            symbol: new SimpleFillSymbol({
+                outline: {
+                    color: "lightgray",
+                    width: 0.5
+                }
+            }),
+            // label: "fill this in later",
+            visualVariables: [
+                new ColorVariable({
+                    field: race,
+                    normalizationField: "race_total",
+                    stops: [
+                        {
+                          value: 0.1,
+                          color: "#FFFCD4",
+                          label: "< 10%"
+                        },
+                        {
+                          value: 0.5,
+                          color: "#350242",
+                          label: "> 50%"
+                        }
+                    ]
+                })
+            
+            ]
+        })
+        if (censusGroupLayer && viewRef && mapRef) {
+            censusGroupLayer.layers.forEach( async (layer) => {
+                if (layer instanceof FeatureLayer) {
+                    if (layer.title === "Race") {
+                        layer.renderer = raceRenderer
+                        
+                    }
+                } 
+            })
+        }
+    }, [race])
+
+    // Education settings
+    const [education, setEducation] = useState('educ_less_high_school')
+    const handleEducationChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setEducation((event.target as HTMLInputElement).value)
+    }
+    useEffect(() => {
+        const educationRenderer = new SimpleRenderer({
+            symbol: new SimpleFillSymbol({
+                outline: {
+                    color: "lightgray",
+                    width: 0.5
+                }
+            }),
+            label: "Highest Education Level",
+            visualVariables: [
+                new ColorVariable({
+                    field: education,
+                    normalizationField: "educ_total",
+                    stops: [
+                        {
+                          value: 0.1,
+                          color: "#FFFCD4",
+                          label: "< 10%"
+                        },
+                        {
+                          value: 0.5,
+                          color: "#350242",
+                          label: "> 50%"
+                        }
+                    ]
+                })
+            
+            ]
+        })
+        if (censusGroupLayer && viewRef && mapRef) {
+            censusGroupLayer.layers.forEach( async (layer) => {
+                if (layer instanceof FeatureLayer) {
+                    if (layer.title === "Education") {
+                        layer.renderer = educationRenderer
+                        
+                    }
+                } 
+            })
+        }
+
+    }, [education])
+
     return (
         <Box>
-            <FormControl>
-                <FormLabel id="income-controlled-radio-buttons-group">Income</FormLabel>
-                <RadioGroup
-                    aria-labelledby="income-controlled-radio-buttons-group"
-                    name="controlled-radio-buttons-group"
-                    value={incomeAttribute}
-                    onChange={handleIncomeDisplay}
-                >
-                    <FormControlLabel value="Median" control={<Radio />} label="Median Income ($)" />
-                    <FormControlLabel value="Range" control={<Radio />} label="Income Range (%)" />
-                </RadioGroup>
-                
-            </FormControl>
-    
-                <Box sx={{width: '100%'}}>
-                    <Slider
-                        aria-label="Income levels"
-                        value={incomeValue}
-                        marks={incomeMarks}
-                        min={0}
-                        max={110}
-                        step={null}
-                        onChange={handleIncomeChange}
-                        getAriaValueText={incometext}
-                        valueLabelFormat={incometext}
-                        valueLabelDisplay="auto"
-                        disableSwap
-                        disabled={incomeAttribute !== "Range"}
-                    />
+            {/* Scale */}
+            <Box mb={3}>
+                <FormControl>
+                    <FormLabel id="scale-controlled-radio-buttons-group">Choose a scale</FormLabel>
+                    <RadioGroup
+                        aria-labelledby="scale-controlled-radio-buttons-group"
+                        name="scale-radio-buttons"
+                        value={scale}
+                        onChange={handleScaleChange}
+                    >
+                        <FormControlLabel value="Tract" control={<Radio />} label="Census Tract" />
+                        <FormControlLabel value="Block Group" control={<Radio />} label="Block Group" />
+
+                    </RadioGroup>
+                </FormControl>
+            </Box>
+
+            {/* Income */}
+            {demographicChecks.Income && (
+                <Box mb={3}>
+                    <FormControl>
+                        <FormLabel id="income-controlled-radio-buttons-group">Income</FormLabel>
+                        <RadioGroup
+                            aria-labelledby="income-controlled-radio-buttons-group"
+                            name="income-radio-buttons"
+                            value={incomeAttribute}
+                            onChange={handleIncomeDisplay}
+                        >
+                            <FormControlLabel value="Median" control={<Radio />} label="Median Income ($)" />
+                            <FormControlLabel value="Range" control={<Radio />} label="Income Range (%)" />
+                        </RadioGroup>
+                        
+                    </FormControl>
+            
+                    <Box sx={{width: '100%'}}>
+                        <Slider
+                            aria-label="Income levels"
+                            value={incomeValue}
+                            marks={incomeMarks}
+                            min={0}
+                            max={110}
+                            step={null}
+                            onChange={handleIncomeChange}
+                            getAriaValueText={incometext}
+                            valueLabelFormat={incometext}
+                            valueLabelDisplay="auto"
+                            disableSwap
+                            disabled={incomeAttribute !== "Range"}
+                        />
+                    </Box>
+
+                </Box>
+            )}
+
+            {/* Race */}
+            {demographicChecks.Race && (
+                <Box mb={3}>
+                    <FormControl>
+                        <FormLabel id="race-controlled-radio-buttons-group">Race</FormLabel>
+                        <FormHelperText>Hispanic data only available at the tract level</FormHelperText>
+                        <RadioGroup
+                            aria-labelledby="race-controlled-radio-buttons-group"
+                            name="race-radio-buttons"
+                            value={race}
+                            onChange={handleRaceChange}
+                        >
+                            <FormControlLabel value="race_white" control={<Radio />} label="White" />
+                            <FormControlLabel value="race_hispanic" control={<Radio />} disabled={scale === "Block Group"} label="Hispanic" />
+                            <FormControlLabel value="race_asian" control={<Radio />} label="Asian" />
+                            <FormControlLabel value="race_black" control={<Radio />} label="Black" />
+                            <FormControlLabel value="race_indigenous" control={<Radio />} label="Indigenous" />
+                            
+                        </RadioGroup>
+                    
+                    </FormControl>
                 </Box>
 
+            )}
+
+            {/* Education */}
+            {demographicChecks.Education && (
+                <Box mb={3}>
+                    <FormControl disabled={scale === "Block Group"}>
+                        <FormLabel id="education-controlled-radio-buttons-group">Education</FormLabel>
+                        <FormHelperText>Education data only available at the tract level</FormHelperText>
+                        <RadioGroup
+                            aria-labelledby="education-controlled-radio-buttons-group"
+                            name="education-radio-buttons"
+                            value={education}
+                            onChange={handleEducationChange}
+                        >
+                            <FormControlLabel value="educ_less_high_school" control={<Radio />} label="Less than High School" />
+                            <FormControlLabel value="educ_high_school" control={<Radio />} label="High School" />
+                            <FormControlLabel value="educ_some_college" control={<Radio />} label="Some College" />
+                            <FormControlLabel value="educ_college" control={<Radio />} label="College" />
+
+                        </RadioGroup>
+                    
+                    </FormControl>
+                </Box>
+            )
+
+            }
+            
         </Box>
         
 

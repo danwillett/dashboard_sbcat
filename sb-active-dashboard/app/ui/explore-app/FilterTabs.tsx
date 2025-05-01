@@ -135,7 +135,7 @@ export default function FilterTabs(props: FilterTabsProps) {
               { demographicsFalse ? (
                   <Typography variant="body2">Add Demographic data to the map <strong>(Step 1)</strong></Typography>
               ): (
-                <DemographicFilters  />
+                <DemographicFilters demographicChecks={demographicChecks}  />
               )}
               
           </CustomTabPanel>

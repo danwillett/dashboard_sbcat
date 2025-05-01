@@ -164,9 +164,8 @@ async function createCensusGraphics(geomLayer: any, tableLayer: any, layerName: 
     return layer
 }
 
-async function createIncomeGraphics() {
+async function createGraphics(tableLayer: FeatureLayer) {
     const geomLayer = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer"})
-    const tableLayer = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/1"})
 
     let tableQuery = tableLayer.createQuery();
     tableQuery.where = "" // No filter, query all records
@@ -179,7 +178,6 @@ async function createIncomeGraphics() {
     tableFeatures.forEach((feature: any) => {
         tableArr.push(feature.attributes)    
     })
-    let tableAttributes = Object.keys(tableFeatures[0].attributes)
              
     // querying census for geometry attributes
     // querying census block and tract geometries
@@ -219,6 +217,277 @@ async function createIncomeGraphics() {
         })
         graphics.push(graphic)
     }
+    console.log(graphics)
+    return graphics
+}
+
+async function createEducationLayer() {
+
+    const educationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/5"})
+    const graphics = await createGraphics(educationTable)
+
+    const layerFields = [
+        new Field({
+            name: "OBJECTID",
+            alias: "Object ID",
+            type: "oid"
+        }),
+        new Field({
+            name: "tract",
+            alias: "Tract",
+            type: "string"
+        }),
+        new Field({
+            name: "block_group",
+            alias: "Block Group",
+            type: "string"
+        }),
+        new Field({
+            name: "educ_total",
+            alias: "Total Population",
+            type: "double"
+        }),
+        new Field({
+            name: "educ_less_high_school",
+            alias: "Less than High School",
+            type: "double"
+        }),
+        new Field({
+            name: "educ_high_school",
+            alias: "High School",
+            type: "double"
+        }),
+        new Field({
+            name: "educ_some_college",
+            alias: "Some College",
+            type: "double"
+        }),
+        new Field({
+            name: "educ_college",
+            alias: "College",
+            type: "double"
+        })
+    ]
+
+    const layer = new FeatureLayer({
+        source: graphics,
+        title: "Education",
+        objectIdField: "OBJECTID",
+        fields: layerFields,
+        popupTemplate: {
+            title: "Highest Level of Education",
+            content: [
+                {
+                  type: "fields",
+                  fieldInfos: [
+                    {
+                      fieldName: "tract",
+                      label: "Tract"
+                    },
+                    {
+                      fieldName: "block_group",
+                      label: "Block Group"
+                    },
+                    {
+                    fieldName: "educ_total",
+                    label: "Total Population"
+                    },
+                    {
+                      fieldName: "educ_less_high_school",
+                      label: "Less than High School"
+                    },
+                    {
+                      fieldName: "educ_high_school",
+                      label: "High School"
+                    },
+                    {
+                      fieldName: "educ_some_college",
+                      label: "Some College"
+                    },
+                    {
+                      fieldName: "educ_college",
+                      label: "College"
+                    }
+                  ]
+                }
+              ]
+        },
+        opacity: 0.6,
+        renderer: new SimpleRenderer({
+            symbol: new SimpleFillSymbol({
+                outline: {
+                    color: "lightgray",
+                    width: 0.5
+                }
+            }),
+            label: "Highest Education Level",
+            visualVariables: [
+                new ColorVariable({
+                    field: "educ_less_high_school",
+                    normalizationField: "educ_total",
+                    stops: [
+                        {
+                          value: 0.1,
+                          color: "#FFFCD4",
+                          label: "< 10%"
+                        },
+                        {
+                          value: 0.5,
+                          color: "#350242",
+                          label: "> 50%"
+                        }
+                    ]
+                })
+            
+            ]
+        })
+    })
+
+    return layer
+}
+
+async function createRaceLayer() {
+
+    const raceTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/2"})
+
+    const graphics = await createGraphics(raceTable)
+
+    const layerFields = [
+        new Field({
+            name: "OBJECTID",
+            alias: "Object ID",
+            type: "oid"
+        }),
+        new Field({
+            name: "tract",
+            alias: "Tract",
+            type: "string"
+        }),
+        new Field({
+            name: "block_group",
+            alias: "Block Group",
+            type: "string"
+        }),
+        new Field({
+            name: "race_total",
+            alias: "Total Population",
+            type: "double"
+        }),
+        new Field({
+            name: "race_white",
+            alias: "White Population",
+            type: "double"
+        }),
+        new Field({
+            name: "race_black",
+            alias: "Black Population",
+            type: "double"
+        }),
+        new Field({
+            name: "race_indigenous",
+            alias: "Indigenous Population",
+            type: "double"
+        }),
+        new Field({
+            name: "race_asian",
+            alias: "Asian Population",
+            type: "double"
+        }),
+        new Field({
+            name: "race_hispanic",
+            alias: "Hispanic Population",
+            type: "double"
+        })
+
+
+    ]
+
+    const layer = new FeatureLayer({
+        source: graphics,
+        title: "Race",
+        objectIdField: "OBJECTID",
+        fields: layerFields,
+        popupTemplate: {
+            title: "Race ACS Data",
+            content: [
+                {
+                  type: "fields",
+                  fieldInfos: [
+                    {
+                      fieldName: "tract",
+                      label: "Tract"
+                    },
+                    {
+                      fieldName: "block_group",
+                      label: "Block Group"
+                    },
+                    {
+                      fieldName: "race_total",
+                      label: "Total Population"
+                    },
+                    {
+                      fieldName: "race_white",
+                      label: "White Population"
+                    },
+                    {
+                      fieldName: "race_black",
+                      label: "Black Population"
+                    },
+                    {
+                      fieldName: "race_indigenous",
+                      label: "Indigenous Population"
+                    },
+                    {
+                      fieldName: "race_asian",
+                      label: "Asian Population"
+                    },
+                    {
+                      fieldName: "race_hispanic",
+                      label: "Hispanic Population"
+                    }
+                  ]
+                }
+              ]
+        },
+        opacity: 0.6,
+        renderer: new SimpleRenderer({
+            symbol: new SimpleFillSymbol({
+                outline: {
+                    color: "lightgray",
+                    width: 0.5
+                }
+            }),
+            // label: "fill this in later",
+            visualVariables: [
+                new ColorVariable({
+                    field: "race_white",
+                    normalizationField: "race_total",
+                    stops: [
+                        {
+                          value: 0.1,
+                          color: "#FFFCD4",
+                          label: "< 10%"
+                        },
+                        {
+                          value: 0.5,
+                          color: "#350242",
+                          label: "> 50%"
+                        }
+                    ]
+                })
+            
+            ]
+        })
+    })
+
+    return layer
+}
+
+async function createIncomeLayer() {
+    
+    const incomeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/1"})
+
+    const graphics = await createGraphics(incomeTable)
     
     const layerFields = [
         new Field({
@@ -390,36 +659,30 @@ async function createIncomeGraphics() {
 // funciton loads all census feature layers (polygons, tables) and create new client side feature layers then groups them into a single group layer
 export async function createCensusGroupLayer() {
     
-    const censusPolygons = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer"})
-            
-    const censusIncomeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/1"})
-    // const incomeLayer = await createCensusGraphics(censusPolygons, censusIncomeTable, "Income")
-    const incomeLayer = await createIncomeGraphics()
+    const incomeLayer = await createIncomeLayer()
 
-    const censusRaceTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/2"})
-    const raceLayer = await createCensusGraphics(censusPolygons, censusRaceTable, "Race")
+    const raceLayer = await createRaceLayer()
     
-    const censusAgeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/3"})
-    const ageLayer = await createCensusGraphics(censusPolygons, censusAgeTable, "Age")
+    // const censusAgeTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/3"})
+    // const ageLayer = await createCensusGraphics(censusPolygons, censusAgeTable, "Age")
 
-    const censusTransportationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/4"})
-    const transportationLayer = await createCensusGraphics(censusPolygons, censusTransportationTable, "Transportation")
+    // const censusTransportationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/4"})
+    // const transportationLayer = await createCensusGraphics(censusPolygons, censusTransportationTable, "Transportation")
+    
+    const educationLayer = await createEducationLayer()
 
-    const censusEducationTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/5"})
-    const educationLayer = await createCensusGraphics(censusPolygons, censusEducationTable, "Education")
-
-    const censusGenderTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/6"})
-    const genderLayer = await createCensusGraphics(censusPolygons, censusGenderTable, "Gender")
+    // const censusGenderTable = new FeatureLayer({ url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_ACS_Census_Data/FeatureServer/6"})
+    // const genderLayer = await createCensusGraphics(censusPolygons, censusGenderTable, "Gender")
     
 
     const censusGroupLayer = new GroupLayer({
         layers: [
             incomeLayer,
             raceLayer,
-            ageLayer,
-            transportationLayer,
+            // ageLayer,
+            // transportationLayer,
             educationLayer,
-            genderLayer
+            // gendegrLayer
         ],
         title: censusTitle,
         visibilityMode: "exclusive"
