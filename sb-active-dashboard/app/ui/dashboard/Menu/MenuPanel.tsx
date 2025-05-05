@@ -3,63 +3,51 @@ import { Box, IconButton } from "@mui/material";
 import { styled, Theme } from "@mui/material/styles";
 import { CalciteIcon } from "@esri/calcite-components-react";
 import { appTheme } from "../../theme";
-const drawerWidth = 450;
 
-const DrawerFooter = styled('div')(({ theme }) => ({
-  display: 'flex',
-  width: '100%',
-  alignItems: 'center',
-  justifyContent: 'end',
-  padding: theme.spacing(0, 1),
-  ...theme.mixins.toolbar,
-}));
 
-const DrawerBox = styled(Box, { shouldForwardProp: (prop) => prop !== "open" })<
-  { open?: boolean; color?: keyof Theme["palette"] }
->(({ theme, open }) => {
-  
-  return {
-    width: open ? drawerWidth : `calc(${theme.spacing(7)} + 1px)`,
-    transition: theme.transitions.create("width", {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.standard,
-    }),
-    overflowX: "hidden",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "space-between",
-
-    borderRight: `1px solid ${theme.palette.white.contrastText}`,
-    backgroundColor: theme.palette.white.main,
-    color: theme.palette.white.contrastText,
-  };
-});
 
 interface MenuPanelProps {
   children: React.ReactNode;
+  drawerOpen: boolean
+  drawerWidth: number
+
 }
 
-const MenuPanel: React.FC<MenuPanelProps> = ({ children }) => {
-  const [drawerOpen, setDrawerOpen] = useState(true);
+const MenuPanel: React.FC<MenuPanelProps> = ({ drawerOpen, drawerWidth, children }) => {
 
-  const handleDrawer = () => {
-    setDrawerOpen(!drawerOpen);
-  };
+  const collapsedWidth = 0;
+  const DrawerBox = styled(Box, {
+      shouldForwardProp: (prop) => prop !== "open",
+    })<{ open?: boolean }>(({ theme, open }) => ({
+      // width: open ? drawerWidth : '1px',
+      overflowX: "hidden",
+      height: "100%",
+      position: "relative",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "flex-start",
+      borderRight: `1px solid ${theme.palette.white.contrastText}`,
+      backgroundColor: theme.palette.white.main,
+      color: theme.palette.white.contrastText,
+      transition: 'width 0.5s ease-in-out',
+      zIndex: 1200
+  }));
 
   return (
     <DrawerBox open={drawerOpen}>
-      {/* Dynamic List Items will be passed as children */}
+      {/* Toggle Button */}
+      {/* <ToggleButton onClick={handleDrawer}>
+        <CalciteIcon icon={drawerOpen ? "chevron-left" : "chevron-right"} />
+      </ToggleButton> */}
 
-      {children}
-
-      {/* Drawer Toggle Button */}
-      <DrawerFooter>
-        <IconButton onClick={handleDrawer} color={drawerOpen ? "secondary" : "primary"}>
-          {drawerOpen ? <CalciteIcon icon="chevron-left" /> : <CalciteIcon icon="chevron-right" />}
-        </IconButton>
-      </DrawerFooter>
+      {/* Menu content */}
+     
+      <Box sx={{ flexGrow: 1, width: "100%", overflow: "auto", mt: 2 }}>
+        {children}
+      </Box>
+      
+      
     </DrawerBox>
   );
 };

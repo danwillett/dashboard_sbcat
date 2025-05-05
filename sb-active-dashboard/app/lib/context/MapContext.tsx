@@ -7,6 +7,8 @@ import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import LayerList from '@arcgis/core/widgets/LayerList';
 import TimeSlider from "@arcgis/core/widgets/TimeSlider"
 
+import { SafetyChecks, VolumeChecks, DemographicChecks } from "@/app/lib/explore-app/types"
+
 type MapContextType = {
     
     mapRef: Map | null,
@@ -28,7 +30,16 @@ type MapContextType = {
     setLayerList: React.Dispatch<React.SetStateAction<LayerList | null>>,
 
     timeSlider: TimeSlider | null,
-    setTimeSlider: React.Dispatch<React.SetStateAction<TimeSlider | null>>
+    setTimeSlider: React.Dispatch<React.SetStateAction<TimeSlider | null>>,
+
+    safetyChecks: SafetyChecks,
+    setSafetyChecks: React.Dispatch<React.SetStateAction<SafetyChecks>>,
+
+    volumeChecks: VolumeChecks,
+    setVolumeChecks: React.Dispatch<React.SetStateAction<VolumeChecks>>,
+
+    demographicChecks: DemographicChecks,
+    setDemographicChecks: React.Dispatch<React.SetStateAction<DemographicChecks>>,
 
 }
 const MapContext = createContext<MapContextType | undefined>(undefined)
@@ -50,6 +61,22 @@ export default function MapProvider({children}: MapProviderProps){
     const [ countGroupLayer, setCountGroupLayer ] = useState<GroupLayer | null>(null)
     const [ incidentGroupLayer, setIncidentGroupLayer ] = useState<GroupLayer | null>(null)
 
+    // tracking layers
+    const [safetyChecks, setSafetyChecks] = useState({
+        "Biking Incidents": false,
+        "Walking Incidents": false
+    })
+    const [volumeChecks, setVolumeChecks] = useState({
+            "Biking Volumes": false,
+            "Modeled Biking Volumes": false,
+            "Walking Volumes": false,
+            "Modeled Walking Volumes": false
+        })
+    const [demographicChecks, setDemographicChecks] = useState({
+            "Income": false,
+            "Race": false,
+            "Education": false
+        })
     
     
     return (
@@ -63,6 +90,11 @@ export default function MapProvider({children}: MapProviderProps){
                 censusGroupLayer, setCensusGroupLayer, 
                 countGroupLayer, setCountGroupLayer, 
                 incidentGroupLayer, setIncidentGroupLayer,
+
+                safetyChecks, setSafetyChecks,
+                volumeChecks, setVolumeChecks,
+                demographicChecks, setDemographicChecks
+
                 
             }}
             >

@@ -23,19 +23,14 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 
 
-interface LayerSearchProps {
-    safetyChecks: SafetyChecks;
-    setSafetyChecks: React.Dispatch<React.SetStateAction<SafetyChecks>>;
-    volumeChecks: VolumeChecks;
-    setVolumeChecks: React.Dispatch<React.SetStateAction<VolumeChecks>>;
-    demographicChecks: DemographicChecks;
-    setDemographicChecks: React.Dispatch<React.SetStateAction<DemographicChecks>>;
-}
+export default function LayerSearch() {
 
-export default function LayerSearch(props: LayerSearchProps) {
-
-    const { mapRef, incidentGroupLayer, censusGroupLayer, countGroupLayer, layerList } = useMapContext()
-    const { safetyChecks, setSafetyChecks, volumeChecks, setVolumeChecks, demographicChecks, setDemographicChecks } = props
+    const { mapRef, 
+        incidentGroupLayer, censusGroupLayer, countGroupLayer, 
+        layerList, 
+        safetyChecks, setSafetyChecks, 
+        volumeChecks, setVolumeChecks, 
+        demographicChecks, setDemographicChecks } = useMapContext()
 
     const handleSafetyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 
@@ -48,6 +43,7 @@ export default function LayerSearch(props: LayerSearchProps) {
 
             const safetyGroup = mapRef.allLayers.find((layer) => layer.title === "Safety")
 
+            // add group layer to the map if this is the first load
             if (!safetyGroup) {
                 mapRef.add(incidentGroupLayer)
                 incidentGroupLayer.allLayers.forEach((sublayer) => {
@@ -70,10 +66,7 @@ export default function LayerSearch(props: LayerSearchProps) {
         if (allFalse && incidentGroupLayer) {
             mapRef?.remove(incidentGroupLayer)
         }
-        
     }, [safetyChecks])
-
-    
 
     const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setVolumeChecks({
@@ -107,8 +100,6 @@ export default function LayerSearch(props: LayerSearchProps) {
             mapRef?.remove(countGroupLayer)
         }
     }, [volumeChecks])
-
-    
 
     const handleDemographicChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setDemographicChecks({

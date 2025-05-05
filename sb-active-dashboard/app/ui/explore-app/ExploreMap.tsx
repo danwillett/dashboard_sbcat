@@ -52,22 +52,7 @@ export default function ExploreMap() {
     const [showFilter, setShowFilter] = useState<Boolean>(false)
     const [showPrint, setShowPrint] = useState<Boolean>(false)
     const [ mapElRef, setMapElRef ] = useState(null)
-    
-    
 
-    const menuProps = {
-
-        showWidgetPanel,
-        setShowWidgetPanel,
-        showLegend,
-        setShowLegend,
-        showLayerList,
-        setShowLayerList,
-        showFilter,
-        setShowFilter,
-        showPrint,
-        setShowPrint
-    }
 
     // once map is generated, load feature layers and add to the map
     useEffect(() => {
@@ -181,65 +166,43 @@ export default function ExploreMap() {
         
     }
 
+    // menu rendering
+    const [leftMenuOpen, setLeftMenuOpen] = useState(true);
+    const leftMenuWidth = 450
+    const handleLeftMenu = () => {
+        setLeftMenuOpen((prev) => !prev);
+    };
+
+    const [rightMenuOpen, setRightMenuOpen] = useState(true);
+    const rightMenuWidth = 300
+    const handleRightMenu = () => {
+        setRightMenuOpen((prev) => !prev);
+    };
+
     return (
-        <Box id="app-container" sx={{ display: 'flex', height: "calc(100vh - 70px)"}}>
+        <Box id="app-container" sx={{ position: 'relative', height: "calc(100vh - 70px)"}}>
             <CssBaseline />
             
-            <Box sx={{height: "100%"}}>
-                <ExploreMenu {...menuProps} />
-            </Box>
-            
-            {/* Widget Panel */}
-            {/* <Box sx={{
-                display: showLegend || showLayerList || showFilter || showPrint ? 'flex' : 'none',  // Always render, visibility controlled via `display`
-                flexDirection: 'column', // Stack vertically first
-                flexWrap: 'wrap', // Wrap into another column when needed
-                alignItems: "stretch", // Aligns properly to the left
-                // maxHeight: "100vh", // Prevents overflow
-                // maxWidth: "80vw", // Shrinks to only needed width
-                padding: 1,
-                flexShrink: 3,
-                maxHeight: "calc(100vh - 70px)", // Prevents it from growing indefinitely
-                maxWidth: "none",
-                }}> */}
-                
-                      
-                {/* Layer List Panel */}
-                {/* <Grid justifyContent="center" className="esri-widget" sx={{display: showLayerList ? 'block': 'none'}}>
-                    <Grid size={12} my={2}>
-                            <Typography align='center' variant='h5'>Layers</Typography>
-                            
-                        </Grid>
-                    <div id="layer-list-container"></div>
-                </Grid> */}
+           <ExploreMenu drawerOpen={leftMenuOpen} handleDrawer={handleLeftMenu} menuWidth={leftMenuWidth} />
 
-                {/* Filter Panel */}
-                {/* <Grid className="esri-widget" justifyContent="center" sx={{display: showFilter ? 'block': 'none'}}>
-                    <Grid size={12} my={2} >
-                            <Typography align='center' variant='h5'>Filters</Typography>
-                    </Grid>
-                    
-                    <FilterPanel {...filterProps} />
-                </Grid> */}
+            <Box 
+                component="main" 
+                sx=
+                    {{ 
+                        position: 'block', 
+                        // top: 0,
+                        // left: leftMenuOpen ? leftMenuWidth : 0,
+                        
+                        zIndex: 1100,
+                        height: '100%',
+                        
+                        // width: '100%'
+                        width: `calc(100vw - ${leftMenuOpen ? leftMenuWidth : 0}px - ${rightMenuOpen ? rightMenuWidth : 0}px )`, //
+                        transition: 'width 0.5s ease-in-out, margin 0.5s ease-in-out',
 
-                {/* Legend Panel */}
-                {/* <Grid justifyContent="center" className="esri-widget" sx={{display: showLegend ? 'block': 'none'}}>
-                    <Grid size={12} my={2}>
-                        <Typography align='center' variant='h5'>Legend</Typography>
-                    </Grid>
-                    <div id="legend-container"></div>
-                </Grid> */}
-
-                {/* Print Panel */}
-                {/* <Grid justifyContent="center" className="esri-widget" sx={{display: showPrint ? 'block': 'none'}}>
-                    <Grid size={12} my={2}>
-                        <Typography align='center' variant='h5'>Print Map</Typography>
-                    </Grid>
-                    <div id="print-container"></div>
-                </Grid> */}
-
-            {/* </Box> */}
-            <Box component="main" sx={{ flexGrow: 1, flexShrink: 1 }}>
+                        marginRight: rightMenuOpen ? `${rightMenuWidth}px` : '0px',
+                        marginLeft: leftMenuOpen ? `${leftMenuWidth}px` : '0px',
+                         }}>
                 <ArcgisMap
                     basemap="topo-vector"
                     // itemId="d5dda743788a4b0688fe48f43ae7beb9"
@@ -248,10 +211,11 @@ export default function ExploreMap() {
                 </ArcgisMap>
                
             </Box>
-            
-            <Box sx={{height: "100%"}}>
-                <ExploreDataDisplay />
-            </Box>
+
+            <ExploreDataDisplay drawerOpen={rightMenuOpen} handleDrawer={handleRightMenu} drawerWidth={rightMenuWidth} />
+            {/* <Box sx={{height: "100%", position: 'relative'}}>
+                
+            </Box> */}
             
             
         </Box>

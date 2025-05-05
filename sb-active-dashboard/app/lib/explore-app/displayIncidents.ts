@@ -279,7 +279,7 @@ export async function createIncidentGroupLayer() {
             pedIncidentsLayer
         ],
         title: "Safety",
-        visibilityMode: "exclusive"
+        visibilityMode: "independent"
     })
     
     return incidentGroupLayer
