@@ -9,6 +9,7 @@ import MenuItem from "../dashboard/Menu/MenuItem";
 import MenuPanel from "../dashboard/Menu/MenuPanel";
 import LayerSearch from "./LayerSearch";
 import FilterTabs from "./FilterTabs";
+import StatsView from "./StatsView";
 
 
 
@@ -41,6 +42,7 @@ export default function ExploreMenu(props: any) {
   }));
   
     return (
+  
       <Box 
         sx={{
           height: '100%',
@@ -58,9 +60,7 @@ export default function ExploreMenu(props: any) {
           
         <MenuPanel drawerOpen={drawerOpen} drawerWidth={menuWidth}>    
 
-          <Box 
-            p={2}
-            >
+          <Box p={2}>
             
               <Typography mb={2} variant="h6" sx={{fontWeight: 'bold'}}>
                 Explore
@@ -74,12 +74,13 @@ export default function ExploreMenu(props: any) {
               </Typography>
               <LayerSearch />
               
-              <Grid justifyContent="center" className="esri-widget">
+              {/* <Grid justifyContent="center" className="esri-widget">
                   <Grid size={12} my={2}>
                       <Typography align='center' variant="h6" sx={{fontWeight: 'bold'}}>Legend</Typography>
                   </Grid>
                   <div id="legend-container"></div>
-              </Grid> 
+              </Grid>  */}
+              <StatsView />
                   
 
           </Box> 

@@ -71,18 +71,17 @@ export default function FilterTabs(props: FilterTabsProps) {
 
     useEffect(() => {
         if (safetyChecks !== null) {
-            console.log(safetyChecks)
+            
             setSafetyFalse(Object.values(safetyChecks).every(value => value === false))
         }
-        console.log(safetyFalse)
+        
     }, [safetyChecks])
     
     useEffect(() => {
         if (volumeChecks !== null) {
-            console.log(volumeChecks)
+            
             setVolumeFalse(Object.values(volumeChecks).every(value => value === false))
         }
-        console.log(volumeFalse)
        
     }, [volumeChecks])
 

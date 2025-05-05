@@ -152,7 +152,7 @@ export default function ExploreMap() {
                 setShowPrint(false)
                 setShowWidgetPanel(true)
 
-                // viewRef.ui.add([layerList, legend], "top-right")
+                viewRef.ui.add([legend], "top-left")
             }
         }
         
@@ -168,13 +168,13 @@ export default function ExploreMap() {
 
     // menu rendering
     const [leftMenuOpen, setLeftMenuOpen] = useState(true);
-    const leftMenuWidth = 450
+    const leftMenuWidth = 300
     const handleLeftMenu = () => {
         setLeftMenuOpen((prev) => !prev);
     };
 
     const [rightMenuOpen, setRightMenuOpen] = useState(true);
-    const rightMenuWidth = 300
+    const rightMenuWidth = 450
     const handleRightMenu = () => {
         setRightMenuOpen((prev) => !prev);
     };
@@ -187,22 +187,15 @@ export default function ExploreMap() {
 
             <Box 
                 component="main" 
-                sx=
-                    {{ 
-                        position: 'block', 
-                        // top: 0,
-                        // left: leftMenuOpen ? leftMenuWidth : 0,
-                        
-                        zIndex: 1100,
-                        height: '100%',
-                        
-                        // width: '100%'
-                        width: `calc(100vw - ${leftMenuOpen ? leftMenuWidth : 0}px - ${rightMenuOpen ? rightMenuWidth : 0}px )`, //
-                        transition: 'width 0.5s ease-in-out, margin 0.5s ease-in-out',
-
-                        marginRight: rightMenuOpen ? `${rightMenuWidth}px` : '0px',
-                        marginLeft: leftMenuOpen ? `${leftMenuWidth}px` : '0px',
-                         }}>
+                sx={{ 
+                    position: 'block', 
+                    zIndex: 1100,
+                    height: '100%',
+                    width: `calc(100vw - ${leftMenuOpen ? leftMenuWidth : 0}px - ${rightMenuOpen ? rightMenuWidth : 0}px )`, //
+                    transition: 'width 0.5s ease-in-out, margin 0.5s ease-in-out',
+                    marginRight: rightMenuOpen ? `${rightMenuWidth}px` : '0px',
+                    marginLeft: leftMenuOpen ? `${leftMenuWidth}px` : '0px',
+                        }}>
                 <ArcgisMap
                     basemap="topo-vector"
                     // itemId="d5dda743788a4b0688fe48f43ae7beb9"
@@ -213,9 +206,7 @@ export default function ExploreMap() {
             </Box>
 
             <ExploreDataDisplay drawerOpen={rightMenuOpen} handleDrawer={handleRightMenu} drawerWidth={rightMenuWidth} />
-            {/* <Box sx={{height: "100%", position: 'relative'}}>
-                
-            </Box> */}
+            
             
             
         </Box>

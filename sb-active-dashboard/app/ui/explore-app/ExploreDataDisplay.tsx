@@ -48,47 +48,38 @@ export default function ExploreDataDisplay(props: any) {
         },
     }));
     return (
-        <Box
-            sx={{
-                height: '100%',
-                width: drawerOpen ? drawerWidth : '1px',
-                transition: 'width 0.5s ease-in-out',
-                zIndex: 3000,
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                // overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
     
-            }}>
-            <MenuPanel drawerOpen={drawerOpen} drawerWidth={drawerWidth}>
-                {/* Layer List Panel */}
-                {/* <Grid justifyContent="center" className="esri-widget">
-                    <Grid size={12} my={2}>
-                            <Typography align='center' variant="h6" sx={{fontWeight: 'bold'}}>Layer Display</Typography>
-                            
-                        </Grid>
-                    <div id="layer-list-container"></div>
-                </Grid> */}
+        
+    <Box
+        sx={{
+            height: '100%',
+            width: drawerOpen ? drawerWidth : '1px',
+            transition: 'width 0.5s ease-in-out',
+            zIndex: 3000,
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            // overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
 
-                {/* Legend */}
-                {/* <Grid justifyContent="center" className="esri-widget">
-                    <Grid size={12} my={2}>
-                        <Typography align='center' variant="h6" sx={{fontWeight: 'bold'}}>Legend</Typography>
-                    </Grid>
-                    <div id="legend-container"></div>
-                </Grid>  */}
-                <Typography my={2} variant="body2">
-                <strong>Step 2:</strong> Apply filters.
-                </Typography>
-                <FilterTabs safetyChecks={safetyChecks} volumeChecks={volumeChecks} demographicChecks={demographicChecks}/>
-            </MenuPanel>
+        }}>
+        <MenuPanel drawerOpen={drawerOpen} drawerWidth={drawerWidth}>
+            <Box p={2}>
+        
+            
+            <Typography my={2} variant="body2">
+            <strong>Step 2:</strong> Apply filters.
+            </Typography>
+            <FilterTabs safetyChecks={safetyChecks} volumeChecks={volumeChecks} demographicChecks={demographicChecks}/>
+            </Box>
+        </MenuPanel>
 
-            <ToggleButton onClick = {handleDrawer} open={drawerOpen} menuWidth={drawerWidth}>
-                <CalciteIcon icon={drawerOpen ? "chevron-right" : "chevron-left"} />
-            </ToggleButton>
+        <ToggleButton onClick = {handleDrawer} open={drawerOpen} menuWidth={drawerWidth}>
+            <CalciteIcon icon={drawerOpen ? "chevron-right" : "chevron-left"} />
+        </ToggleButton>
 
-        </ Box>
+    </ Box>
+        
     )
  }
