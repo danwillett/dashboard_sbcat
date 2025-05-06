@@ -15,6 +15,26 @@ import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import FeatureLayerView from "@arcgis/core/views/layers/FeatureLayerView";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import GroupLayerView from "@arcgis/core/views/layers/GroupLayerView";
+import MapView from "@arcgis/core/views/MapView";
+import TimeExtent from "@arcgis/core/time/TimeExtent";
+
+function getDateForTimeZone(queryDate: any, timezone: any) {
+    // adjust the given date field to the timezone of the date field
+    const zonedDate = new Date(
+      queryDate.toLocaleString("en-US", {
+        timeZone: timezone
+      })
+    );
+    const pad = (value: any) => String(value).padStart(2, "0");
+    const month = pad(zonedDate.getMonth() + 1);
+    const day = pad(zonedDate.getDate())
+    const year = zonedDate.getFullYear();
+    const hour = pad(zonedDate.getHours());
+    const minutes = pad(zonedDate.getMinutes());
+    const seconds = pad(zonedDate.getSeconds());
+  
+    return `${year}-${month}-${day} ${hour}:${minutes}:${seconds}`;
+  }
 
 type PedCountStats = {
     filtered_ped: number | null
@@ -35,24 +55,54 @@ function setupCountLayerWatch({
   setStats,
   statsKey,
   existingStats,
+  startField,
+  endField,
 }: {
-  view: __esri.MapView,
-  layer: __esri.FeatureLayer,
+  view: MapView,
+  layer: FeatureLayer,
   reactiveUtils: typeof import("@arcgis/core/core/reactiveUtils"),
   setStats: StatsSetter,
   statsKey: string,
   existingStats: any,
+  startField: string,
+  endField: string
 }) {
   view.whenLayerView(layer).then((layerView) => {
+    
     reactiveUtils.watch(
       () => [layerView.updating, view.stationary],
       ([isUpdating, isStationary]) => {
         if (!isUpdating || isStationary) {
-          let where = "1=1";
-          if (layerView.filter?.where) {
-            where = layerView.filter.where;
-          }
-          console.log(where)
+
+            let where = "1=1";
+            let timeWhere = ""
+            // get time extent
+            
+            let fieldTimeZone = layer.fieldsIndex.getTimeZone(startField);
+            if (!fieldTimeZone) {
+                fieldTimeZone = "UTC"
+            } 
+            const timeExtent = (layerView as any).timeExtent as TimeExtent
+            if (timeExtent) {
+                const start = getDateForTimeZone(timeExtent.start, fieldTimeZone);
+                const end = getDateForTimeZone(timeExtent.end, fieldTimeZone);
+                
+                if (start && end) {
+                    timeWhere = `${startField} > DATE '${start}' AND ${endField} < DATE '${end}'`;
+                }
+              }
+          
+              let filtersWhere = ""
+            if (layerView.filter?.where) {
+                filtersWhere = layerView.filter.where;
+            }
+            const wheres = [timeWhere, filtersWhere].filter((where) => where.length > 0)
+            if (wheres.length > 1) {
+                where = wheres.join(" AND ")
+            } else if (wheres.length == 1) {
+                where = wheres[0]
+            }
+          
           layerView.queryFeatures({
             geometry: view.extent,
             where,
@@ -60,7 +110,7 @@ function setupCountLayerWatch({
             returnGeometry: false,
             outFields: ["*"],
           }).then((result) => {
-            console.log(result)
+            
             setStats({
               ...existingStats,
               [statsKey]: result.features.length,
@@ -73,8 +123,9 @@ function setupCountLayerWatch({
 }
 
 export default function StatsView() {
-    const { mapRef, viewRef, countGroupLayer, censusGroupLayer, incidentGroupLayer, volumeChecks, safetyChecks } = useMapContext()
-    // Get count site statistics (number of sites by type)
+    const { mapRef, viewRef, countGroupLayer, incidentGroupLayer, volumeChecks, safetyChecks } = useMapContext()
+    
+    // Get Volume statistics by filters and extent
     const [ pedCountStats, setPedCountStats ] = useState<CountStats>({
         "filtered": null,
         "total": null,
@@ -90,13 +141,12 @@ export default function StatsView() {
         
         if (!volumeGroup) {
             setPedCountStats({
+                ...pedCountStats,
                 "filtered": null,
-                "total": null,
-                
             })
             setBikeCountStats({
-                "filtered": null,
-                "total": null
+                ...bikeCountStats,
+                "filtered": null
             })
             return
         } 
@@ -109,13 +159,14 @@ export default function StatsView() {
                 setStats: setPedCountStats,
                 statsKey: "filtered",
                 existingStats: pedCountStats,
+                startField: "start_date",
+                endField: "end_date"
               });
-            
             
         } else {
             setPedCountStats({
+                ...pedCountStats,
                 "filtered": null,
-                "total": null
             })
         }
 
@@ -129,23 +180,21 @@ export default function StatsView() {
                 setStats: setBikeCountStats,
                 statsKey: "filtered",
                 existingStats: bikeCountStats,
-              });
-            
-            
+                startField: "start_date",
+                endField: "end_date"
+              });             
             
         } else {
             setBikeCountStats({
-                "filtered": null,
-                "total": null
+                ...bikeCountStats,
+                "filtered": null
             })
         }
         
-
     }, [viewRef, countGroupLayer, mapRef, volumeChecks])
     
     
-
-    // Get Safety statistics
+    // Get Safety statistics by filters and extent
     const [ pedSafetyStats, setPedSafetyStats ] = useState<CountStats>({
         filtered: null,
         total: null
@@ -162,13 +211,12 @@ export default function StatsView() {
         
         if (!safetyGroup) {
             setPedSafetyStats({
+                ...pedSafetyStats,
                 "filtered": null,
-                "total": null,
-                
             })
             setBikeSafetyStats({
+                ...bikeSafetyStats,
                 "filtered": null,
-                "total": null
             })
             return
         } 
@@ -181,13 +229,15 @@ export default function StatsView() {
                 setStats: setPedSafetyStats,
                 statsKey: "filtered",
                 existingStats: pedSafetyStats,
+                startField: "timestamp",
+                endField: "timestamp"
               });
             
             
         } else {
             setPedSafetyStats({
-                "filtered": null,
-                "total": null
+                ...pedSafetyStats,
+                "filtered": null
             })
         }
 
@@ -201,18 +251,86 @@ export default function StatsView() {
                 setStats: setBikeSafetyStats,
                 statsKey: "filtered",
                 existingStats: bikeSafetyStats,
-              });
-            
-            
+                startField: "timestamp",
+                endField: "timestamp"
+              });            
             
         } else {
             setBikeSafetyStats({
+                ...bikeSafetyStats,
                 "filtered": null,
-                "total": null
+                
             })
         }
     }, [viewRef, incidentGroupLayer, mapRef, safetyChecks ])
 
+
+    // Get all data stats to display
+    useEffect(() => {
+        if (!countGroupLayer) return
+
+        const bikeVolumesLayer = countGroupLayer.allLayers.find((layer): layer is FeatureLayer => layer.title === "Biking Volumes") as FeatureLayer
+        console.log(bikeVolumesLayer)
+        if (!bikeVolumesLayer) return
+        const bikeQuery = bikeVolumesLayer.createQuery()
+        bikeQuery.where = "1=1"
+        bikeVolumesLayer.queryFeatures(bikeQuery).then((result) => {
+            if (result) {
+                setBikeCountStats({
+                    ...bikeCountStats,
+                    "total": result.features.length
+                })
+            }
+        })
+
+        const pedVolumesLayer = countGroupLayer.allLayers.find((layer): layer is FeatureLayer => layer.title === "Walking Volumes") as FeatureLayer
+        console.log(pedVolumesLayer)
+        if (!pedVolumesLayer) return
+        const pedQuery = pedVolumesLayer.createQuery()
+        pedQuery.where = "1=1"
+        pedVolumesLayer.queryFeatures(pedQuery).then((result) => {
+            if (result) {
+                setPedCountStats({
+                    ...pedCountStats,
+                    "total": result.features.length
+                })
+            }
+        })
+        
+
+    }, [countGroupLayer])
+
+    // Get all data stats to display
+    useEffect(() => {
+        if (!incidentGroupLayer) return
+
+        const bikeSafetyLayer = incidentGroupLayer.allLayers.find((layer): layer is FeatureLayer => layer.title === "Biking Incidents") as FeatureLayer
+        if (!bikeSafetyLayer) return
+        const bikeQuery = bikeSafetyLayer.createQuery()
+        bikeQuery.where = "1=1"
+        bikeSafetyLayer.queryFeatures(bikeQuery).then((result) => {
+            if (result) {
+                setBikeSafetyStats({
+                    ...bikeSafetyStats,
+                    "total": result.features.length
+                })
+            }
+        })
+
+        const pedSafetyLayer = incidentGroupLayer.allLayers.find((layer): layer is FeatureLayer => layer.title === "Walking Incidents") as FeatureLayer
+        if (!pedSafetyLayer) return
+        const pedQuery = pedSafetyLayer.createQuery()
+        pedQuery.where = "1=1"
+        pedSafetyLayer.queryFeatures(pedQuery).then((result) => {
+            if (result) {
+                setPedSafetyStats({
+                    ...pedSafetyStats,
+                    "total": result.features.length
+                })
+            }
+        })
+        
+    }, [incidentGroupLayer])
 
     return (
         <Card
@@ -225,45 +343,105 @@ export default function StatsView() {
           borderColor: 'divider',
         }}
       >
+        
+
         <CardContent>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
             Summary Stats
-          </Typography>
-          <Grid container spacing={2}>
-            {pedCountStats.filtered !== null && (
-                <Grid size={6}>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    Walking Sites
-                    </Typography>
-                    <Typography variant="h6">{pedCountStats.filtered}</Typography>
-              </Grid>
-            )}
-            {bikeCountStats.filtered !== null && (
-                <Grid size={6}>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    Biking Sites
-                    </Typography>
-                    <Typography variant="h6">{bikeCountStats.filtered}</Typography>
-              </Grid>
-            )}
-            {pedSafetyStats.filtered !== null && (
-                <Grid size={6}>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    Walking Incidents
-                    </Typography>
-                    <Typography variant="h6">{pedSafetyStats.filtered}</Typography>
-              </Grid>
-            )}
-            {bikeSafetyStats.filtered !== null && (
-                <Grid size={6}>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    Biking Incidents
-                    </Typography>
-                    <Typography variant="h6">{bikeSafetyStats.filtered}</Typography>
-              </Grid>
-            )}
+        </Typography>
+
+        {/* Check if any filtered data exists */}
+        {(pedCountStats.filtered !== null || bikeCountStats.filtered !== null ||
+            pedSafetyStats.filtered !== null || bikeSafetyStats.filtered !== null) ? (
             
-          </Grid>
+            <Grid container spacing={3}>
+            {/* Walking Group */}
+            {(pedCountStats.filtered !== null || pedSafetyStats.filtered !== null) && (
+                <Grid size={6}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    🚶 Walking
+                </Typography>
+
+                {pedCountStats.filtered !== null && (
+                    <>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        Count Sites
+                    </Typography>
+                    <Box sx={{ display: 'flex', columnGap: 1, alignItems: 'center' }}>
+                        <Typography variant="h6">{pedCountStats.filtered}</Typography>
+                        <Typography variant="body2">in view</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', columnGap: 1, alignItems: 'center', mb: 1 }}>
+                        <Typography variant="h6">{pedCountStats.total}</Typography>
+                        <Typography variant="body2">total</Typography>
+                    </Box>
+                    </>
+                )}
+
+                {pedSafetyStats.filtered !== null && (
+                    <>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        Incidents
+                    </Typography>
+                    <Box sx={{ display: 'flex', columnGap: 1, alignItems: 'center' }}>
+                        <Typography variant="h6">{pedSafetyStats.filtered}</Typography>
+                        <Typography variant="body2">in view</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', columnGap: 1, alignItems: 'center' }}>
+                        <Typography variant="h6">{pedSafetyStats.total}</Typography>
+                        <Typography variant="body2">total</Typography>
+                    </Box>
+                    </>
+                )}
+                </Grid>
+            )}
+
+            {/* Biking Group */}
+            {(bikeCountStats.filtered !== null || bikeSafetyStats.filtered !== null) && (
+                <Grid size={6}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    🚴 Biking
+                </Typography>
+
+                {bikeCountStats.filtered !== null && (
+                    <>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        Count Sites
+                    </Typography>
+                    <Box sx={{ display: 'flex', columnGap: 1, alignItems: 'center' }}>
+                        <Typography variant="h6">{bikeCountStats.filtered}</Typography>
+                        <Typography variant="body2">in view</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', columnGap: 1, alignItems: 'center', mb: 1 }}>
+                        <Typography variant="h6">{bikeCountStats.total}</Typography>
+                        <Typography variant="body2">total</Typography>
+                    </Box>
+                    </>
+                )}
+
+                {bikeSafetyStats.filtered !== null && (
+                    <>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        Incidents
+                    </Typography>
+                    <Box sx={{ display: 'flex', columnGap: 1, alignItems: 'center' }}>
+                        <Typography variant="h6">{bikeSafetyStats.filtered}</Typography>
+                        <Typography variant="body2">in view</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', columnGap: 1, alignItems: 'center' }}>
+                        <Typography variant="h6">{bikeSafetyStats.total}</Typography>
+                        <Typography variant="body2">total</Typography>
+                    </Box>
+                    </>
+                )}
+                </Grid>
+            )}
+            </Grid>
+        ) : (
+            <Typography variant="body2" color="text.secondary">
+            Add data to the map to see summary stats.
+            </Typography>
+        )}
         </CardContent>
       </Card>
     )
