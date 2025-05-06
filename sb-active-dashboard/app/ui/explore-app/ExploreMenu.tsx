@@ -1,9 +1,13 @@
 import React, {useRef, useState} from "react";
 
+// import global state variables
+import { useMapContext } from "@/app/lib/context/MapContext";
+
 import { List, Typography, Box, IconButton } from "@mui/material";
 import { CalciteIcon } from "@esri/calcite-components-react";
 import { styled} from "@mui/material/styles";
 import  Grid from "@mui/material/Grid2"
+
 
 import MenuItem from "../dashboard/Menu/MenuItem";
 import MenuPanel from "../dashboard/Menu/MenuPanel";
@@ -11,38 +15,37 @@ import LayerSearch from "./LayerSearch";
 import FilterTabs from "./FilterTabs";
 import StatsView from "./StatsView";
 
+interface ToggleButtonProps {
+  open: boolean;
+  menuWidth: number;
+}
 
+const ToggleButton = styled(IconButton, {
+  shouldForwardProp: (prop) => prop !== 'open' && prop !== 'menuWidth',
+})<ToggleButtonProps>(({ theme, open, menuWidth }) => ({
+  position: 'absolute',
+  top: '50%',
+  left: open ? `${menuWidth - 21}px` : '5px', 
+  transform: 'translateY(-50%)',
+  zIndex: 4000,
+  backgroundColor: theme.palette.background.paper,
+  border: `1px solid ${theme.palette.divider}`,
+  boxShadow: theme.shadows[3],
+  transition: 'left 0.5s ease-in-out',
+  '&:hover': {
+    backgroundColor: theme.palette.background.paper, // same as normal
+    opacity: 1, // optional: ensures no fade
+    boxShadow: theme.shadows[4], // optionally stronger shadow on hover
+  },
+}));
 
 export default function ExploreMenu(props: any) {
   const { drawerOpen, handleDrawer, menuWidth } = props
   
-  
-  interface ToggleButtonProps {
-    open: boolean;
-    menuWidth: number;
-  }
-  
-  const ToggleButton = styled(IconButton, {
-    shouldForwardProp: (prop) => prop !== 'open' && prop !== 'menuWidth',
-  })<ToggleButtonProps>(({ theme, open, menuWidth }) => ({
-    position: 'absolute',
-    top: '50%',
-    left: open ? `${menuWidth - 21}px` : '5px', 
-    transform: 'translateY(-50%)',
-    zIndex: 4000,
-    backgroundColor: theme.palette.background.paper,
-    border: `1px solid ${theme.palette.divider}`,
-    boxShadow: theme.shadows[3],
-    transition: 'left 0.5s ease-in-out',
-    '&:hover': {
-      backgroundColor: theme.palette.background.paper, // same as normal
-      opacity: 1, // optional: ensures no fade
-      boxShadow: theme.shadows[4], // optionally stronger shadow on hover
-    },
-  }));
+  const { safetyChecks, setSafetyChecks, volumeChecks, setVolumeChecks, demographicChecks, setDemographicChecks} = useMapContext()
   
     return (
-  
+
       <Box 
         sx={{
           height: '100%',
@@ -72,15 +75,22 @@ export default function ExploreMenu(props: any) {
               <Typography mb={2} variant="body2">
                 <strong>Step 1:</strong> Add datasets to the map.
               </Typography>
-              <LayerSearch />
+              <LayerSearch 
+                safetyChecks={safetyChecks} 
+              setSafetyChecks={setSafetyChecks} 
+              volumeChecks={volumeChecks} 
+              setVolumeChecks={setVolumeChecks} 
+              demographicChecks={demographicChecks}
+              setDemographicChecks={setDemographicChecks} 
+              />
               
-              {/* <Grid justifyContent="center" className="esri-widget">
+              <Grid justifyContent="center" className="esri-widget">
                   <Grid size={12} my={2}>
                       <Typography align='center' variant="h6" sx={{fontWeight: 'bold'}}>Legend</Typography>
                   </Grid>
                   <div id="legend-container"></div>
-              </Grid>  */}
-              <StatsView />
+              </Grid> 
+              
                   
 
           </Box> 

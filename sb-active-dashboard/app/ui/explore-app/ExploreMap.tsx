@@ -152,7 +152,7 @@ export default function ExploreMap() {
                 setShowPrint(false)
                 setShowWidgetPanel(true)
 
-                viewRef.ui.add([legend], "top-left")
+                // viewRef.ui.add([legend], "top-left")
             }
         }
         
@@ -168,7 +168,7 @@ export default function ExploreMap() {
 
     // menu rendering
     const [leftMenuOpen, setLeftMenuOpen] = useState(true);
-    const leftMenuWidth = 300
+    const leftMenuWidth = 450
     const handleLeftMenu = () => {
         setLeftMenuOpen((prev) => !prev);
     };

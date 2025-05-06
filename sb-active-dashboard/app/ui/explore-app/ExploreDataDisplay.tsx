@@ -1,5 +1,7 @@
 import React, {useRef, useState} from "react";
 
+import { useMapContext } from "@/app/lib/context/MapContext";
+
 import { List, Typography, Box, IconButton } from "@mui/material";
 import { styled } from "@mui/material";
 
@@ -9,18 +11,17 @@ import MenuItem from "../dashboard/Menu/MenuItem";
 import MenuPanel from "../dashboard/Menu/MenuPanel";
 import LayerSearch from "./LayerSearch";
 import FilterTabs from "./FilterTabs";
+import StatsView from "./StatsView";
 
 import Grid from "@mui/material/Grid2"
 
-import { useMapContext } from "@/app/lib/context/MapContext";
+
 
 
 export default function ExploreDataDisplay(props: any) {
     const {drawerOpen, handleDrawer, drawerWidth} = props
     const { safetyChecks, volumeChecks, demographicChecks} = useMapContext()
 
-    
-    
     interface ToggleButtonProps {
         open: boolean;
         menuWidth: number;
@@ -66,12 +67,16 @@ export default function ExploreDataDisplay(props: any) {
         }}>
         <MenuPanel drawerOpen={drawerOpen} drawerWidth={drawerWidth}>
             <Box p={2}>
-        
+
+            <StatsView />
             
             <Typography my={2} variant="body2">
             <strong>Step 2:</strong> Apply filters.
             </Typography>
+
             <FilterTabs safetyChecks={safetyChecks} volumeChecks={volumeChecks} demographicChecks={demographicChecks}/>
+            
+            
             </Box>
         </MenuPanel>
 

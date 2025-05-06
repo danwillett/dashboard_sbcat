@@ -236,7 +236,7 @@ export default function VolumeFilters() {
         <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
         
             <Box sx={{width: '100%'}}>
-                <Typography variant='body1' align="left" my={1} sx={{width: '100%'}}>Filter counts by day of the week</Typography>
+                <Typography variant='body1' align="left" my={1} sx={{width: '100%'}}>Visualize counts by day of the week</Typography>
                 <FormControl>
                     <FormLabel id="count-dow-radio-buttons-group-label">Daily Traffic</FormLabel>
                     <RadioGroup
@@ -253,7 +253,7 @@ export default function VolumeFilters() {
                 </FormControl>
 
                 {/* Localities */}
-                <Typography variant='body1' align="left" my={1} sx={{width: '100%'}}>Filter by locality</Typography>
+                <Typography variant='body1' align="left" my={1} sx={{width: '100%'}}>Filter by Jursidiction</Typography>
                 <FormControl fullWidth sx={{mb: 3}}>
                     <FormGroup>
                         { Object.entries(localities).map(([locale, value]) => (
