@@ -14,18 +14,19 @@ export default function SafetyMenu(props: any) {
   
     return (
 
-      <MenuPanel>
-          <List>
-          {/* <MenuItem open={drawerOpen} showWidget={showLayerList} setShowWidget={setShowLayerList} iconName="layers" label="Layers" /> */}
-          {/* <MenuItem open={drawerOpen} showWidget={showFilter} setShowWidget={setShowFilter} iconName="filter" label="Filters" /> 
-          <MenuItem open={drawerOpen} showWidget={showLegend} setShowWidget={setShowLegend} iconName="legend" label="Legend" />
-          <MenuItem open={drawerOpen} showWidget={showPrint} setShowWidget={setShowPrint} iconName="print" label="Print" /> */}
+      // <MenuPanel>
+      //     <List>
+      //     {/* <MenuItem open={drawerOpen} showWidget={showLayerList} setShowWidget={setShowLayerList} iconName="layers" label="Layers" /> */}
+      //     {/* <MenuItem open={drawerOpen} showWidget={showFilter} setShowWidget={setShowFilter} iconName="filter" label="Filters" /> 
+      //     <MenuItem open={drawerOpen} showWidget={showLegend} setShowWidget={setShowLegend} iconName="legend" label="Legend" />
+      //     <MenuItem open={drawerOpen} showWidget={showPrint} setShowWidget={setShowPrint} iconName="print" label="Print" /> */}
           
-      </List>
+      // </List>
         
         
         
-      </MenuPanel>
+      // </MenuPanel>
+      <div>in progress!</div>
 
 
       

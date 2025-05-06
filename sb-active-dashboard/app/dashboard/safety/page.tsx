@@ -1,12 +1,12 @@
 import dynamic from 'next/dynamic'
-const SafetyMapNoSSR = dynamic(
-  () => import ("../../ui/safety-app/SafetyMap"),
-  {ssr: false}
-)
+// const SafetyMapNoSSR = dynamic(
+//   () => import ("../../ui/safety-app/SafetyMap"),
+//   {ssr: false}
+// )
 
 export default function Safety() {
   return (
-    
-    <SafetyMapNoSSR />
+    <div>In progress!</div>
+    // <SafetyMapNoSSR />
   );
 }
