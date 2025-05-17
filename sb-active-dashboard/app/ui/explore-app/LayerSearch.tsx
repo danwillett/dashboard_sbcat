@@ -35,7 +35,7 @@ interface LayerSearchProps {
 export default function LayerSearch(props: LayerSearchProps) {
 
     const { mapRef, incidentGroupLayer, censusGroupLayer, countGroupLayer, layerList } = useMapContext()
-    const { safetyChecks, setSafetyChecks, volumeChecks, setVolumeChecks, demographicChecks, setDemographicChecks } = props
+    const { safetyChecks, setSafetyChecks, volumeChecks, setVolumeChecks, demographicChecks, setDemographicChecks } = useMapContext()
 
 
     const handleSafetyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,6 +175,8 @@ export default function LayerSearch(props: LayerSearchProps) {
                             {/* <FormControlLabel control={<Switch checked={volumeChecks["Modeled Biking Volumes"]} onChange={handleVolumeChange} name="Modeled Biking Volumes" />} label="Modeled Bicycle Volumes" /> */}
                             <FormControlLabel control={<Switch checked={volumeChecks["Walking Volumes"]} onChange={handleVolumeChange} name="Walking Volumes" />} label="Pedestrian Count Locations" />
                             {/* <FormControlLabel control={<Switch checked={volumeChecks["Modeled Walking Volumes"]} onChange={handleVolumeChange} name="Modeled Walking Volumes" />} label="Modeled Pedestrian Volumes" /> */}
+                            <FormControlLabel control={<Switch checked={volumeChecks["All Volumes"]} onChange={handleVolumeChange} name="All Volumes" />} label="All Count Locations" />
+
                         </FormGroup>
                     </AccordionDetails>
                 </Accordion>

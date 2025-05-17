@@ -42,7 +42,6 @@ const ToggleButton = styled(IconButton, {
 export default function ExploreMenu(props: any) {
   const { drawerOpen, handleDrawer, menuWidth } = props
   
-  const { safetyChecks, setSafetyChecks, volumeChecks, setVolumeChecks, demographicChecks, setDemographicChecks} = useMapContext()
   
     return (
 
@@ -76,12 +75,7 @@ export default function ExploreMenu(props: any) {
                 <strong>Step 1:</strong> Add datasets to the map.
               </Typography>
               <LayerSearch 
-                safetyChecks={safetyChecks} 
-              setSafetyChecks={setSafetyChecks} 
-              volumeChecks={volumeChecks} 
-              setVolumeChecks={setVolumeChecks} 
-              demographicChecks={demographicChecks}
-              setDemographicChecks={setDemographicChecks} 
+                
               />
               
               <Grid justifyContent="center" className="esri-widget">

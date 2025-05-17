@@ -70,7 +70,8 @@ export default function MapProvider({children}: MapProviderProps){
             "Biking Volumes": false,
             "Modeled Biking Volumes": false,
             "Walking Volumes": false,
-            "Modeled Walking Volumes": false
+            "Modeled Walking Volumes": false,
+            "All Volumes": false
         })
     const [demographicChecks, setDemographicChecks] = useState({
             "Income": false,

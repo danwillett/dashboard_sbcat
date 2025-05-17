@@ -10,6 +10,9 @@ import { DataFrame, Str, toJSON } from "danfojs"
 import ColorVariable from "@arcgis/core/renderers/visualVariables/ColorVariable";
 import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
 import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
+import CustomContent from "@arcgis/core/popup/content/CustomContent";
+import PopupTemplate from "@arcgis/core/PopupTemplate"
+import { UniqueValueRenderer } from "@arcgis/core/renderers";
 
 
 // display count locations, change color by average counts/day (?)
@@ -186,6 +189,7 @@ import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
 
 // }
 
+// Display count sites by either ped or bike aadt
 async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: __esri.FeatureLayer, query: string, title: string) {
     let tableQuery = countTable.createQuery();
     tableQuery.where = query // query either only bikes or only peds
@@ -418,6 +422,321 @@ async function createAADTGraphics(countPoints: __esri.FeatureLayer, countTable: 
     return layer
 }
 
+// I want to visualize my count sites by presence of bike counts and presence of pedestrian counts. In my popup, I want to give a summary of when surveys were conducted and who conducted them
+
+// function that creates new count site layer with attributes: Ped Data, Bike Data, Earliest Data, Last Data
+
+async function createSiteGraphics() {
+
+    const countPoints = new FeatureLayer({url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Bicycle_and_Pedestrian_Counts/FeatureServer/0"})
+    const aadtTable = new FeatureLayer({url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Bicycle_and_Pedestrian_Counts/FeatureServer/2"})
+
+    let geomQuery = countPoints.createQuery()
+    geomQuery.where = ""
+    geomQuery.outFields = ["*"]
+    geomQuery.returnGeometry = true
+
+    let geomArr: Record<string, any>[] = []
+    const geomResults = await countPoints.queryFeatures(geomQuery)
+
+    let geomFeatures = geomResults.features
+
+    const typeQuery = aadtTable.createQuery()
+        typeQuery.where = "1=1"
+    const aadtResults = await aadtTable.queryFeatures()
+    const aadtFeatures = aadtResults.features
+    for (const feature of geomFeatures){
+ 
+        let id = feature.attributes.id
+        let name = feature.attributes.name
+        let source = feature.attributes.source
+        let locality = feature.attributes.locality
+        let geometry = feature.geometry
+
+        // query aadt table to determin if there are ped and bike counts
+        
+
+        const typeResults = aadtFeatures.filter((feature) => feature.attributes.site_id === id)
+        let bikeData = false
+        let pedData = false
+        let firstSurvey: number | string | null = null
+        let lastSurvey: number | string | null = null
+        typeResults.forEach((feature) => {
+            
+            if (feature.attributes.count_type === "bike") {
+                bikeData = true
+            }
+            if (feature.attributes.count_type === "bike") {
+                pedData = true
+            }
+
+            if (!firstSurvey) {
+                firstSurvey = feature.attributes.start_date
+            } else if (firstSurvey < feature.attributes.start_date) {
+                firstSurvey = feature.attributes.start_date
+            }
+
+            if (!lastSurvey) {
+                lastSurvey = feature.attributes.end_date
+            } else if (lastSurvey < feature.attributes.end_date) {
+                lastSurvey = feature.attributes.end_date
+            }
+
+        })
+    
+        let countTypes = "Biking & Walking"
+        if (bikeData && !pedData) {
+            countTypes = "Biking"
+        }
+        if (!bikeData && pedData) {
+            countTypes = "Walking"
+        }
+
+        geomArr.push({id, geometry, name, locality, source, countTypes, firstSurvey, lastSurvey})
+    }
+    console.log(geomArr)
+
+    // creating a new graphics layer 
+    const graphics: Graphic[] = []
+    let graphic
+
+    for (let i=0; i<geomArr.length; i++) {
+    
+        graphic = new Graphic({
+            geometry: geomArr[i].geometry,
+            attributes: geomArr[i]
+        })
+        graphics.push(graphic)
+    }
+    
+    const layerFields = [
+        new Field({
+            name: "OBJECTID",
+            alias: "ObjectId",
+            type: "oid"
+        }),
+        new Field({
+            name: "id",
+            alias: "Site ID",
+            type: "string"
+        }),
+        new Field({
+            name: "name",
+            alias: "Count Site",
+            type: "string"
+        }),
+        new Field({
+            name: "source",
+            alias: "Survey",
+            type: "string"
+        }),
+        new Field({
+            name: "locality",
+            alias: "Locality",
+            type: "string"
+        }),
+        new Field({
+            name: "countTypes",
+            alias: "Data Collected",
+            type: "string"
+        }),
+        new Field({
+            name: "firstSurvey",
+            alias: "First Survey",
+            type: "date-only"
+        }),
+        new Field({
+            name: "lastSurvey",
+            alias: "Last Survey",
+            type: "date-only"
+        })
+    ]
+
+    const siteInfo = {
+        type: "fields",
+        fieldInfos: [
+          {
+            fieldName: "name",
+            label: "Location"
+          },
+          {
+            fieldName: "locality",
+            label: "Locality"
+          },
+          {
+            fieldName: "source",
+            label: "Source"
+          },
+          {
+            fieldName: "countTypes",
+            label: "Data Collected"
+          },
+          {
+            fieldName: "firstSurvey",
+            label: "First Surveyed",
+            format: {
+                dateFormat: 'short-date'
+            }
+          },
+          {
+            fieldName: "lastSurvey",
+            label: "Last Surveyed",
+            format: {
+                dateFormat: 'short-date'
+            }
+          }
+      
+        ]
+      }
+   
+
+    const surveyContent = new CustomContent({
+        outFields:["*"],
+        creator: (event) => {
+            if (event?.graphic) {
+            const siteId = event.graphic.attributes.id
+            const siteName = event.graphic.attributes.name
+            const source = event.graphic.attributes.source
+            console.log(event.graphic)
+            const query = aadtTable.createQuery()
+            query.where = "site_id = " + siteId
+            return aadtTable.queryFeatures(query).then((results: FeatureSet) => {
+         
+                let tableArr: Record<string, any>[] = []
+                results.features.forEach((feature: any) => {
+                    tableArr.push({...feature.attributes})
+                })
+
+                const typeDict: Record<string, string> = {
+                    ped: "Walking",
+                    bike: "Biking"
+                }
+                const tableContent = tableArr.map((record) => {
+                    return {
+
+                        ...record,
+                        start_date: new Date(record.start_date).toDateString(),
+                        end_date: new Date(record.end_date).toDateString(),
+                        start_year: new Date(record.start_date).getFullYear(),
+                        count_type: typeDict[record.count_type]
+                    }
+                })
+       
+                const numSurveys = Array.from(new Set(tableArr.map((record) => record.start_date))).length
+                const startYears = Array.from(new Set(tableArr.map((record) => new Date(record.start_date).getFullYear())))
+                const endYears = Array.from(new Set(tableArr.map((record) => new Date(record.end_date).getFullYear())))
+                const uniqueYears = Array.from(new Set(startYears.concat(endYears)))
+
+                const countTypes = Array.from(new Set(tableArr.map((record) => record.count_type)))
+                    .join(" and ")
+                    .replace("ped", "<b>Walking</b>")
+                    .replace("bike", "<b>Biking</b>")
+                
+                const buildStyledTable = (tableInfo: any) => {
+                             
+                    const attributes = ["start_date", "end_date", "count_type", "all_aadt", "weekday_aadt", "weekend_aadt"];
+
+                    const labels: Record<string, string> = {
+                        start_date: "Start Date",
+                        end_date: "End Date",
+                        count_type: "Count Type",
+                        all_aadt: "Everyday AADT",
+                        weekday_aadt: "Weekday AADT",
+                        weekend_aadt: "Weekend AADT"
+                    };
+                    
+                    return `
+                        <br/><br/>
+                        <details>
+                        <summary><b>${tableInfo.start_year} ${tableInfo.count_type} Survey</b></summary>
+                        <div class="esri-feature-fields">
+                            
+                            <table class="esri-widget__table">
+                                <tbody>
+                                ${attributes.map((attr) => 
+                                    `
+                                        <tr>
+                                            <th class="esri-feature-fields__field-header">${labels[attr]}</th>
+                                            <td class="esri-feature-fields__field-data">${tableInfo[attr]}</td>
+                                        </tr>`
+                                    )
+                                    .join("")}
+                                </tbody>
+                        
+                            </table>
+                        </div>
+                        </details>
+                        `;
+                    }
+                        
+                        
+                    
+
+                // Format the returned values and display this in the popup content
+                return `
+                    <b>Site Summary</b>
+                    <br/><br/>
+                    <b>${numSurveys}</b> ${source} survey${numSurveys > 1 ? "s have" : " has"} been conducted at ${siteName}.
+                    Surveys collected ${countTypes} volume data ${
+                    uniqueYears.length > 1
+                        ? "over the following years: <ul>" + uniqueYears.map((year) => "<li>" + year + "</li>").join("") + "</ul>"
+                        : "during " + uniqueYears[0]
+                    }
+                    
+                    ${tableContent.map((survey) => buildStyledTable(survey)).join("")}
+                    
+                `;
+  
+            })
+        }
+            // return "hey"
+        }
+    })
+    
+    const layer = new FeatureLayer({
+        source: graphics,
+        title: "All Volumes",
+        objectIdField: "OBJECTID",
+        fields: layerFields,
+        timeInfo: {
+            startField: "firstSurvey",
+            endField: "lastSurvey",
+            interval: {
+                unit: "years",
+                value: 1
+            }
+        },
+        popupTemplate: new PopupTemplate({
+            outFields: ["*"],
+            title: "{name}",
+            content: [siteInfo, surveyContent]
+          }),
+        renderer: new UniqueValueRenderer({
+            field: 'countTypes',
+            defaultSymbol: new SimpleMarkerSymbol({ style: "circle", color: "gray", size: 6 }),
+            uniqueValueInfos: [
+                {
+                value: "Biking & Walking",
+                symbol: new SimpleMarkerSymbol({ style: "circle", color: "blue", size: 6 })
+                },
+                {
+                value: "Biking",
+                symbol: new SimpleMarkerSymbol({ style: "circle", color: "green", size: 6 })
+                },
+                {
+                value: "Walking",
+                symbol: new SimpleMarkerSymbol({ style: "circle", color: "purple", size: 6 })
+                }
+            ]
+            
+            
+            
+        })
+    })
+    console.log(layer)
+    return layer
+}
+
 export async function createCountGroupLayer() {
 
     const countPoints = new FeatureLayer({url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Bicycle_and_Pedestrian_Counts/FeatureServer/0"})
@@ -427,14 +746,16 @@ export async function createCountGroupLayer() {
 
     const bikeLayer = await createAADTGraphics(countPoints, aadtTable, "count_type = 'bike'", "Biking Volumes")
     const pedLayer = await createAADTGraphics(countPoints, aadtTable, "count_type = 'ped'", "Walking Volumes")
+    const combinedLayer = await createSiteGraphics()
 
     const countGroupLayer = new GroupLayer({
         layers: [
             bikeLayer,
-            pedLayer
+            pedLayer,
+            combinedLayer
         ],
         title: "Volumes",
-        visibilityMode: "exclusive"
+        visibilityMode: "independent"
 
     })
 

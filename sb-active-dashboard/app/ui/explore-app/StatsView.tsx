@@ -150,7 +150,9 @@ export default function StatsView() {
             })
             return
         } 
+        console.log(volumeGroup)
         const pedLayer = volumeGroup.allLayers.find((layer): layer is FeatureLayer => layer.title === "Walking Volumes") as FeatureLayer
+        console.log(pedLayer)
         if (pedLayer.visible) {
             setupCountLayerWatch({
                 view: viewRef,
