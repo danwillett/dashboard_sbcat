@@ -10,8 +10,7 @@ import ExploreDataDisplay from "./ExploreDataDisplay";
 
 // import custom functions
 import { createCensusGroupLayer } from "@/app/lib/explore-app/displayCensus";
-import { createCountGroupLayer } from "@/app/lib/explore-app/displayCounts";
-import { createModeledVolumeLayer } from "@/app/lib/explore-app/displayModeledVolumes";
+import { createCountGroupLayer, createModeledVolumeLayer } from "@/app/lib/explore-app/displayCounts";
 import { createIncidentGroupLayer } from "@/app/lib/explore-app/displayIncidents";
 import { addVisualizationOptions } from "@/app/lib/utils";
 import { changeIncidentRenderer } from "@/app/lib/explore-app/displayIncidents";
@@ -38,13 +37,15 @@ import GroupLayer from "@arcgis/core/layers/GroupLayer";
 // import mui components
 import { CssBaseline, Box, Popover, Typography, Toolbar } from "@mui/material";
 import Grid from "@mui/material/Grid2"
+import VectorTileLayer from "@arcgis/core/layers/VectorTileLayer";
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 
 // import { setAssetPath as setCalciteComponentsAssetPath } from '@esri/calcite-components/dist/components';
 // setCalciteComponentsAssetPath("https://js.arcgis.com/calcite-components/2.13.2/assets");
 
 export default function ExploreMap() {
 
-    const { mapRef, setMapRef, viewRef, setViewRef, countGroupLayer, setCountGroupLayer, censusGroupLayer, setCensusGroupLayer, incidentGroupLayer, setIncidentGroupLayer, setLayerList, setTimeSlider } = useMapContext()
+    const { mapRef, setMapRef, viewRef, setViewRef, countGroupLayer, setCountGroupLayer, censusGroupLayer, setCensusGroupLayer, incidentGroupLayer, setIncidentGroupLayer, AADTHexagonLayer, setAADTHexagonLayer, setLayerList, setTimeSlider } = useMapContext()
 
     const [showWidgetPanel, setShowWidgetPanel] = useState<Boolean>(false)
     const [showLegend, setShowLegend] = useState<Boolean>(false)
@@ -52,6 +53,8 @@ export default function ExploreMap() {
     const [showFilter, setShowFilter] = useState<Boolean>(false)
     const [showPrint, setShowPrint] = useState<Boolean>(false)
     const [ mapElRef, setMapElRef ] = useState(null)
+
+    const [hexagonTile, setHexagonTile] = useState<VectorTileLayer | null>(null)
 
 
     // once map is generated, load feature layers and add to the map
@@ -61,15 +64,14 @@ export default function ExploreMap() {
             const createLayers = async () => {
                 const censusGroupLayer = await createCensusGroupLayer()
                 const countGroupLayer = await createCountGroupLayer()
-                // const modeledVolumeLayer = await createModeledVolumeLayer()
                 const incidentGroupLayer = await createIncidentGroupLayer()
+                const modeledAADTHexagons = createModeledVolumeLayer()
                                 
                 setCensusGroupLayer(censusGroupLayer)
                 setCountGroupLayer(countGroupLayer)
                 setIncidentGroupLayer(incidentGroupLayer)
-
-                // add map layers in LayerSearch
-                // mapRef.add(censusGroupLayer)
+                setAADTHexagonLayer(modeledAADTHexagons)
+                
             }
             
             createLayers()
@@ -151,8 +153,7 @@ export default function ExploreMap() {
                 setShowLayerList(true)
                 setShowPrint(false)
                 setShowWidgetPanel(true)
-
-                // viewRef.ui.add([legend], "top-left")
+                
             }
         }
         

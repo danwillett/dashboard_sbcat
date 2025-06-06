@@ -5,6 +5,7 @@ import FeatureSet from "@arcgis/core/rest/support/FeatureSet"
 import Graphic from "@arcgis/core/Graphic"
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer"
+import VectorTileLayer from "@arcgis/core/layers/VectorTileLayer"
 import * as math from 'mathjs'
 import { DataFrame, Str, toJSON } from "danfojs"
 import ColorVariable from "@arcgis/core/renderers/visualVariables/ColorVariable";
@@ -13,6 +14,7 @@ import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
 import CustomContent from "@arcgis/core/popup/content/CustomContent";
 import PopupTemplate from "@arcgis/core/PopupTemplate"
 import { UniqueValueRenderer } from "@arcgis/core/renderers";
+import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol"
 
 
 // display count locations, change color by average counts/day (?)
@@ -695,7 +697,7 @@ async function createSiteGraphics() {
     
     const layer = new FeatureLayer({
         source: graphics,
-        title: "All Volumes",
+        title: "All Sites",
         objectIdField: "OBJECTID",
         fields: layerFields,
         timeInfo: {
@@ -737,16 +739,112 @@ async function createSiteGraphics() {
     return layer
 }
 
+export function createModeledVolumeLayer() {
+    
+    const bikeHexagonTile = new VectorTileLayer({
+        style: {
+        
+            version: 8,
+            sources: {
+            esri: {
+                url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/ModeledVolumes/VectorTileServer",
+                type: "vector"
+            }
+            },
+            layers: [
+                    {
+                        "id": "AADBT",
+                        "type": "fill",
+                        "source": "esri",
+                        "source-layer": "HexagonAADT",
+                        "layout": {},
+                        "paint": {
+                        "fill-color": [
+                            "step",
+                            [
+                            "get",
+                            "aadt_2023_bike"
+                            ],
+                            "#ffffb2",
+                            100,
+                            "#fecc5c",
+                            300,
+                            "#fd8d3c",
+                            600,
+                            "#e31a1c"
+                        ],
+                        "fill-outline-color": "#6E6E6E"
+                        }
+                    }
+            ]
+        },
+        title: "Modeled Biking Volumes",
+        visible: false,
+        opacity: 0.5
+    })
+
+    const pedHexagonTile = new VectorTileLayer({
+        style: {
+        
+            version: 8,
+            sources: {
+            esri: {
+                url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/ModeledVolumes/VectorTileServer",
+                type: "vector"
+            }
+            },
+            layers: [
+                    {
+                        "id": "AADPT",
+                        "type": "fill",
+                        "source": "esri",
+                        "source-layer": "HexagonAADT",
+                        "layout": {},
+                        "paint": {
+                        "fill-color": [
+                            "step",
+                            [
+                            "get",
+                            "aadt_2023_ped"
+                            ],
+                            "#ffffb2",
+                            100,
+                            "#fecc5c",
+                            300,
+                            "#fd8d3c",
+                            600,
+                            "#e31a1c"
+                        ],
+                        "fill-outline-color": "#6E6E6E"
+                        }
+                    }
+            ]
+        },
+        title: "Modeled Walking Volumes",
+        visible: false,
+        opacity: 0.5
+    })
+ 
+
+
+    const modeledVolumeGroupLayer = new GroupLayer({
+        layers: [bikeHexagonTile, pedHexagonTile],
+        title: "Modeled Volumes",
+        visibilityMode: "exclusive"
+    })
+    return modeledVolumeGroupLayer
+}
+
 export async function createCountGroupLayer() {
 
     const countPoints = new FeatureLayer({url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Bicycle_and_Pedestrian_Counts/FeatureServer/0"})
     const countTable = new FeatureLayer({url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Bicycle_and_Pedestrian_Counts/FeatureServer/1"})
     const aadtTable = new FeatureLayer({url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Bicycle_and_Pedestrian_Counts/FeatureServer/2"})
 
-
-    const bikeLayer = await createAADTGraphics(countPoints, aadtTable, "count_type = 'bike'", "Biking Volumes")
-    const pedLayer = await createAADTGraphics(countPoints, aadtTable, "count_type = 'ped'", "Walking Volumes")
+    const bikeLayer = await createAADTGraphics(countPoints, aadtTable, "count_type = 'bike'", "Biking Sites")
+    const pedLayer = await createAADTGraphics(countPoints, aadtTable, "count_type = 'ped'", "Walking Sites")
     const combinedLayer = await createSiteGraphics()
+    // const modelBikeLayer = await createModeledVolumeLayer()
 
     const countGroupLayer = new GroupLayer({
         layers: [
@@ -754,8 +852,8 @@ export async function createCountGroupLayer() {
             pedLayer,
             combinedLayer
         ],
-        title: "Volumes",
-        visibilityMode: "independent"
+        title: "Count Sites",
+        visibilityMode: "exclusive"
 
     })
 

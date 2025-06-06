@@ -4,10 +4,11 @@ import React, { ReactNode, createContext, useContext, useState } from 'react'
 import Map from "@arcgis/core/Map"
 import MapView from "@arcgis/core/views/MapView"
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
+import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer';
 import LayerList from '@arcgis/core/widgets/LayerList';
 import TimeSlider from "@arcgis/core/widgets/TimeSlider"
 
-import { SafetyChecks, VolumeChecks, DemographicChecks } from "@/app/lib/explore-app/types"
+import { SafetyChecks, VolumeChecks, DemographicChecks, CountSiteChecks } from "@/app/lib/explore-app/types"
 
 type MapContextType = {
     
@@ -26,6 +27,9 @@ type MapContextType = {
     incidentGroupLayer: GroupLayer | null,
     setIncidentGroupLayer: React.Dispatch<React.SetStateAction<GroupLayer | null>>,
 
+    AADTHexagonLayer: GroupLayer | null,
+    setAADTHexagonLayer: React.Dispatch<React.SetStateAction<GroupLayer | null>>,
+
     layerList: LayerList | null,
     setLayerList: React.Dispatch<React.SetStateAction<LayerList | null>>,
 
@@ -34,6 +38,9 @@ type MapContextType = {
 
     safetyChecks: SafetyChecks,
     setSafetyChecks: React.Dispatch<React.SetStateAction<SafetyChecks>>,
+
+    countSiteChecks: CountSiteChecks,
+    setCountSiteChecks: React.Dispatch<React.SetStateAction<CountSiteChecks>>,
 
     volumeChecks: VolumeChecks,
     setVolumeChecks: React.Dispatch<React.SetStateAction<VolumeChecks>>,
@@ -60,24 +67,30 @@ export default function MapProvider({children}: MapProviderProps){
     const [ censusGroupLayer, setCensusGroupLayer ] = useState<GroupLayer | null>(null)
     const [ countGroupLayer, setCountGroupLayer ] = useState<GroupLayer | null>(null)
     const [ incidentGroupLayer, setIncidentGroupLayer ] = useState<GroupLayer | null>(null)
+    const [ AADTHexagonLayer, setAADTHexagonLayer ] = useState<GroupLayer | null>(null)
 
     // tracking layers
     const [safetyChecks, setSafetyChecks] = useState({
         "Biking Incidents": false,
         "Walking Incidents": false
     })
+
+    const [countSiteChecks, setCountSiteChecks] = useState({
+        "Biking Sites": false,
+        "Walking Sites": false,
+        "All Sites": false
+    })
+
     const [volumeChecks, setVolumeChecks] = useState({
-            "Biking Volumes": false,
-            "Modeled Biking Volumes": false,
-            "Walking Volumes": false,
-            "Modeled Walking Volumes": false,
-            "All Volumes": false
-        })
+        "Modeled Biking Volumes": false,
+        "Modeled Walking Volumes": false,
+    })
+
     const [demographicChecks, setDemographicChecks] = useState({
-            "Income": false,
-            "Race": false,
-            "Education": false
-        })
+        "Income": false,
+        "Race": false,
+        "Education": false
+    })
     
     
     return (
@@ -91,8 +104,10 @@ export default function MapProvider({children}: MapProviderProps){
                 censusGroupLayer, setCensusGroupLayer, 
                 countGroupLayer, setCountGroupLayer, 
                 incidentGroupLayer, setIncidentGroupLayer,
+                AADTHexagonLayer, setAADTHexagonLayer,
 
                 safetyChecks, setSafetyChecks,
+                countSiteChecks, setCountSiteChecks,
                 volumeChecks, setVolumeChecks,
                 demographicChecks, setDemographicChecks
 

@@ -21,6 +21,7 @@ import Button from '@mui/material/Button';
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
+import Box from "@mui/material/Box";
 
 interface LayerSearchProps {
     safetyChecks: SafetyChecks;
@@ -34,8 +35,8 @@ interface LayerSearchProps {
 
 export default function LayerSearch(props: LayerSearchProps) {
 
-    const { mapRef, incidentGroupLayer, censusGroupLayer, countGroupLayer, layerList } = useMapContext()
-    const { safetyChecks, setSafetyChecks, volumeChecks, setVolumeChecks, demographicChecks, setDemographicChecks } = useMapContext()
+    const { mapRef, incidentGroupLayer, censusGroupLayer, countGroupLayer, AADTHexagonLayer, layerList } = useMapContext()
+    const { safetyChecks, setSafetyChecks, countSiteChecks, setCountSiteChecks, volumeChecks, setVolumeChecks, demographicChecks, setDemographicChecks } = useMapContext()
 
 
     const handleSafetyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,7 +57,7 @@ export default function LayerSearch(props: LayerSearchProps) {
         // add group layer to the map if this is the first load
         if (!safetyGroup) {
             mapRef.add(incidentGroupLayer)
-            
+        
         }
 
         // set visibility based on safetyChecks
@@ -78,6 +79,40 @@ export default function LayerSearch(props: LayerSearchProps) {
 
     }, [safetyChecks])
 
+    const handleCountSiteChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        event.stopPropagation()
+        setCountSiteChecks({
+            ...countSiteChecks,
+            [event.target.name]: event.target.checked,
+          });
+    }
+
+    useEffect(() => {
+        if (!mapRef || !countGroupLayer ) return;
+
+        const countSiteGroup = mapRef.allLayers.find((layer) => layer.title === "Count Sites")
+        if (!countSiteGroup) {
+            // load in hexagon layers first
+            mapRef.add(countGroupLayer)            
+        } 
+        // countSites
+        countGroupLayer.allLayers.forEach((sublayer) => {
+            const title = sublayer.title
+            if (title && title in countSiteChecks) {
+                const visible = countSiteChecks[title as keyof typeof countSiteChecks]
+                sublayer.visible = visible;
+                sublayer.listMode = visible ? "hide" : "show";
+            }
+        })
+
+        
+        const allFalse = Object.values(countSiteChecks).every(value => value === false)
+        if (allFalse) {
+            mapRef?.remove(countGroupLayer)
+        }
+
+    }, [countSiteChecks])
+
     const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         event.stopPropagation()
         setVolumeChecks({
@@ -87,25 +122,33 @@ export default function LayerSearch(props: LayerSearchProps) {
     }
 
     useEffect(() => {
-        if (!mapRef || !countGroupLayer) return;
-
-        const volumeGroup = mapRef.allLayers.find((layer) => layer.title === "Volumes")
+        if (!mapRef || !AADTHexagonLayer ) return;
+        console.log(AADTHexagonLayer)
+        const volumeGroup = mapRef.allLayers.find((layer) => layer.title === "Modeled Volumes")
         if (!volumeGroup) {
-            mapRef.add(countGroupLayer)
+            // load in hexagon layers first
+            mapRef.add(AADTHexagonLayer)           
+        } else {
+            // make sure hexagons stay above census group layer
+            mapRef.reorder(AADTHexagonLayer, 1)
         }
-        countGroupLayer.allLayers.forEach((sublayer) => {
+
+        // countSites
+        
+        AADTHexagonLayer.allLayers.forEach((sublayer) => {
             const title = sublayer.title
+            console.log(title)
             if (title && title in volumeChecks) {
                 const visible = volumeChecks[title as keyof typeof volumeChecks]
                 sublayer.visible = visible;
                 sublayer.listMode = visible ? "hide" : "show";
             }
         })
-
         const allFalse = Object.values(volumeChecks).every(value => value === false)
-        if (allFalse && countGroupLayer) {
-            mapRef?.remove(countGroupLayer)
+        if (allFalse) {
+            mapRef?.remove(AADTHexagonLayer)
         }
+
     }, [volumeChecks])
 
     const handleDemographicChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,7 +165,9 @@ export default function LayerSearch(props: LayerSearchProps) {
         const censusGroup = mapRef.allLayers.find((layer) => layer.title === "Demographics")
         if (!censusGroup) {
             mapRef.add(censusGroupLayer)
-            
+        } else {
+            // ensure that census layer is always at the bottom, if it isn't already
+            mapRef.reorder(censusGroupLayer, 0)
         }
 
         censusGroupLayer.allLayers.forEach((sublayer) => {
@@ -139,6 +184,9 @@ export default function LayerSearch(props: LayerSearchProps) {
             mapRef?.remove(censusGroupLayer)
         }
     }, [demographicChecks])
+
+    // change map order of all layers once loaded in
+    
 
     return (
         <div>
@@ -171,11 +219,23 @@ export default function LayerSearch(props: LayerSearchProps) {
                     </AccordionSummary>
                     <AccordionDetails>
                         <FormGroup id={"volume-layers"}>
-                            <FormControlLabel control={<Switch checked={volumeChecks["Biking Volumes"]} onChange={handleVolumeChange} name="Biking Volumes" />} label="Bicycle Count Locations" />
-                            {/* <FormControlLabel control={<Switch checked={volumeChecks["Modeled Biking Volumes"]} onChange={handleVolumeChange} name="Modeled Biking Volumes" />} label="Modeled Bicycle Volumes" /> */}
-                            <FormControlLabel control={<Switch checked={volumeChecks["Walking Volumes"]} onChange={handleVolumeChange} name="Walking Volumes" />} label="Pedestrian Count Locations" />
-                            {/* <FormControlLabel control={<Switch checked={volumeChecks["Modeled Walking Volumes"]} onChange={handleVolumeChange} name="Modeled Walking Volumes" />} label="Modeled Pedestrian Volumes" /> */}
-                            <FormControlLabel control={<Switch checked={volumeChecks["All Volumes"]} onChange={handleVolumeChange} name="All Volumes" />} label="All Count Locations" />
+                            <Typography variant="subtitle2" sx={{  mb: 0.5 }}>
+                                Count Sites
+                            </Typography>
+                            <Box sx={{ mx:1, display: 'flex', flexDirection: 'column'}}>
+                                <FormControlLabel control={<Switch checked={countSiteChecks["Biking Sites"]} onChange={handleCountSiteChange} name="Biking Sites" />} label="Biking Sites" />                           
+                                <FormControlLabel control={<Switch checked={countSiteChecks["Walking Sites"]} onChange={handleCountSiteChange} name="Walking Sites" />} label="Walking Sites" />                               
+                                <FormControlLabel control={<Switch checked={countSiteChecks["All Sites"]} onChange={handleCountSiteChange} name="All Sites" />} label="All Sites" />
+                            </Box>
+                            
+                            <Typography variant="subtitle2" sx={{ mt: 2, mb: 0.5 }}>
+                                Modeled Volumes
+                            </Typography>
+                            <Box sx={{ mx:1, display: 'flex', flexDirection: 'column'}}>
+                                <FormControlLabel control={<Switch checked={volumeChecks["Modeled Biking Volumes"]} onChange={handleVolumeChange} name="Modeled Biking Volumes" />} label="Biking Volumes" />
+                            <FormControlLabel control={<Switch checked={volumeChecks["Modeled Walking Volumes"]} onChange={handleVolumeChange} name="Modeled Walking Volumes" />} label="Walking Volumes" />
+
+                            </Box>                            
 
                         </FormGroup>
                     </AccordionDetails>
