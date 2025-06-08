@@ -4,6 +4,7 @@ export type SafetyChecks = {
 }
 
 export type CountSiteChecks = {
+    "toggled": boolean,
     "Biking Sites": boolean,
     "Walking Sites": boolean,
     "All Sites": boolean
@@ -11,6 +12,7 @@ export type CountSiteChecks = {
 
 
 export type VolumeChecks = {
+    "toggled": boolean,
     "Modeled Biking Volumes": boolean,
     "Modeled Walking Volumes": boolean,
 }

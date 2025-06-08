@@ -32,7 +32,7 @@ type UniqueFieldsMap = Record<string, boolean>;
 
 export default function VolumeFilters() {
 
-    const { countGroupLayer, viewRef, mapRef } = useMapContext()
+    const { countGroupLayer, countSiteChecks, viewRef, mapRef } = useMapContext()
 
     const [ filters, setFilters ] = useState<Filters>({
             locality: null,
@@ -47,7 +47,7 @@ export default function VolumeFilters() {
     
         // filter incidents by day of week
         if (countGroupLayer !== null && mapRef !== null && viewRef !== null) {
-            const volumeGroup = mapRef.allLayers.find((layer): layer is GroupLayer => layer.title === "Volumes" && layer.type === "group")
+            const volumeGroup = mapRef.allLayers.find((layer): layer is GroupLayer => layer.title === "Count Sites" && layer.type === "group")
             if (volumeGroup) {
                 const groupIncidentView = await viewRef?.whenLayerView(countGroupLayer) as GroupLayerView;
                 const countLayerViews = groupIncidentView.layerViews
@@ -236,21 +236,27 @@ export default function VolumeFilters() {
         <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
         
             <Box sx={{width: '100%'}}>
-                <Typography variant='body1' align="left" my={1} sx={{width: '100%'}}>Visualize counts by day of the week</Typography>
-                <FormControl>
-                    <FormLabel id="count-dow-radio-buttons-group-label">Daily Traffic</FormLabel>
-                    <RadioGroup
-                        aria-labelledby="count-dow-radio-buttons-group-label"
-                        defaultValue="all_aadt"
-                        name="count-dow-radio-buttons-group"
-                        onChange={changeRenderField}
-                        value={dowValue}
-                    >
-                        <FormControlLabel value="all_aadt" control={<Radio />}  label="Everyday" />
-                        <FormControlLabel value="weekday_addt" control={<Radio />} label="Weekday" />
-                        <FormControlLabel value="weekend_aadt" control={<Radio />} label="Weekend" />
-                    </RadioGroup>
-                </FormControl>
+
+                { !countSiteChecks['All Sites'] && (
+                    <div>
+                        <Typography variant='body1' align="left" my={1} sx={{width: '100%'}}>Visualize counts by day of the week</Typography>
+                        <FormControl>
+                            <FormLabel id="count-dow-radio-buttons-group-label">Daily Traffic</FormLabel>
+                            <RadioGroup
+                                aria-labelledby="count-dow-radio-buttons-group-label"
+                                defaultValue="all_aadt"
+                                name="count-dow-radio-buttons-group"
+                                onChange={changeRenderField}
+                                value={dowValue}
+                            >
+                                <FormControlLabel value="all_aadt" control={<Radio />}  label="Everyday" />
+                                <FormControlLabel value="weekday_addt" control={<Radio />} label="Weekday" />
+                                <FormControlLabel value="weekend_aadt" control={<Radio />} label="Weekend" />
+                            </RadioGroup>
+                        </FormControl>
+                    </div>
+                )}
+                
 
                 {/* Localities */}
                 <Typography variant='body1' align="left" my={1} sx={{width: '100%'}}>Filter by Jursidiction</Typography>

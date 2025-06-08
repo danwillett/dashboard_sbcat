@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react"
 
 // map context and types
 import { useMapContext } from "@/app/lib/context/MapContext";
-import { SafetyChecks, VolumeChecks, DemographicChecks } from "@/app/lib/explore-app/types"
+import { SafetyChecks, VolumeChecks, DemographicChecks, CountSiteChecks } from "@/app/lib/explore-app/types"
 
 // arcgis js
 import LayerList from "@arcgis/core/widgets/LayerList";
@@ -22,6 +22,10 @@ import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import Box from "@mui/material/Box";
+
+// mui radio components
+import RadioGroup from "@mui/material/RadioGroup";
+import Radio from "@mui/material/Radio";
 
 interface LayerSearchProps {
     safetyChecks: SafetyChecks;
@@ -79,77 +83,135 @@ export default function LayerSearch(props: LayerSearchProps) {
 
     }, [safetyChecks])
 
-    const handleCountSiteChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        event.stopPropagation()
-        setCountSiteChecks({
+
+    const handleCountSiteToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.checked) {
+            setCountSiteChecks({
+                "toggled": false,
+                "Biking Sites": false,
+                "Walking Sites": false,
+                "All Sites": true
+            })
+        } else {
+            setCountSiteChecks({
             ...countSiteChecks,
-            [event.target.name]: event.target.checked,
-          });
+            "toggled": event.target.checked
+        })
+        }
+        
+    }
+    const [selectedCountSite, setSelectedCountSite] = useState<string>("All Sites")
+    const handleCountSiteChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+
+        event.stopPropagation()
+
+        // change the clicked radio to true and all others except toggled to false
+        Object.keys(countSiteChecks).forEach((key) => {
+            if (key === 'toggled') return;
+            let check = false
+            if (key === event.target.value) {
+                check = true
+                setSelectedCountSite(key)
+            }  
+            setCountSiteChecks({
+                    ...countSiteChecks,
+                    [key]: check
+                })
+        })
+        
     }
 
     useEffect(() => {
         if (!mapRef || !countGroupLayer ) return;
-
-        const countSiteGroup = mapRef.allLayers.find((layer) => layer.title === "Count Sites")
-        if (!countSiteGroup) {
-            // load in hexagon layers first
-            mapRef.add(countGroupLayer)            
-        } 
-        // countSites
-        countGroupLayer.allLayers.forEach((sublayer) => {
-            const title = sublayer.title
-            if (title && title in countSiteChecks) {
-                const visible = countSiteChecks[title as keyof typeof countSiteChecks]
-                sublayer.visible = visible;
-                sublayer.listMode = visible ? "hide" : "show";
-            }
-        })
-
         
-        const allFalse = Object.values(countSiteChecks).every(value => value === false)
-        if (allFalse) {
-            mapRef?.remove(countGroupLayer)
+        const countSiteGroup = mapRef.allLayers.find((layer) => layer.title === "Count Sites")
+        
+        if (countSiteChecks["toggled"]) {
+            // add the group layer if not already added
+            if (!countSiteGroup) {
+                mapRef.add(countGroupLayer)            
+            } 
+            // countSites
+            countGroupLayer.allLayers.forEach((sublayer) => {
+                const title = sublayer.title
+                if (title === selectedCountSite) {
+                    sublayer.visible = true;
+                    sublayer.listMode = "show"
+                } else {
+                    sublayer.visible = false
+                    sublayer.listMode = "hide"
+                }
+            })
+
+        } else {
+            if (countSiteGroup) {
+                mapRef?.remove(countGroupLayer)            
+            } 
+
         }
+        
+    }, [selectedCountSite, countSiteChecks])
 
-    }, [countSiteChecks])
-
+    const [selectedVolumeType, setSelectedVolumeType] = useState<string>("Modeled Biking Volumes")
+    const handleVolumeToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.checked) {
+            setVolumeChecks({
+                "toggled": false,
+                "Modeled Biking Volumes": true,
+                "Modeled Walking Volumes": false,
+            })
+        } else {
+            setVolumeChecks({
+                ...volumeChecks,
+                "toggled": event.target.checked
+            })
+        }
+    }
     const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         event.stopPropagation()
-        setVolumeChecks({
-            ...volumeChecks,
-            [event.target.name]: event.target.checked,
-          });
+        Object.keys(volumeChecks).forEach((key) => {
+            if (key === 'toggled') return;
+            let check = false
+            if (key === event.target.value) {
+                check = true
+                setSelectedVolumeType(key)
+            }  
+            setVolumeChecks({
+                    ...volumeChecks,
+                    [key]: check
+                })
+        })
     }
 
     useEffect(() => {
         if (!mapRef || !AADTHexagonLayer ) return;
-        console.log(AADTHexagonLayer)
+        console.log(selectedVolumeType)
         const volumeGroup = mapRef.allLayers.find((layer) => layer.title === "Modeled Volumes")
-        if (!volumeGroup) {
+        if (volumeChecks.toggled) {
+             if (!volumeGroup) {
             // load in hexagon layers first
-            mapRef.add(AADTHexagonLayer)           
-        } else {
-            // make sure hexagons stay above census group layer
-            mapRef.reorder(AADTHexagonLayer, 1)
-        }
-
-        // countSites
-        
-        AADTHexagonLayer.allLayers.forEach((sublayer) => {
-            const title = sublayer.title
-            console.log(title)
-            if (title && title in volumeChecks) {
-                const visible = volumeChecks[title as keyof typeof volumeChecks]
-                sublayer.visible = visible;
-                sublayer.listMode = visible ? "hide" : "show";
+                mapRef.add(AADTHexagonLayer)           
+            } else {
+                // make sure hexagons stay above census group layer
+                mapRef.reorder(AADTHexagonLayer, 1)
             }
-        })
-        const allFalse = Object.values(volumeChecks).every(value => value === false)
-        if (allFalse) {
-            mapRef?.remove(AADTHexagonLayer)
+        
+            AADTHexagonLayer.allLayers.forEach((sublayer) => {
+                const title = sublayer.title
+                if (title && title in volumeChecks) {
+                    const visible = volumeChecks[title as keyof typeof volumeChecks]
+                    sublayer.visible = visible;
+                    sublayer.listMode = visible ? "hide" : "show";
+                }
+            })
+        } else {
+            if (volumeGroup) {
+            // load in hexagon layers first
+                mapRef.remove(AADTHexagonLayer)
+            }
         }
-
-    }, [volumeChecks])
+    
+    }, [selectedVolumeType, volumeChecks])
 
     const handleDemographicChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         event.stopPropagation()
@@ -219,26 +281,52 @@ export default function LayerSearch(props: LayerSearchProps) {
                     </AccordionSummary>
                     <AccordionDetails>
                         <FormGroup id={"volume-layers"}>
-                            <Typography variant="subtitle2" sx={{  mb: 0.5 }}>
-                                Count Sites
-                            </Typography>
-                            <Box sx={{ mx:1, display: 'flex', flexDirection: 'column'}}>
-                                <FormControlLabel control={<Switch checked={countSiteChecks["Biking Sites"]} onChange={handleCountSiteChange} name="Biking Sites" />} label="Biking Sites" />                           
-                                <FormControlLabel control={<Switch checked={countSiteChecks["Walking Sites"]} onChange={handleCountSiteChange} name="Walking Sites" />} label="Walking Sites" />                               
-                                <FormControlLabel control={<Switch checked={countSiteChecks["All Sites"]} onChange={handleCountSiteChange} name="All Sites" />} label="All Sites" />
-                            </Box>
-                            
-                            <Typography variant="subtitle2" sx={{ mt: 2, mb: 0.5 }}>
-                                Modeled Volumes
-                            </Typography>
-                            <Box sx={{ mx:1, display: 'flex', flexDirection: 'column'}}>
-                                <FormControlLabel control={<Switch checked={volumeChecks["Modeled Biking Volumes"]} onChange={handleVolumeChange} name="Modeled Biking Volumes" />} label="Biking Volumes" />
-                            <FormControlLabel control={<Switch checked={volumeChecks["Modeled Walking Volumes"]} onChange={handleVolumeChange} name="Modeled Walking Volumes" />} label="Walking Volumes" />
+                            {/* Top-level category: Count Sites */}
+                            <FormControlLabel
+                            control={
+                                <Switch
+                                checked={countSiteChecks["toggled"]}
+                                onChange={handleCountSiteToggle} // You'll create this handler
+                                name="Count Sites"
+                                />
+                            }
+                            label="Count Sites"
+                            />
+                            {countSiteChecks["toggled"] && ( // You'll control this state based on the switch
+                            <RadioGroup
+                                value={selectedCountSite} // Controlled value
+                                onChange={handleCountSiteChange}
+                                sx={{ mx: 2 }}
+                            >
+                                <FormControlLabel value="Biking Sites" control={<Radio />} label="Biking Sites" />
+                                <FormControlLabel value="Walking Sites" control={<Radio />} label="Walking Sites" />
+                                <FormControlLabel value="All Sites" control={<Radio />} label="All Sites" />
+                            </RadioGroup>
+                            )}
 
-                            </Box>                            
-
+                            {/* Modeled Volumes */}
+                            <FormControlLabel
+                            control={
+                                <Switch
+                                checked={volumeChecks["toggled"]}
+                                onChange={handleVolumeToggle} // You'll create this handler
+                                name="Modeled Volumes"
+                                />
+                            }
+                            label="Modeled Volumes"
+                            />
+                            {volumeChecks["toggled"] && (
+                            <RadioGroup
+                                value={selectedVolumeType}
+                                onChange={handleVolumeChange}
+                                sx={{ mx: 2 }}
+                            >
+                                <FormControlLabel value="Modeled Biking Volumes" control={<Radio />} label="Biking Volumes" />
+                                <FormControlLabel value="Modeled Walking Volumes" control={<Radio />} label="Walking Volumes" />
+                            </RadioGroup>
+                            )}
                         </FormGroup>
-                    </AccordionDetails>
+                        </AccordionDetails>
                 </Accordion>
             )}
             

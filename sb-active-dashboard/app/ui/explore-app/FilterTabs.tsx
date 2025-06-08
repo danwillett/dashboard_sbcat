@@ -3,7 +3,8 @@
 import React, {useState, useEffect} from "react"
 
 // map context and types
-import { DemographicChecks, SafetyChecks, VolumeChecks } from "@/app/lib/explore-app/types"
+import { DemographicChecks, SafetyChecks, VolumeChecks, CountSiteChecks } from "@/app/lib/explore-app/types"
+import { useMapContext } from "@/app/lib/context/MapContext";
 
 // custom components
 import SafetyFilters from "./SafetyFilters";
@@ -58,15 +59,12 @@ const StyledTab = styled((props: StyledTabProps) => (
     fontSize: theme.typography.pxToRem(15),
   }))
 
-interface FilterTabsProps {
-    safetyChecks: SafetyChecks;
-    volumeChecks: VolumeChecks;
-    demographicChecks: DemographicChecks;
-}
-export default function FilterTabs(props: FilterTabsProps) {
-    const { safetyChecks, volumeChecks, demographicChecks } = props
+
+export default function FilterTabs() {
+    const { safetyChecks, countSiteChecks, demographicChecks} = useMapContext()
+
     const [ safetyFalse, setSafetyFalse ] = useState(false)
-    const [ volumeFalse, setVolumeFalse ] = useState(false)
+    // const [ volumeFalse, setVolumeFalse ] = useState(false)
     const [ demographicsFalse, setDemographicsFalse ] = useState(false)
 
     useEffect(() => {
@@ -77,14 +75,6 @@ export default function FilterTabs(props: FilterTabsProps) {
         
     }, [safetyChecks])
     
-    useEffect(() => {
-        if (volumeChecks !== null) {
-            
-            setVolumeFalse(Object.values(volumeChecks).every(value => value === false))
-        }
-       
-    }, [volumeChecks])
-
     useEffect(() => {
         if (demographicChecks !== null ) {
           setDemographicsFalse(Object.values(demographicChecks).every(value => value === false))
@@ -108,7 +98,7 @@ export default function FilterTabs(props: FilterTabsProps) {
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={value} onChange={handleChange} aria-label="filtering options">
                   <StyledTab label="Safety" {...a11yProps(0)} />
-                  <StyledTab label="Volumes" {...a11yProps(1)} />
+                  <StyledTab label="Count Sites" {...a11yProps(1)} />
                   <StyledTab label="Demographics" {...a11yProps(2)} />   
               </Tabs>
           </Box>
@@ -123,10 +113,11 @@ export default function FilterTabs(props: FilterTabsProps) {
               
           </CustomTabPanel>
           <CustomTabPanel value={value} index={1}>
-            { volumeFalse ? (
-                    <Typography variant="body2">Add Volume data to the map <strong>(Step 1)</strong></Typography>
+            { countSiteChecks.toggled ? (
+               <VolumeFilters />
+                    
                 ): (
-                    <VolumeFilters />
+                   <Typography variant="body2">Add Volume data to the map <strong>(Step 1)</strong></Typography>
                 )}
           </CustomTabPanel>
           <CustomTabPanel value={value} index={2}>

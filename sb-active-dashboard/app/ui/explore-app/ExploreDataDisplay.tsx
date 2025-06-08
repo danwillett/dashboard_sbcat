@@ -20,8 +20,7 @@ import Grid from "@mui/material/Grid2"
 
 export default function ExploreDataDisplay(props: any) {
     const {drawerOpen, handleDrawer, drawerWidth} = props
-    const { safetyChecks, volumeChecks, demographicChecks} = useMapContext()
-
+    
     interface ToggleButtonProps {
         open: boolean;
         menuWidth: number;
@@ -74,7 +73,7 @@ export default function ExploreDataDisplay(props: any) {
             <strong>Step 2:</strong> Apply filters.
             </Typography>
 
-            <FilterTabs safetyChecks={safetyChecks} volumeChecks={volumeChecks} demographicChecks={demographicChecks}/>
+            <FilterTabs />
             
             
             </Box>

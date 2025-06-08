@@ -15,6 +15,7 @@ import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import FeatureLayerView from "@arcgis/core/views/layers/FeatureLayerView";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import GroupLayerView from "@arcgis/core/views/layers/GroupLayerView";
+import Map from "@arcgis/core/Map";
 import MapView from "@arcgis/core/views/MapView";
 import TimeExtent from "@arcgis/core/time/TimeExtent";
 
@@ -50,6 +51,7 @@ type StatsSetter = React.Dispatch<React.SetStateAction<any>>;
 
 function setupCountLayerWatch({
   view,
+  map,
   layer,
   reactiveUtils,
   setStats,
@@ -59,6 +61,7 @@ function setupCountLayerWatch({
   endField,
 }: {
   view: MapView,
+  map: Map,
   layer: FeatureLayer,
   reactiveUtils: typeof import("@arcgis/core/core/reactiveUtils"),
   setStats: StatsSetter,
@@ -72,6 +75,17 @@ function setupCountLayerWatch({
     reactiveUtils.watch(
       () => [layerView.updating, view.stationary],
       ([isUpdating, isStationary]) => {
+        // if the layer isn't visible, turn it off
+        // const countSiteGroup = map.allLayers.find((layer): layer is GroupLayer => layer.title === "Count Sites" && layer.type === "group") as GroupLayer
+        // const allLayer = countSiteGroup.allLayers.find((layer): layer is FeatureLayer => layer.title === "All Sites") as FeatureLayer
+        
+        // if (!layer.visible && !allLayer.visible) {
+        //     setStats({
+        //       ...existingStats,
+        //       [statsKey]: 0,
+        //     });
+        //     return
+        // }
         if (!isUpdating || isStationary) {
 
             let where = "1=1";
@@ -122,9 +136,102 @@ function setupCountLayerWatch({
   });
 }
 
-export default function StatsView() {
-    const { mapRef, viewRef, countGroupLayer, incidentGroupLayer, volumeChecks, safetyChecks } = useMapContext()
+function setupAllCountLayerWatch({
+  view,
+  map,
+  layer,
+  reactiveUtils,
+  setStats,
+  statsKey,
+  existingStats,
+  startField,
+  endField,
+}: {
+  view: MapView,
+  map: Map,
+  layer: FeatureLayer,
+  reactiveUtils: typeof import("@arcgis/core/core/reactiveUtils"),
+  setStats: StatsSetter,
+  statsKey: string,
+  existingStats: any,
+  startField: string,
+  endField: string
+}) {
+  view.whenLayerView(layer).then((layerView) => {
     
+    reactiveUtils.watch(
+      () => [layerView.updating, view.stationary],
+      ([isUpdating, isStationary]) => {
+        // if the layer isn't visible, turn it off
+        // const countSiteGroup = map.allLayers.find((layer): layer is GroupLayer => layer.title === "Count Sites" && layer.type === "group") as GroupLayer
+        // const allLayer = countSiteGroup.allLayers.find((layer): layer is FeatureLayer => layer.title === "All Sites") as FeatureLayer
+        
+        // if (!layer.visible && !allLayer.visible) {
+        //     setStats({
+        //       ...existingStats,
+        //       [statsKey]: 0,
+        //     });
+        //     return
+        // }
+        if (!isUpdating || isStationary) {
+
+            let where = "1=1";
+            let timeWhere = ""
+            // get time extent
+            
+            let fieldTimeZone = layer.fieldsIndex.getTimeZone(startField);
+            if (!fieldTimeZone) {
+                fieldTimeZone = "UTC"
+            } 
+            const timeExtent = (layerView as any).timeExtent as TimeExtent
+            if (timeExtent) {
+                const start = getDateForTimeZone(timeExtent.start, fieldTimeZone);
+                const end = getDateForTimeZone(timeExtent.end, fieldTimeZone);
+                
+                if (start && end) {
+                    timeWhere = `${startField} > DATE '${start}' AND ${endField} < DATE '${end}'`;
+                }
+              }
+          
+              let filtersWhere = ""
+            if (layerView.filter?.where) {
+                filtersWhere = layerView.filter.where;
+            }
+            const wheres = [timeWhere, filtersWhere].filter((where) => where.length > 0)
+            if (wheres.length > 1) {
+                where = wheres.join(" AND ")
+            } else if (wheres.length == 1) {
+                where = wheres[0]
+            }
+          
+          layerView.queryFeatures({
+            geometry: view.extent,
+            where,
+            spatialRelationship: "intersects",
+            returnGeometry: false,
+            outFields: ["*"],
+          }).then((result) => {
+
+            
+            
+            setStats({
+              ...existingStats,
+              [statsKey]: result.features.length,
+            });
+          });
+        }
+      }
+    );
+  });
+}
+
+export default function StatsView() {
+    const { mapRef, viewRef, countGroupLayer, incidentGroupLayer, countSiteChecks, safetyChecks } = useMapContext()
+    
+    const [countSitesOn, setCountSitesOn] = useState(countSiteChecks['toggled'])
+    useEffect(() => {
+        setCountSitesOn(countSiteChecks['toggled'])
+    }, [countSiteChecks])
     // Get Volume statistics by filters and extent
     const [ pedCountStats, setPedCountStats ] = useState<CountStats>({
         "filtered": null,
@@ -135,11 +242,10 @@ export default function StatsView() {
         "total": null
     })
     useEffect(() => {
-        
+        console.log("rerunning")
         if (!viewRef || !countGroupLayer || !mapRef) return
-        const volumeGroup = mapRef.allLayers.find((layer): layer is GroupLayer => layer.title === "Volumes" && layer.type === "group") as GroupLayer
-        
-        if (!volumeGroup) {
+        const countSiteGroup = mapRef.allLayers.find((layer): layer is GroupLayer => layer.title === "Count Sites" && layer.type === "group") as GroupLayer
+        if (!countSiteGroup) {
             setPedCountStats({
                 ...pedCountStats,
                 "filtered": null,
@@ -150,52 +256,120 @@ export default function StatsView() {
             })
             return
         } 
-        console.log(volumeGroup)
-        const pedLayer = volumeGroup.allLayers.find((layer): layer is FeatureLayer => layer.title === "Walking Volumes") as FeatureLayer
-        console.log(pedLayer)
-        if (pedLayer.visible) {
-            setupCountLayerWatch({
-                view: viewRef,
-                layer: pedLayer,
-                reactiveUtils,
-                setStats: setPedCountStats,
-                statsKey: "filtered",
-                existingStats: pedCountStats,
-                startField: "start_date",
-                endField: "end_date"
-              });
-            
-        } else {
-            setPedCountStats({
-                ...pedCountStats,
-                "filtered": null,
-            })
-        }
-
-        const bikeLayer = volumeGroup.allLayers.find((layer): layer is FeatureLayer => layer.title === "Biking Volumes") as FeatureLayer
-        if (bikeLayer.visible) {
-
-            setupCountLayerWatch({
-                view: viewRef,
-                layer: bikeLayer,
-                reactiveUtils,
-                setStats: setBikeCountStats,
-                statsKey: "filtered",
-                existingStats: bikeCountStats,
-                startField: "start_date",
-                endField: "end_date"
-              });             
-            
-        } else {
-            setBikeCountStats({
-                ...bikeCountStats,
-                "filtered": null
-            })
-        }
+    
+        const allLayer = countSiteGroup.allLayers.find((layer): layer is FeatureLayer => layer.title === "All Sites") as FeatureLayer
         
-    }, [viewRef, countGroupLayer, mapRef, volumeChecks])
+        viewRef.whenLayerView(allLayer).then((layerView) => {
     
+            reactiveUtils.watch(
+            () => [layerView.updating, viewRef.stationary],
+            ([isUpdating, isStationary]) => {
+
+                if (!isUpdating || isStationary) {
+
+                    let where = "1=1";
+                    let timeWhere = ""
+                    // get time extent
+                    
+                    let fieldTimeZone = allLayer.fieldsIndex.getTimeZone("firstSurvey");
+                    if (!fieldTimeZone) {
+                        fieldTimeZone = "UTC"
+                    } 
+                    const timeExtent = (layerView as any).timeExtent as TimeExtent
+                    if (timeExtent) {
+                        const start = getDateForTimeZone(timeExtent.start, fieldTimeZone);
+                        const end = getDateForTimeZone(timeExtent.end, fieldTimeZone);
+                        
+                        if (start && end) {
+                            timeWhere = `firstSurvey > DATE '${start}' AND lastSurvey < DATE '${end}'`;
+                        }
+                    }
+                
+                    let filtersWhere = ""
+                    if (layerView.filter?.where) {
+                        filtersWhere = layerView.filter.where;
+                    }
+                    const wheres = [timeWhere, filtersWhere].filter((where) => where.length > 0)
+                    if (wheres.length > 1) {
+                        where = wheres.join(" AND ")
+                    } else if (wheres.length == 1) {
+                        where = wheres[0]
+                    }
+                    console.log(where)
+                
+                    // get bike sites
+                    const bikeWhere = where + " AND countTypes IN ('Biking', 'Biking & Walking')"
+                    layerView.queryFeatures({
+                        geometry: viewRef.extent,
+                        where: bikeWhere,
+                        spatialRelationship: "intersects",
+                        returnGeometry: false,
+                        outFields: ["*"],
+                    }).then((result) => {
+                        console.log(result)
+                        setBikeCountStats({
+                            ...bikeCountStats,
+                            filtered: result.features.length,
+                            });
+                        });
+
+                    // get walk sites
+                    const walkWhere = where + " AND countTypes IN ('Walking', 'Biking & Walking')"
+                    layerView.queryFeatures({
+                        geometry: viewRef.extent,
+                        where: walkWhere,
+                        spatialRelationship: "intersects",
+                        returnGeometry: false,
+                        outFields: ["*"],
+                    }).then((result) => {
+                        console.log(result)
+                        setPedCountStats({
+                            ...pedCountStats,
+                            filtered: result.features.length,
+                            });
+                        });
+                    }
+
+                    });
+
+                    
+                        
+        })
+        
+        // const pedLayer = countSiteGroup.allLayers.find((layer): layer is FeatureLayer => layer.title === "Walking Sites") as FeatureLayer
+        // setupCountLayerWatch({
+        //     view: viewRef,
+        //     map: mapRef,
+        //     layer: pedLayer,
+        //     reactiveUtils,
+        //     setStats: setPedCountStats,
+        //     statsKey: "filtered",
+        //     existingStats: pedCountStats,
+        //     startField: "start_date",
+        //     endField: "end_date"
+        //     });
+
+        // const bikeLayer = countSiteGroup.allLayers.find((layer): layer is FeatureLayer => layer.title === "Biking Sites") as FeatureLayer
+
+        // setupCountLayerWatch({
+        //     view: viewRef,
+        //     map: mapRef,
+        //     layer: bikeLayer,
+        //     reactiveUtils,
+        //     setStats: setBikeCountStats,
+        //     statsKey: "filtered",
+        //     existingStats: bikeCountStats,
+        //     startField: "start_date",
+        //     endField: "end_date"
+        //     });             
+            
+        
+    }, [viewRef, countGroupLayer, mapRef, countSitesOn])
     
+    useEffect(() => {
+        console.log(bikeCountStats)
+    }, [bikeCountStats])
+
     // Get Safety statistics by filters and extent
     const [ pedSafetyStats, setPedSafetyStats ] = useState<CountStats>({
         filtered: null,
@@ -271,12 +445,11 @@ export default function StatsView() {
     useEffect(() => {
         if (!countGroupLayer) return
 
-        const bikeVolumesLayer = countGroupLayer.allLayers.find((layer): layer is FeatureLayer => layer.title === "Biking Volumes") as FeatureLayer
-        console.log(bikeVolumesLayer)
-        if (!bikeVolumesLayer) return
-        const bikeQuery = bikeVolumesLayer.createQuery()
+        const bikeSitesLayer = countGroupLayer.allLayers.find((layer): layer is FeatureLayer => layer.title === "Biking Sites") as FeatureLayer
+        if (!bikeSitesLayer) return
+        const bikeQuery = bikeSitesLayer.createQuery()
         bikeQuery.where = "1=1"
-        bikeVolumesLayer.queryFeatures(bikeQuery).then((result) => {
+        bikeSitesLayer.queryFeatures(bikeQuery).then((result) => {
             if (result) {
                 setBikeCountStats({
                     ...bikeCountStats,
@@ -285,12 +458,11 @@ export default function StatsView() {
             }
         })
 
-        const pedVolumesLayer = countGroupLayer.allLayers.find((layer): layer is FeatureLayer => layer.title === "Walking Volumes") as FeatureLayer
-        console.log(pedVolumesLayer)
-        if (!pedVolumesLayer) return
-        const pedQuery = pedVolumesLayer.createQuery()
+        const pedSitesLayer = countGroupLayer.allLayers.find((layer): layer is FeatureLayer => layer.title === "Walking Sites") as FeatureLayer
+        if (!pedSitesLayer) return
+        const pedQuery = pedSitesLayer.createQuery()
         pedQuery.where = "1=1"
-        pedVolumesLayer.queryFeatures(pedQuery).then((result) => {
+        pedSitesLayer.queryFeatures(pedQuery).then((result) => {
             if (result) {
                 setPedCountStats({
                     ...pedCountStats,
@@ -299,7 +471,6 @@ export default function StatsView() {
             }
         })
         
-
     }, [countGroupLayer])
 
     // Get all data stats to display
@@ -346,7 +517,6 @@ export default function StatsView() {
         }}
       >
         
-
         <CardContent>
         <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
             Summary Stats

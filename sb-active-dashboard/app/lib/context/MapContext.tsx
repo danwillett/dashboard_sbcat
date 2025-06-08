@@ -76,13 +76,16 @@ export default function MapProvider({children}: MapProviderProps){
     })
 
     const [countSiteChecks, setCountSiteChecks] = useState({
-        "Biking Sites": false,
-        "Walking Sites": false,
-        "All Sites": false
+        "toggled": false,
+        "All Sites": false,
+        "Biking Sites": true,
+        "Walking Sites": false
+        
     })
 
     const [volumeChecks, setVolumeChecks] = useState({
-        "Modeled Biking Volumes": false,
+        "toggled": false,
+        "Modeled Biking Volumes": true,
         "Modeled Walking Volumes": false,
     })
 

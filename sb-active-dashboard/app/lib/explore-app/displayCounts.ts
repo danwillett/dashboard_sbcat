@@ -468,7 +468,7 @@ async function createSiteGraphics() {
             if (feature.attributes.count_type === "bike") {
                 bikeData = true
             }
-            if (feature.attributes.count_type === "bike") {
+            if (feature.attributes.count_type === "ped") {
                 pedData = true
             }
 
@@ -496,7 +496,6 @@ async function createSiteGraphics() {
 
         geomArr.push({id, geometry, name, locality, source, countTypes, firstSurvey, lastSurvey})
     }
-    console.log(geomArr)
 
     // creating a new graphics layer 
     const graphics: Graphic[] = []
@@ -599,7 +598,6 @@ async function createSiteGraphics() {
             const siteId = event.graphic.attributes.id
             const siteName = event.graphic.attributes.name
             const source = event.graphic.attributes.source
-            console.log(event.graphic)
             const query = aadtTable.createQuery()
             query.where = "site_id = " + siteId
             return aadtTable.queryFeatures(query).then((results: FeatureSet) => {
@@ -853,7 +851,7 @@ export async function createCountGroupLayer() {
             combinedLayer
         ],
         title: "Count Sites",
-        visibilityMode: "exclusive"
+        visibilityMode: "independent"
 
     })
 
