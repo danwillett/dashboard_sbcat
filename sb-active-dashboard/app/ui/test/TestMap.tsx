@@ -1,14 +1,18 @@
-'use client';
+"use client";
 
-import React, {  useRef, useState, useEffect, useCallback } from "react";
-import { defineCustomElements as defineChartsElements, defineCustomElements } from "@arcgis/charts-components/dist/loader";
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import {
+  defineCustomElements as defineChartsElements,
+  defineCustomElements,
+} from "@arcgis/charts-components/dist/loader";
 import { ScatterPlotModel } from "@arcgis/charts-model";
-
 
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 
 if (typeof window !== "undefined") {
-    defineCustomElements(window, { resourcesUrl: "https://js.arcgis.com/charts-components/4.32/assets" })
+  defineCustomElements(window, {
+    resourcesUrl: "https://js.arcgis.com/charts-components/4.32/assets",
+  });
 }
 
 async function createFeatureLayer(url: any) {
@@ -65,7 +69,6 @@ export default function TestMap() {
     const layer = await createFeatureLayer(
       "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Bicycle_and_Pedestrian_Counts/FeatureServer/0"
     );
-
   }, []);
 
   // Register a function that will execute after the current render cycle

@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 
-
 import "./globals.css";
-import '@esri/calcite-components/dist/calcite/calcite.css';
-
+import "@esri/calcite-components/dist/calcite/calcite.css";
 
 export const metadata: Metadata = {
   title: "Active SB",
@@ -17,9 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

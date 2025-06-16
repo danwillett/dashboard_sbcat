@@ -1,4 +1,4 @@
-import dynamic from 'next/dynamic'
+import dynamic from "next/dynamic";
 // const SafetyMapNoSSR = dynamic(
 //   () => import ("../../ui/safety-app/SafetyMap"),
 //   {ssr: false}

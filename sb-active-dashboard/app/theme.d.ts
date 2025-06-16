@@ -1,7 +1,7 @@
 // app/theme.d.ts or app/types/theme.d.ts
-import { Palette, PaletteOptions } from '@mui/material/styles';
+import { Palette, PaletteOptions } from "@mui/material/styles";
 
-declare module '@mui/material/styles' {
+declare module "@mui/material/styles" {
   interface Palette {
     aqua: PaletteColor;
     lightgray: PaletteColor;

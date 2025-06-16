@@ -1,132 +1,153 @@
-'use client'
+"use client";
 
-import React, { ReactNode, createContext, useContext, useState } from 'react'
-import Map from "@arcgis/core/Map"
-import MapView from "@arcgis/core/views/MapView"
+import React, { ReactNode, createContext, useContext, useState } from "react";
+import Map from "@arcgis/core/Map";
+import MapView from "@arcgis/core/views/MapView";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
-import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer';
-import LayerList from '@arcgis/core/widgets/LayerList';
-import TimeSlider from "@arcgis/core/widgets/TimeSlider"
+import VectorTileLayer from "@arcgis/core/layers/VectorTileLayer";
+import LayerList from "@arcgis/core/widgets/LayerList";
+import TimeSlider from "@arcgis/core/widgets/TimeSlider";
 
-import { SafetyChecks, VolumeChecks, DemographicChecks, CountSiteChecks } from "@/app/lib/explore-app/types"
+import {
+  SafetyChecks,
+  VolumeChecks,
+  DemographicChecks,
+  CountSiteChecks,
+} from "@/app/lib/explore-app/types";
 
 type MapContextType = {
-    
-    mapRef: Map | null,
-    setMapRef: React.Dispatch<React.SetStateAction<Map | null>>,
+  mapRef: Map | null;
+  setMapRef: React.Dispatch<React.SetStateAction<Map | null>>;
 
-    viewRef: MapView | null,
-    setViewRef: React.Dispatch<React.SetStateAction<MapView | null>>,
+  viewRef: MapView | null;
+  setViewRef: React.Dispatch<React.SetStateAction<MapView | null>>;
 
-    censusGroupLayer: GroupLayer | null,
-    setCensusGroupLayer: React.Dispatch<React.SetStateAction<GroupLayer | null>>,
+  censusGroupLayer: GroupLayer | null;
+  setCensusGroupLayer: React.Dispatch<React.SetStateAction<GroupLayer | null>>;
 
-    countGroupLayer: GroupLayer | null,
-    setCountGroupLayer: React.Dispatch<React.SetStateAction<GroupLayer | null>>,
-    
-    incidentGroupLayer: GroupLayer | null,
-    setIncidentGroupLayer: React.Dispatch<React.SetStateAction<GroupLayer | null>>,
+  countGroupLayer: GroupLayer | null;
+  setCountGroupLayer: React.Dispatch<React.SetStateAction<GroupLayer | null>>;
 
-    AADTHexagonLayer: GroupLayer | null,
-    setAADTHexagonLayer: React.Dispatch<React.SetStateAction<GroupLayer | null>>,
+  incidentGroupLayer: GroupLayer | null;
+  setIncidentGroupLayer: React.Dispatch<
+    React.SetStateAction<GroupLayer | null>
+  >;
 
-    layerList: LayerList | null,
-    setLayerList: React.Dispatch<React.SetStateAction<LayerList | null>>,
+  AADTHexagonLayer: GroupLayer | null;
+  setAADTHexagonLayer: React.Dispatch<React.SetStateAction<GroupLayer | null>>;
 
-    timeSlider: TimeSlider | null,
-    setTimeSlider: React.Dispatch<React.SetStateAction<TimeSlider | null>>,
+  layerList: LayerList | null;
+  setLayerList: React.Dispatch<React.SetStateAction<LayerList | null>>;
 
-    safetyChecks: SafetyChecks,
-    setSafetyChecks: React.Dispatch<React.SetStateAction<SafetyChecks>>,
+  timeSlider: TimeSlider | null;
+  setTimeSlider: React.Dispatch<React.SetStateAction<TimeSlider | null>>;
 
-    countSiteChecks: CountSiteChecks,
-    setCountSiteChecks: React.Dispatch<React.SetStateAction<CountSiteChecks>>,
+  safetyChecks: SafetyChecks;
+  setSafetyChecks: React.Dispatch<React.SetStateAction<SafetyChecks>>;
 
-    volumeChecks: VolumeChecks,
-    setVolumeChecks: React.Dispatch<React.SetStateAction<VolumeChecks>>,
+  countSiteChecks: CountSiteChecks;
+  setCountSiteChecks: React.Dispatch<React.SetStateAction<CountSiteChecks>>;
 
-    demographicChecks: DemographicChecks,
-    setDemographicChecks: React.Dispatch<React.SetStateAction<DemographicChecks>>,
+  volumeChecks: VolumeChecks;
+  setVolumeChecks: React.Dispatch<React.SetStateAction<VolumeChecks>>;
 
-}
-const MapContext = createContext<MapContextType | undefined>(undefined)
+  demographicChecks: DemographicChecks;
+  setDemographicChecks: React.Dispatch<React.SetStateAction<DemographicChecks>>;
+};
+const MapContext = createContext<MapContextType | undefined>(undefined);
 
 interface MapProviderProps {
-    children: ReactNode;
+  children: ReactNode;
 }
 
-export default function MapProvider({children}: MapProviderProps){
+export default function MapProvider({ children }: MapProviderProps) {
+  // map components
+  const [mapRef, setMapRef] = useState<Map | null>(null);
+  const [viewRef, setViewRef] = useState<MapView | null>(null);
+  const [layerList, setLayerList] = useState<LayerList | null>(null);
+  const [timeSlider, setTimeSlider] = useState<TimeSlider | null>(null);
 
-    // map components
-    const [ mapRef, setMapRef ] = useState<Map | null>(null)
-    const [ viewRef, setViewRef ] = useState<MapView | null>(null)
-    const [ layerList, setLayerList ] = useState<LayerList | null>(null)
-    const [ timeSlider, setTimeSlider ] = useState<TimeSlider | null>(null)
+  // data layers
+  const [censusGroupLayer, setCensusGroupLayer] = useState<GroupLayer | null>(
+    null
+  );
+  const [countGroupLayer, setCountGroupLayer] = useState<GroupLayer | null>(
+    null
+  );
+  const [incidentGroupLayer, setIncidentGroupLayer] =
+    useState<GroupLayer | null>(null);
+  const [AADTHexagonLayer, setAADTHexagonLayer] = useState<GroupLayer | null>(
+    null
+  );
 
-    // data layers
-    const [ censusGroupLayer, setCensusGroupLayer ] = useState<GroupLayer | null>(null)
-    const [ countGroupLayer, setCountGroupLayer ] = useState<GroupLayer | null>(null)
-    const [ incidentGroupLayer, setIncidentGroupLayer ] = useState<GroupLayer | null>(null)
-    const [ AADTHexagonLayer, setAADTHexagonLayer ] = useState<GroupLayer | null>(null)
+  // tracking layers
+  const [safetyChecks, setSafetyChecks] = useState({
+    toggled: false,
+    "All Incidents": true,
+    "Biking Incidents": false,
+    "Walking Incidents": false,
+  });
 
-    // tracking layers
-    const [safetyChecks, setSafetyChecks] = useState({
-        "Biking Incidents": false,
-        "Walking Incidents": false
-    })
+  const [countSiteChecks, setCountSiteChecks] = useState({
+    toggled: false,
+    "All Sites": false,
+    "Biking Sites": true,
+    "Walking Sites": false,
+  });
 
-    const [countSiteChecks, setCountSiteChecks] = useState({
-        "toggled": false,
-        "All Sites": false,
-        "Biking Sites": true,
-        "Walking Sites": false
-        
-    })
+  const [volumeChecks, setVolumeChecks] = useState({
+    toggled: false,
+    "Modeled Biking Volumes": true,
+    "Modeled Walking Volumes": false,
+  });
 
-    const [volumeChecks, setVolumeChecks] = useState({
-        "toggled": false,
-        "Modeled Biking Volumes": true,
-        "Modeled Walking Volumes": false,
-    })
+  const [demographicChecks, setDemographicChecks] = useState({
+    Income: false,
+    Race: false,
+    Education: false,
+  });
 
-    const [demographicChecks, setDemographicChecks] = useState({
-        "Income": false,
-        "Race": false,
-        "Education": false
-    })
-    
-    
-    return (
-        <MapContext.Provider
-            value={{
-                mapRef, setMapRef, 
-                viewRef, setViewRef,
-                layerList, setLayerList,
-                timeSlider, setTimeSlider,
+  return (
+    <MapContext.Provider
+      value={{
+        mapRef,
+        setMapRef,
+        viewRef,
+        setViewRef,
+        layerList,
+        setLayerList,
+        timeSlider,
+        setTimeSlider,
 
-                censusGroupLayer, setCensusGroupLayer, 
-                countGroupLayer, setCountGroupLayer, 
-                incidentGroupLayer, setIncidentGroupLayer,
-                AADTHexagonLayer, setAADTHexagonLayer,
+        censusGroupLayer,
+        setCensusGroupLayer,
+        countGroupLayer,
+        setCountGroupLayer,
+        incidentGroupLayer,
+        setIncidentGroupLayer,
+        AADTHexagonLayer,
+        setAADTHexagonLayer,
 
-                safetyChecks, setSafetyChecks,
-                countSiteChecks, setCountSiteChecks,
-                volumeChecks, setVolumeChecks,
-                demographicChecks, setDemographicChecks
-
-                
-            }}
-            >
-            {children}
-        </MapContext.Provider>
-    )
+        safetyChecks,
+        setSafetyChecks,
+        countSiteChecks,
+        setCountSiteChecks,
+        volumeChecks,
+        setVolumeChecks,
+        demographicChecks,
+        setDemographicChecks,
+      }}
+    >
+      {children}
+    </MapContext.Provider>
+  );
 }
 
 export const useMapContext = () => {
-    const context = useContext(MapContext)
-    if (!context) {
-        throw new Error('useMapContext must be used within a LayerProvider')
-    }
+  const context = useContext(MapContext);
+  if (!context) {
+    throw new Error("useMapContext must be used within a LayerProvider");
+  }
 
-    return context
-}
+  return context;
+};
