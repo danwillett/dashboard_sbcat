@@ -23,6 +23,6 @@
       "@arcgis/core/*": ["node_modules/@arcgis/core/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "../sb-active-dashboard-vite/sb-dashboard-vite/ui/dashboard/DashboardLayout.tsx"],
   "exclude": ["node_modules"]
 }

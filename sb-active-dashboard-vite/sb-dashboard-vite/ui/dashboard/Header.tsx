@@ -9,7 +9,7 @@ export default function Header(props: any) {
   return (
     <AppBar
       position="sticky"
-      style={{ backgroundColor: theme.palette.navy.main }}
+      style={{ backgroundColor: theme.palette.navy.main, width: "100vw" }}
     >
       <Toolbar sx={{ height: "70px" }}>
         <Box

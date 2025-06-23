@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import DashboardLayout from "@/ui/dashboard/DashboardLayout";
 import LayerProvider from "@/lib/context/MapContext";
 import HomePage from "./pages/home";
 import ExplorePage from "./pages/dashboard/explore";
@@ -25,10 +26,12 @@ function App() {
               path="/dashboard/*"
               element={
                 <LayerProvider>
+                  <DashboardLayout>
                   <Routes>
                     <Route path="explore" element={<ExplorePage />} />
                     <Route path="safety"  element={<SafetyPage  />} />
                   </Routes>
+                  </DashboardLayout>
                 </LayerProvider>
               }
             />
