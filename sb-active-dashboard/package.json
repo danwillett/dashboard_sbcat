@@ -1,37 +1,41 @@
 {
-  "name": "sb-active-dashboard",
-  "version": "0.1.0",
+  "name": "sb-dashboard-vite",
   "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@arcgis/charts-components": "^4.32.13",
-    "@arcgis/charts-model": "^4.32.13",
-    "@arcgis/core": "^4.32.9",
-    "@arcgis/map-components-react": "^4.32.13",
+    "@arcgis/core": "^4.33.0",
+    "@arcgis/map-components": "^4.33.1",
+    "@arcgis/map-components-react": "^4.33.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@esri/calcite-components": "^3.0.3",
-    "@esri/calcite-components-react": "^2.13.2",
-    "@mui/icons-material": "^6.4.5",
-    "@mui/material": "^6.4.10",
-    "@toolpad/core": "^0.12.0",
-    "danfojs": "^1.1.2",
-    "mathjs": "^14.0.1",
-    "next": "14.2.23",
-    "react": "^18",
-    "react-dom": "^18"
+    "@esri/calcite-components": "^3.2.1",
+    "@esri/calcite-components-react": "^3.2.1",
+    "@mui/icons-material": "^7.1.2",
+    "@mui/material": "^7.1.2",
+    "dev": "^0.1.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.2"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.23",
-    "typescript": "^5"
+    "@arcgis/lumina": "^4.33.1",
+    "@eslint/js": "^9.25.0",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "eslint": "^9.25.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.30.1",
+    "vite": "^6.3.5"
   }
 }
