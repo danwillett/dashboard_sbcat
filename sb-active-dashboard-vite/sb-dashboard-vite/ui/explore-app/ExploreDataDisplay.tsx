@@ -13,7 +13,7 @@ import LayerSearch from "./LayerSearch";
 import FilterTabs from "./FilterTabs";
 import StatsView from "./StatsView";
 
-import Grid2 from "@mui/material/Grid2";
+import Grid from "@mui/material/Unstable_Grid2/Grid2"
 
 export default function ExploreDataDisplay(props: any) {
   const { drawerOpen, handleDrawer, drawerWidth } = props;
