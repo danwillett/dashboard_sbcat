@@ -1,8 +1,27 @@
 {
   "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"], // copy of original strict setup
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    /* 🔑 Emotion + React 18 */
+    "jsx": "react-jsx",
+    "jsxImportSource": "@emotion/react",       // matches vite.config
+
+    /* Paths */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@arcgis/core/*": ["node_modules/@arcgis/core/*"]
     }
-  }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "src/theme.d.ts"],
+  "exclude": ["node_modules"]
 }
