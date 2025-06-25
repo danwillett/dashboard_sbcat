@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 
 // map context and types
-import { useMapContext } from "@/app/lib/context/MapContext";
+import { useExploreMapContext } from "../../lib/context/ExploreMapContext";
 
 // arcgis js
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
@@ -44,7 +44,7 @@ type Filters = {
 type UniqueFieldsMap = Record<string, boolean>;
 
 export default function VolumeFilters() {
-  const { countGroupLayer, countSiteChecks, viewRef, mapRef } = useMapContext();
+  const { countGroupLayer, countSiteChecks, viewRef, mapRef } = useExploreMapContext();
 
   const [filters, setFilters] = useState<Filters>({
     locality: null,

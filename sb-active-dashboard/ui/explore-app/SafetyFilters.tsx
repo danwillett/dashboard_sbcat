@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 
 // map context and types
-import { useMapContext } from "@/app/lib/context/MapContext";
+import { useExploreMapContext } from "../../lib/context/ExploreMapContext";
 
 // arcgis js
 
@@ -34,7 +34,7 @@ type Filters = {
 
 // changes size visualVariables of counts and incidents
 export default function SafetyFilters() {
-  const { incidentGroupLayer, viewRef, mapRef } = useMapContext();
+  const { incidentGroupLayer, viewRef, mapRef } = useExploreMapContext();
 
   const [filters, setFilters] = useState<Filters>({
     timeOfDay: null,

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 
 // import global state variables
-import { useMapContext } from "@/app/lib/context/MapContext";
+import { useExploreMapContext } from "../../lib/context/ExploreMapContext";
 
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
 
@@ -144,7 +144,7 @@ export default function StatsView() {
     incidentGroupLayer,
     countSiteChecks,
     safetyChecks,
-  } = useMapContext();
+  } = useExploreMapContext();
 
   const [countSitesOn, setCountSitesOn] = useState(countSiteChecks["toggled"]);
   useEffect(() => {

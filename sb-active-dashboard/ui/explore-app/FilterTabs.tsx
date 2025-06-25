@@ -8,8 +8,8 @@ import {
   SafetyChecks,
   VolumeChecks,
   CountSiteChecks,
-} from "@/app/lib/explore-app/types";
-import { useMapContext } from "@/app/lib/context/MapContext";
+} from "@/../../lib/explore-app/types";
+import { useExploreMapContext } from "../../lib/context/ExploreMapContext";
 
 // custom components
 import SafetyFilters from "./SafetyFilters";
@@ -65,7 +65,7 @@ const StyledTab = styled((props: StyledTabProps) => (
 }));
 
 export default function FilterTabs() {
-  const { safetyChecks, countSiteChecks, demographicChecks } = useMapContext();
+  const { safetyChecks, countSiteChecks, demographicChecks } = useExploreMapContext();
 
   const [safetyFalse, setSafetyFalse] = useState(false);
   // const [ volumeFalse, setVolumeFalse ] = useState(false)

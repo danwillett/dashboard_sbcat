@@ -2,13 +2,13 @@
 import React, { useEffect, useState } from "react";
 
 // map context and types
-import { useExploreMapContext } from "../../lib/context/ExploreMapContext";
+import { useMapContext } from "@/app/lib/context/MapContext";
 import {
   SafetyChecks,
   VolumeChecks,
   DemographicChecks,
   CountSiteChecks,
-} from "@../../lib/explore-app/types";
+} from "@/app/lib/explore-app/types";
 
 // arcgis js
 import LayerList from "@arcgis/core/widgets/LayerList";
@@ -32,7 +32,7 @@ import Box from "@mui/material/Box";
 import RadioGroup from "@mui/material/RadioGroup";
 import Radio from "@mui/material/Radio";
 
-interface LayerSearchProps {
+interface SafetyLayerSearchProps {
   safetyChecks: SafetyChecks;
   setSafetyChecks: React.Dispatch<React.SetStateAction<SafetyChecks>>;
   volumeChecks: VolumeChecks;
@@ -41,7 +41,7 @@ interface LayerSearchProps {
   setDemographicChecks: React.Dispatch<React.SetStateAction<DemographicChecks>>;
 }
 
-export default function LayerSearch(props: LayerSearchProps) {
+export default function SafetyLayerSearch(props: SafetyLayerSearchProps) {
   const {
     mapRef,
     incidentGroupLayer,
@@ -49,7 +49,7 @@ export default function LayerSearch(props: LayerSearchProps) {
     countGroupLayer,
     AADTHexagonLayer,
     layerList,
-  } = useExploreMapContext();
+  } = useMapContext();
   const {
     safetyChecks,
     setSafetyChecks,
@@ -59,7 +59,7 @@ export default function LayerSearch(props: LayerSearchProps) {
     setVolumeChecks,
     demographicChecks,
     setDemographicChecks,
-  } = useExploreMapContext();
+  } = useMapContext();
 
   const [selectedSafetyType, setSelectedSafetyType] =
     useState<string>("All Incidents");

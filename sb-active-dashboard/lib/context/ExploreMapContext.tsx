@@ -60,7 +60,7 @@ interface MapProviderProps {
   children: ReactNode;
 }
 
-export default function LayerProvider({ children }: MapProviderProps) {
+export default function ExploreProvider({ children }: MapProviderProps) {
   // map components
   const [mapRef, setMapRef] = useState<Map | null>(null);
   const [viewRef, setViewRef] = useState<MapView | null>(null);
@@ -143,10 +143,10 @@ export default function LayerProvider({ children }: MapProviderProps) {
   );
 }
 
-export const useMapContext = () => {
+export const useExploreMapContext = () => {
   const context = useContext(MapContext);
   if (!context) {
-    throw new Error("useMapContext must be used within a LayerProvider");
+    throw new Error("useExploreMapContext must be used within a ExploreProvider");
   }
 
   return context;

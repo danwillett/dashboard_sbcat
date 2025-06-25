@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 
 // map context and types
-import { useMapContext } from "@/app/lib/context/MapContext";
-import { DemographicChecks } from "@/app/lib/explore-app/types";
+import { useExploreMapContext } from "../../lib/context/ExploreMapContext";
+import { DemographicChecks } from "../../lib/explore-app/types";
 
 // arcgis js
 
@@ -41,7 +41,7 @@ interface DemographicFiltersProps {
 // changes size visualVariables of counts and incidents
 export default function DemographicFilters(props: DemographicFiltersProps) {
   const { demographicChecks } = props;
-  const { censusGroupLayer, viewRef, mapRef } = useMapContext();
+  const { censusGroupLayer, viewRef, mapRef } = useExploreMapContext();
 
   // Scale settings
   const [scale, setScale] = useState<string>("Tract");

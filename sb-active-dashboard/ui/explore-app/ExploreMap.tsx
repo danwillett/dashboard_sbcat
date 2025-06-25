@@ -2,21 +2,21 @@
 import React, { useRef, useState, useEffect } from "react";
 
 // import global state variables
-import { useMapContext } from "@/app/lib/context/MapContext";
+import { useExploreMapContext } from "../../lib/context/ExploreMapContext";
 
 // import custom components
 import ExploreMenu from "./ExploreMenu";
 import ExploreDataDisplay from "./ExploreDataDisplay";
 
 // import custom functions
-import { createCensusGroupLayer } from "@/app/lib/explore-app/displayCensus";
+import { createCensusGroupLayer } from "../../lib/explore-app/displayCensus";
 import {
   createCountGroupLayer,
   createModeledVolumeLayer,
-} from "@/app/lib/explore-app/displayCounts";
-import { createIncidentGroupLayer } from "@/app/lib/explore-app/displayIncidents";
-import { addVisualizationOptions } from "@/app/lib/utils";
-import { changeIncidentRenderer } from "@/app/lib/explore-app/displayIncidents";
+} from "../../lib/explore-app/displayCounts";
+import { createIncidentGroupLayer } from "../../lib/explore-app/displayIncidents";
+import { addVisualizationOptions } from "../../lib/utils";
+import { changeIncidentRenderer } from "../../lib/explore-app/displayIncidents";
 
 // import arcgis and calcite components
 // import "@esri/calcite-components";
@@ -60,7 +60,7 @@ export default function ExploreMap() {
     setAADTHexagonLayer,
     setLayerList,
     setTimeSlider,
-  } = useMapContext();
+  } = useExploreMapContext();
 
   const [showWidgetPanel, setShowWidgetPanel] = useState<Boolean>(false);
   const [showLegend, setShowLegend] = useState<Boolean>(false);
