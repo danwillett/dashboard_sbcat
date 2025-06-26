@@ -207,7 +207,9 @@ export default function ExploreMap() {
           position: "block",
           zIndex: 1100,
           height: "100%",
-          width: `calc(100vw - ${leftMenuOpen ? leftMenuWidth : 0}px - ${rightMenuOpen ? rightMenuWidth : 0}px )`, //
+          width: `calc(100vw - ${leftMenuOpen ? leftMenuWidth : 0}px - ${
+            rightMenuOpen ? rightMenuWidth : 0
+          }px )`, //
           transition: "width 0.5s ease-in-out, margin 0.5s ease-in-out",
           marginRight: rightMenuOpen ? `${rightMenuWidth}px` : "0px",
           marginLeft: leftMenuOpen ? `${leftMenuWidth}px` : "0px",

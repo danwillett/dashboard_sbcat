@@ -27,7 +27,7 @@ import { createHeatmaps } from "@/app/lib/safety-app/handleSafety";
 
 import SafetyMenu from "./SafetyMenu";
 import SafetyFilterPanel from "./SafetyFilterPanel";
-import Grid from "@mui/material/Grid"
+import Grid from "@mui/material/Grid";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 
 export default function SafetyMapOld() {
@@ -161,13 +161,12 @@ export default function SafetyMapOld() {
     >
       <CssBaseline />
       {/* <Header open={open} handleDrawerOpen={handleDrawerOpen} /> */}
-      
-      <SafetyMenu 
+
+      <SafetyMenu
         drawerOpen={leftMenuOpen}
         handleDrawer={handleLeftMenu}
         menuWidth={leftMenuWidth}
       />
-      
 
       {/* Widget Panel */}
 
@@ -240,17 +239,17 @@ export default function SafetyMapOld() {
       </Box>
 
       <Box
-          component="main"
-          sx={{
-            position: "block",
-            zIndex: 1100,
-            height: "100%",
-            width: `calc(100vw - ${leftMenuOpen ? leftMenuWidth : 0}px`,// - ${rightMenuOpen ? rightMenuWidth : 0}px )`, //
-            transition: "width 0.5s ease-in-out, margin 0.5s ease-in-out",
-            // marginRight: rightMenuOpen ? `${rightMenuWidth}px` : "0px",
-            marginLeft: leftMenuOpen ? `${leftMenuWidth}px` : "0px",
-          }}
-        >
+        component="main"
+        sx={{
+          position: "block",
+          zIndex: 1100,
+          height: "100%",
+          width: `calc(100vw - ${leftMenuOpen ? leftMenuWidth : 0}px`, // - ${rightMenuOpen ? rightMenuWidth : 0}px )`, //
+          transition: "width 0.5s ease-in-out, margin 0.5s ease-in-out",
+          // marginRight: rightMenuOpen ? `${rightMenuWidth}px` : "0px",
+          marginLeft: leftMenuOpen ? `${leftMenuWidth}px` : "0px",
+        }}
+      >
         <ArcgisMap
           basemap="topo-vector"
           // itemId="d5dda743788a4b0688fe48f43ae7beb9"

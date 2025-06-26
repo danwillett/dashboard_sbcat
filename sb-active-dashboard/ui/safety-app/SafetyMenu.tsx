@@ -1,48 +1,37 @@
 import React, { useRef, useState } from "react";
 
 // import global state variables
-import { useMapContext } from "@/app/lib/context/MapContext";
-
+import { useSafetyMapContext } from "../../lib/context/SafetyMapContext";
+import ToggleButton from "../safety-app/ToggleButton";
 import { List, Typography, Box, IconButton } from "@mui/material";
 import { CalciteIcon } from "@esri/calcite-components-react";
 import { styled } from "@mui/material/styles";
 import { Grid } from "@mui/material";
 
+
 import MenuItem from "../dashboard/Menu/MenuItem";
 import MenuPanel from "../dashboard/Menu/MenuPanel";
+import SafetyFilters from "./SafetyFilters";
 // import LayerSearch from "./LayerSearch";
 // import FilterTabs from "./FilterTabs";
 // import StatsView from "./StatsView";
 
-interface ToggleButtonProps {
-  open: boolean;
-  menuWidth: number;
-}
-
-const ToggleButton = styled(IconButton, {
-  shouldForwardProp: (prop) => prop !== "open" && prop !== "menuWidth",
-})<ToggleButtonProps>(({ theme, open, menuWidth }) => ({
-  position: "absolute",
-  top: "50%",
-  left: open ? `${menuWidth - 21}px` : "5px",
-  transform: "translateY(-50%)",
-  zIndex: 4000,
-  backgroundColor: theme.palette.background.paper,
-  border: `1px solid ${theme.palette.divider}`,
-  boxShadow: theme.shadows[3],
-  transition: "left 0.5s ease-in-out",
-  "&:hover": {
-    backgroundColor: theme.palette.background.paper, // same as normal
-    opacity: 1, // optional: ensures no fade
-    boxShadow: theme.shadows[4], // optionally stronger shadow on hover
-  },
-}));
-
-
-
 export default function SafetyMenu(props: any) {
   const { drawerOpen, handleDrawer, menuWidth } = props;
 
+  const [ mode, setMode ] = useState("bike")
+  const changeMode = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setMode(event.target.value)
+  }
+
+  const [ region, setRegion ] = useState("All County")
+  const changeRegion = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRegion(event.target.value)
+  }
+
+  const filterInputs = {
+    mode, changeMode, region, changeRegion
+  }
   return (
     <Box
       sx={{
@@ -60,31 +49,25 @@ export default function SafetyMenu(props: any) {
     >
       <MenuPanel drawerOpen={drawerOpen} drawerWidth={menuWidth}>
         <Box p={2}>
-          <Typography mb={2} variant="h6" sx={{ fontWeight: "bold" }}>
-            Safety
-          </Typography>
           <Typography mb={2} variant="body2">
             Evaluate bike and pedestrian safety across Santa Barbara County.
           </Typography>
 
-
-          <Typography mb={2} variant="body2">
-            <strong>Step 1:</strong> Add datasets to the map.
+          <SafetyFilters {...filterInputs} />
+          
+          <Typography my={2} variant="h6" sx={{ fontWeight: "bold" }}>
+            {mode.toUpperCase()} Safety
           </Typography>
-          {/* <LayerSearch /> */}
 
-          <Grid justifyContent="center" className="esri-widget">
-            <Grid size={12} my={2}>
-              <Typography
-                align="center"
-                variant="h6"
-                sx={{ fontWeight: "bold" }}
-              >
-                Legend
-              </Typography>
-            </Grid>
-            <div id="legend-container"></div>
-          </Grid>
+
+
+          {/* panel for incidents */}
+            {/* visualizization options heatmaps */}
+            {/* visul */}
+
+          {/* panel for  */}
+
+          
         </Box>
       </MenuPanel>
 
