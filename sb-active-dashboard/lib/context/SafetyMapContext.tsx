@@ -2,6 +2,7 @@ import React, { ReactNode, createContext, useContext, useState } from "react";
 import Map from "@arcgis/core/Map";
 import MapView from "@arcgis/core/views/MapView";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
+import FeatureLayerView from "@arcgis/core/views/layers/FeatureLayerView";
 
 type SafetyMapContextType = {
   mapRef: Map | null;
@@ -12,6 +13,12 @@ type SafetyMapContextType = {
 
   citiesLayer: FeatureLayer | null;
   setCitiesLayer: React.Dispatch<React.SetStateAction<FeatureLayer | null>>;
+
+  incidentsLayer: FeatureLayer | null;
+  setIncidentsLayer: React.Dispatch<React.SetStateAction<FeatureLayer | null>>;
+
+  incidentsLayerView: FeatureLayerView | null;
+  setIncidentsLayerView: React.Dispatch<React.SetStateAction<FeatureLayerView | null>>;
 
 };
 const SafetyMapContext = createContext<SafetyMapContextType | undefined>(undefined);
@@ -25,7 +32,8 @@ export default function SafetyProvider({ children }: MapProviderProps) {
   const [mapRef, setMapRef] = useState<Map | null>(null);
   const [viewRef, setViewRef] = useState<MapView | null>(null);
   const [citiesLayer, setCitiesLayer] = useState<FeatureLayer | null>(null)
-
+  const [incidentsLayer, setIncidentsLayer] = useState<FeatureLayer | null>(null)
+  const [incidentsLayerView, setIncidentsLayerView] = useState<FeatureLayerView | null>(null)
   // data layers
   
   return (
@@ -36,7 +44,11 @@ export default function SafetyProvider({ children }: MapProviderProps) {
         viewRef,
         setViewRef,
         citiesLayer,
-        setCitiesLayer
+        setCitiesLayer,
+        incidentsLayer,
+        setIncidentsLayer,
+        incidentsLayerView,
+        setIncidentsLayerView
         
       }}
     >

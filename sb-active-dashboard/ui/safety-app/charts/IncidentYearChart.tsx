@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-// import "./index.css";
+import { useSafetyMapContext } from "@/lib/context/SafetyMapContext";
 
 // Individual imports for each component used in this sample
 import "@arcgis/charts-components/components/arcgis-chart";
@@ -8,24 +8,23 @@ import "@arcgis/charts-components/components/arcgis-charts-action-bar";
 // Import createModel from the charts-components package
 import { createModel } from "@arcgis/charts-components/model";
 
-import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
-
-export default function TestMap() {
+export default function IncidentYearChart() {
   const chartRef = useRef(null);
-
+  const { incidentsLayer, viewRef, incidentsLayerView } = useSafetyMapContext()
   const initChart = useCallback(async () => {
     // Create a new feature layer from service URL
-    const layer = new FeatureLayer({
-      url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Safety_Incidents/FeatureServer",
-    });
-    await layer.load();
+    if (incidentsLayer == null) return;
+    await incidentsLayer.load();
 
     // Use querySelector to get the <arcgis-chart> element
     const chartElement = document.querySelector("arcgis-chart");
+    
 
     // Use createModel to create a scatterplot model
-    const chartModel = await createModel({ layer, chartType: "barChart" });
-    
+    const chartModel = await createModel({ layer: incidentsLayer, chartType: "barChart" });
+    chartModel.setDataFilter({
+      where: "1=1"
+    })
     await chartModel.setXAxisField("timestamp");
     chartModel.setTemporalBinningUnit("years")
     chartModel.setTemporalBinningSize(1)
@@ -33,12 +32,15 @@ export default function TestMap() {
     if (chartRef.current) {
       chartRef.current.model = chartModel;
     }
-  }, []);
+  }, [incidentsLayer]);
 
   // Call initChart() function to render the chart
   useEffect(() => {
     initChart().catch(console.error);
   }, [initChart]);
+
+  // change Data filter based on new filters coming in
+  
 
   return (
     <arcgis-chart ref={chartRef}>

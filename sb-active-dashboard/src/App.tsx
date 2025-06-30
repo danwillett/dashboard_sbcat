@@ -7,9 +7,13 @@ import SafetyProvider from "@/lib/context/SafetyMapContext";
 import HomePage from "./pages/home";
 import ExplorePage from "./pages/dashboard/explore";
 import SafetyPage from "./pages/dashboard/safety";
+import TestMap from "@/ui/test/TestMap";
 
 import { ThemeProvider, CssBaseline, StyledEngineProvider } from "@mui/material";
 import { appTheme } from "@/ui/theme";  // your existing theme file
+
+import '@arcgis/charts-components';
+
 
 function App() {
   return (
@@ -32,6 +36,7 @@ function App() {
                       
                       <Route path="explore" element={<ExplorePage />} />                    
                       <Route path="safety"  element={<SafetyPage  />} />
+                      <Route path="test" element={<TestMap />} />
                       
                     </Routes>
                   </DashboardLayout>

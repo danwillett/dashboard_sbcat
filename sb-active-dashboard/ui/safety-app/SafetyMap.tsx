@@ -1,20 +1,14 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import "@esri/calcite-components";
 import "@arcgis/map-components/dist/components/arcgis-map";
-import "@arcgis/map-components/dist/components/arcgis-legend";
-import "@arcgis/map-components/dist/components/arcgis-layer-list";
-import "@arcgis/map-components/dist/components/arcgis-time-slider";
-import "@arcgis/map-components/dist/components/arcgis-print";
-import Map from "@arcgis/core/Map";
-import MapView from "@arcgis/core/views/MapView";
-import LayerList from "@arcgis/core/widgets/LayerList";
-import TimeInterval from "@arcgis/core/time/TimeInterval";
-import Legend from "@arcgis/core/widgets/Legend";
-import TimeSlider from "@arcgis/core/widgets/TimeSlider";
-import Print from "@arcgis/core/widgets/Print";
+import "@arcgis/charts-components/components/arcgis-chart";
+import "@arcgis/charts-components/components/arcgis-charts-action-bar";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import { useSafetyMapContext } from "@/lib/context/SafetyMapContext";
 import SafetyMenu from "./SafetyMenu";
+
+// Import createModel from the charts-components package
+import { createModel } from "@arcgis/charts-components/model";
 
 import { ArcgisMap } from "@arcgis/map-components-react";
 import { CssBaseline, Box, Popover, Typography, Toolbar } from "@mui/material";
@@ -28,26 +22,31 @@ export default function SafetyMap() {
   // import safety global variables
   const { setMapRef, mapRef, setViewRef, viewRef } = useSafetyMapContext();
 //   import layers
-  const { setCitiesLayer } = useSafetyMapContext() 
+  const { setCitiesLayer, incidentsLayer, setIncidentsLayer, setIncidentsLayerView } = useSafetyMapContext() 
 
   // generate safety layers when map is loaded
+  const createSafetyLayers = async () => {
+    // create layers
+    console.log("create layers");
+    // inicident records
+    setIncidentsLayer(new FeatureLayer({
+      url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Hosted_Safety_Incidents/FeatureServer",
+      title: "Records"
+    }))
+    // city boundaries
+    setCitiesLayer(new FeatureLayer({
+      url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Incorporated_Cities/FeatureServer",
+    }));
+    // add layers to map
+  };
   useEffect(() => {
     // ensure map is loaded
     if (mapRef === null) return;
-
     // create layers
-    const createSafetyLayers = async () => {
-      // create layers
-      console.log("create layers");
-      // city boundaries
-      setCitiesLayer(new FeatureLayer({
-        url: "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/Incorporated_Cities/FeatureServer",
-      }));
-      // add layers to map
-    };
     createSafetyLayers();
+    
   }, [mapRef]);
-
+  
   // adjust map view and add elements
   useEffect(() => {
     // make sure the view is loaded
@@ -57,12 +56,30 @@ export default function SafetyMap() {
       center: [-120, 34.7],
       zoom: 9,
     });
-  });
+  }, [viewRef]);
+
+  // add layers to map
+  useEffect(() => {
+    if (mapRef == null || incidentsLayer == null) return;
+
+    mapRef.add(incidentsLayer)
+      
+  }, [mapRef, incidentsLayer])
+
+  useEffect(() => {
+    if (viewRef == null || incidentsLayer == null) return;
+    const addLayers = async () => {
+      const iview = await viewRef.whenLayerView(incidentsLayer)
+      setIncidentsLayerView(iview)
+    }
+    addLayers()
+  }, [viewRef, incidentsLayer])
 
   const assignMap = (event: any) => {
     setMapRef(event.target.map);
     setViewRef(event.target.view);
   };
+
 
   // menu rendering
   const [leftMenuOpen, setLeftMenuOpen] = useState(true);
@@ -70,6 +87,8 @@ export default function SafetyMap() {
   const handleLeftMenu = () => {
     setLeftMenuOpen((prev) => !prev);
   };
+
+
   return (
     <Box
       id="app-container"
@@ -100,6 +119,8 @@ export default function SafetyMap() {
           basemap="topo-vector"
           onArcgisViewReadyChange={assignMap}
         ></ArcgisMap>
+
+        
       </Box>
     </Box>
   );

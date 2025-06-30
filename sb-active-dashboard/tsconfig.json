@@ -19,8 +19,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@arcgis/core/*": ["node_modules/@arcgis/core/*"]
-    }
+      "@arcgis/core/*": ["node_modules/@arcgis/core/*"],
+      "@arcgis/charts-components/*": ["node_modules/@arcgis/charts-components/*"]
+    },
+
   },
   "include": ["**/*.ts", "**/*.tsx", "src/theme.d.ts"],
   "exclude": ["node_modules"]

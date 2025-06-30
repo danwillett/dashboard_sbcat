@@ -3,16 +3,12 @@ import React, { useEffect, useState } from "react";
 
 // map context and types
 import { useSafetyMapContext } from "../../lib/context/SafetyMapContext";
-
+import IncidentYearChart from "./charts/IncidentYearChart";
 // arcgis js
 
 // mui accordion components
-import Accordion from "@mui/material/Accordion";
-import AccordionActions from "@mui/material/AccordionActions";
-import AccordionSummary from "@mui/material/AccordionSummary";
-import AccordionDetails from "@mui/material/AccordionDetails";
 import Typography from "@mui/material/Typography";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+
 import Button from "@mui/material/Button";
 
 // mui form elements
@@ -32,6 +28,7 @@ import Box from "@mui/material/Box";
 // mui radio components
 import RadioGroup from "@mui/material/RadioGroup";
 import Radio from "@mui/material/Radio";
+import FeatureFilter from "@arcgis/core/layers/support/FeatureFilter";
 
 interface SafetyFilterProps {
   mode: string;
@@ -42,6 +39,8 @@ interface SafetyFilterProps {
 
 export default function SafetyFilters(props: SafetyFilterProps) {
   const { mode, changeMode, region, changeRegion } = props;
+  const { incidentsLayer, citiesLayer, viewRef } = useSafetyMapContext()
+  const [ filters, setFilters ] = useState({ where: null, geometry: null })
 
   // create year slider labels
   const startYear = 2012;
@@ -106,6 +105,32 @@ export default function SafetyFilters(props: SafetyFilterProps) {
       }
     };
 
+    useEffect(() => {
+      const makeFilters = async () => {
+        const geomResults = await citiesLayer?.queryFeatures({where: `City='${region}'`, returnGeometry: true})
+        const geom = geomResults?.features[0].geometry
+
+        setFilters({
+          where: `${mode}=1`,
+          geometry: geom
+        })
+      }
+      
+      makeFilters()
+      
+    }, [mode, region, viewRef, incidentsLayer, citiesLayer])
+
+  useEffect(() => {
+    if (incidentsLayer == null) return;
+    const applyFilters = async () => {
+      const incidentsLayerView = await viewRef?.whenLayerView(incidentsLayer)
+      if (incidentsLayerView){
+        incidentsLayerView.filter = new FeatureFilter(filters)
+      } 
+    
+    }
+    applyFilters()
+    }, [filters, incidentsLayer, viewRef])
   return (
     <div>
       {/* DATA SELECTION */}
@@ -119,8 +144,8 @@ export default function SafetyFilters(props: SafetyFilterProps) {
           aria-labelledby="mode-radio-buttons"
           name="mode-radio-buttons-group"
         >
-          <FormControlLabel value="bike" control={<Radio />} label="Bike" />
-          <FormControlLabel value="walk" control={<Radio />} label="Walk" />
+          <FormControlLabel value="bicyclist" control={<Radio />} label="Bike" />
+          <FormControlLabel value="pedestrian" control={<Radio />} label="Walk" />
           <FormControlLabel value="ebike" control={<Radio />} label="Ebike" />
         </RadioGroup>
       </FormControl>
@@ -134,13 +159,15 @@ export default function SafetyFilters(props: SafetyFilterProps) {
           aria-labelledby="region-radio-buttons"
           name="region-radio-buttons-group"
         >
-          <FormControlLabel value="City of Buelton" control={<Radio />} label="Buelton" />
-          <FormControlLabel value="City of Carpinteria" control={<Radio />} label="Carpinteria" />
-          <FormControlLabel value="City of Goleta" control={<Radio />} label="Goleta" />
-          <FormControlLabel value="City of Guadalupe" control={<Radio />} label="Guadalupe" />
-          <FormControlLabel value="City of Santa Barbara" control={<Radio />} label="Santa Barbara" />
-          <FormControlLabel value="City of Santa Maria" control={<Radio />} label="Santa Maria" />
-          <FormControlLabel value="City of Solvang" control={<Radio />} label="Solvang" />
+          {/* <FormControlLabel value="" control={<Radio />} label="SB County" /> */}
+          {/* <FormControlLabel value="1=1" control={<Radio />} label="Unicorporated Land" /> */}
+          <FormControlLabel value="Buelton" control={<Radio />} label="Buelton" />
+          <FormControlLabel value="Carpinteria" control={<Radio />} label="Carpinteria" />
+          <FormControlLabel value="Goleta" control={<Radio />} label="Goleta" />
+          <FormControlLabel value="Guadalupe" control={<Radio />} label="Guadalupe" />
+          <FormControlLabel value="Santa Barbara" control={<Radio />} label="Santa Barbara" />
+          <FormControlLabel value="Santa Maria" control={<Radio />} label="Santa Maria" />
+          <FormControlLabel value="Solvang" control={<Radio />} label="Solvang" />
         </RadioGroup>
       </FormControl>
 
@@ -161,7 +188,7 @@ export default function SafetyFilters(props: SafetyFilterProps) {
             my={2}
             sx={{ width: "100%" }}
           >
-            Filter by time of day
+            Years
           </Typography>
           <FormControl>
             <InputLabel id="year-start-select-label">Start</InputLabel>
@@ -211,6 +238,7 @@ export default function SafetyFilters(props: SafetyFilterProps) {
             />
           </Box>
         </Box>
+      <IncidentYearChart />
       {/* severity */}
     </div>
   );
