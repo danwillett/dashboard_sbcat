@@ -56,7 +56,7 @@ export default function Header({ apps }: HeaderProps) {
         className="sticky top-0 z-40 w-full"
         style={{ background: getGradientStyle(currentTheme) }}
       >
-        <div className="flex items-center justify-between h-16 px-4">
+        <div className="flex items-center justify-between h-16 w-full px-4">
           <div id="header-branding" className="flex items-center gap-3">
             <a
               href="https://spatial.ucsb.edu"
@@ -72,9 +72,13 @@ export default function Header({ apps }: HeaderProps) {
               />
             </a>
             <div className="w-px h-8 bg-white/40" />
-            <h1 id="dashboard-title" className="text-lg font-semibold text-white">
+            <Link
+              to="/"
+              id="dashboard-title"
+              className="text-lg font-semibold text-white hover:text-white/90"
+            >
               ACTIVE SB
-            </h1>
+            </Link>
           </div>
 
           <nav id="header-navigation" className="flex items-center gap-2">

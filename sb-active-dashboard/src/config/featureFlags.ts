@@ -7,5 +7,5 @@
  *   - Full-view branch (internal): VITE_SHOW_VOLUME_PAGE=true
  */
 export const featureFlags = {
-  showVolumePage: import.meta.env.VITE_SHOW_VOLUME_PAGE === 'true',
+  showVolumePage: import.meta.env.VITE_SHOW_VOLUME_PAGE === 'true' || import.meta.env.DEV,
 } as const;

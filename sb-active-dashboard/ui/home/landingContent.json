@@ -1,0 +1,83 @@
+{
+  "heroImage": "https://spatialwebsitestorage.blob.core.windows.net/spatial-images/research_atp_support.jpg",
+  "platformDescription": "This platform brings together walking and biking data for Santa Barbara County—helping communities explore safety, accessibility, and equity through maps and data insights. Descriptions here are drafts; we'll workshop the wording with the team.",
+  "cardImage": "https://spatialwebsitestorage.blob.core.windows.net/spatial-images/research_atp_support.jpg",
+  "categories": [
+    {
+      "id": "general",
+      "title": "General",
+      "tools": [
+        {
+          "id": "data-query-and-download",
+          "title": "Data Query and Download",
+          "description": "Filter, explore, and download walking and biking data for your area of interest.",
+          "link": "/data-query-and-download"
+        }
+      ]
+    },
+    {
+      "id": "safety",
+      "title": "Safety",
+      "tools": [
+        {
+          "id": "safety-hotspot",
+          "title": "Hotspot Finder",
+          "description": "Identify locations where walking and biking conflicts cluster across the county."
+        },
+        {
+          "id": "safety-trends",
+          "title": "Safety Trends Over Time",
+          "description": "Track how incident patterns change year to year and by road user type."
+        }
+      ]
+    },
+    {
+      "id": "volumes",
+      "title": "Volumes",
+      "tools": [
+        {
+          "id": "volumes-raw-data",
+          "title": "Raw Data Query",
+          "description": "Explore count survey sites and time series for observed bike and pedestrian volumes."
+        },
+        {
+          "id": "volumes-modeled",
+          "title": "Modeled Estimates",
+          "description": "View modeled volume estimates across the network where counts are limited."
+        },
+        {
+          "id": "volumes-trends",
+          "title": "Volume Trends Over Time",
+          "description": "Compare how walking and biking volumes shift across seasons and years."
+        }
+      ]
+    },
+    {
+      "id": "equity",
+      "title": "Equity",
+      "tools": [
+        {
+          "id": "equity-bike-accessibility",
+          "title": "Bike Accessibility",
+          "description": "Rate how easy it is to reach points of interest via the bike network from selected locations."
+        },
+        {
+          "id": "equity-infrastructure",
+          "title": "Infrastructure Equity",
+          "description": "Examine how bike and pedestrian infrastructure is distributed across communities."
+        }
+      ]
+    },
+    {
+      "id": "infrastructure",
+      "title": "Infrastructure",
+      "tools": [
+        {
+          "id": "infrastructure-safest-route",
+          "title": "Safest Bike Route",
+          "description": "Map a recommended bike route from point A to point B with safety in mind."
+        }
+      ]
+    }
+  ]
+}

@@ -114,7 +114,7 @@ export default function ContactPage() {
         <Box id="contact-back-link" sx={{ mt: 6 }}>
           <Link
             component={RouterLink}
-            to="/dashboard/safety"
+            to="/"
             sx={{
               color: theme.palette.aqua.main,
               fontWeight: "medium",
@@ -122,7 +122,7 @@ export default function ContactPage() {
               "&:hover": { textDecoration: "underline" },
             }}
           >
-            ← Back to Dashboard
+            ← Back to Home
           </Link>
         </Box>
       </Container>
