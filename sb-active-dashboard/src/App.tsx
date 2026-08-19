@@ -9,6 +9,7 @@ import VolumePage from "./pages/dashboard/volume";
 import Test from "./pages/dashboard/test";
 import AboutPage from "./pages/about";
 import ContactPage from "./pages/contact";
+import DataQueryAndDownloadPage from "./pages/data-query-and-download";
 // import TestBoundariesPage from "./pages/dashboard/test-boundaries";
 
 import { ThemeProvider, CssBaseline, StyledEngineProvider } from "@mui/material";
@@ -23,12 +24,15 @@ function App() {
         <CssBaseline enableColorScheme />
         <BrowserRouter>
           <Routes>
-            {/* Redirect root to safety dashboard */}
-            <Route path="/" element={<Navigate to="/dashboard/safety" replace />} />
+            {/* Landing page */}
+            <Route path="/" element={<HomePage />} />
 
             {/* Static pages */}
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
+
+            {/* Tool experiences */}
+            <Route path="/data-query-and-download" element={<DataQueryAndDownloadPage />} />
 
             {/* everything that needs useMapContext */}
             <Route

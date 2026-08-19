@@ -76,6 +76,12 @@ export interface SafetyFilters {
     type: 'weekdays' | 'weekends';
   };
   excludeHighwayIncidents?: boolean; // When true, filters out incidents on Caltrans highways
+  /** When false, severity is not applied to queries (all severities included). */
+  severityFilterEnabled?: boolean;
+  /** When false, data source is not applied to queries (all sources included). */
+  dataSourceFilterEnabled?: boolean;
+  /** When false, conflict type is not applied to queries (all types included). */
+  conflictFilterEnabled?: boolean;
 }
 
 // Chart data interfaces
