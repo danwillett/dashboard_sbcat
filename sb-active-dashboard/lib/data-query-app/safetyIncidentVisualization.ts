@@ -1,6 +1,7 @@
 import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
 import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
 import UniqueValueRenderer from "@arcgis/core/renderers/UniqueValueRenderer";
+import UniqueValueInfo from "@arcgis/core/renderers/support/UniqueValueInfo";
 import HeatmapRenderer from "@arcgis/core/renderers/HeatmapRenderer";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import { ALL_CONFLICT_TYPES } from "@/lib/data-query-app/safetyIncidentFilters";
@@ -473,11 +474,13 @@ export async function applySafetyIncidentVisualization(
       if (seen.has(key)) continue;
       seen.add(key);
       const label = normalizeIncidentSeverity(sample.severity, sample.source);
-      fieldRenderer.uniqueValueInfos.push({
-        value: key,
-        label,
-        symbol: SEVERITY_SYMBOLS[label],
-      });
+      fieldRenderer.uniqueValueInfos.push(
+        new UniqueValueInfo({
+          value: key,
+          label,
+          symbol: SEVERITY_SYMBOLS[label],
+        })
+      );
     }
     layer.renderer = fieldRenderer;
     console.info(

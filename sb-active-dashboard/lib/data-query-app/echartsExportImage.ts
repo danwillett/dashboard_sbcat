@@ -1,6 +1,6 @@
 type EchartsExportInstance = {
-  getDataURL: (opts: {
-    type?: string;
+  getDataURL: (opts?: {
+    type?: "png" | "jpeg" | "svg";
     pixelRatio?: number;
     backgroundColor?: string;
   }) => string;

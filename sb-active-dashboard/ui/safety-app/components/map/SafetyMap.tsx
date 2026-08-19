@@ -50,7 +50,7 @@ export default function SafetyMap({
   const [viewReady, setViewReady] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
-  const highwayFilterTimeoutRef = useRef<number | null>(null);
+  const highwayFilterTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [serviceReady, setServiceReady] = useState(false);
   
   // Services

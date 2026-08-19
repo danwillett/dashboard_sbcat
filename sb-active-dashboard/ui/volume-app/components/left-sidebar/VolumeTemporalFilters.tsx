@@ -1,7 +1,7 @@
 import {
   DayType,
   VolumeSiteQueryFilters,
-} from "../../../lib/volume-app/siteTemporalQuery";
+} from "@/lib/volume-app/siteTemporalQuery";
 
 interface VolumeTemporalFiltersProps {
   filters: VolumeSiteQueryFilters;

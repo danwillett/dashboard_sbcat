@@ -214,9 +214,10 @@ function incidentDimensionLabel(
 function categoryOrder(primary: string, categories: string[]): string[] {
   switch (primary) {
     case "severity":
-      return SEVERITY_ORDER.filter((l) => categories.includes(l)).concat(
-        categories.filter((c) => !SEVERITY_ORDER.includes(c as NormalizedSeverity))
-      );
+      return [
+        ...SEVERITY_ORDER.filter((l) => categories.includes(l)),
+        ...categories.filter((c) => !SEVERITY_ORDER.includes(c as NormalizedSeverity)),
+      ];
     case "roadUser":
       return ROAD_USER_ORDER.filter((l) => categories.includes(l)).concat(
         categories.filter((c) => !ROAD_USER_ORDER.includes(c))
@@ -243,9 +244,10 @@ function categoryOrder(primary: string, categories: string[]): string[] {
 
 function seriesOrder(secondary: string, names: string[]): string[] {
   if (secondary === "severity") {
-    return SEVERITY_ORDER.filter((l) => names.includes(l)).concat(
-      names.filter((n) => !SEVERITY_ORDER.includes(n as NormalizedSeverity))
-    );
+    return [
+      ...SEVERITY_ORDER.filter((l) => names.includes(l)),
+      ...names.filter((n) => !SEVERITY_ORDER.includes(n as NormalizedSeverity)),
+    ];
   }
   if (secondary === "age") {
     return AGE_ORDER.filter((l) => names.includes(l));
