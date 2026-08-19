@@ -12,6 +12,8 @@ import { ModeledVolumeDataService } from "../../../../lib/data-services/ModeledV
 import { useVolumeAppStore } from "../../../../lib/stores/volume-app-state";
 import { HourlyData, queryHourlyCounts } from "../../../../lib/volume-app/hourlyStats";
 import { createAADTLayer, createHexagonLayer, shouldShowLineSegments, ZOOM_THRESHOLD_FOR_LINE_SEGMENTS } from "../../../../lib/volume-app/volumeLayers";
+import { applyCountSurveySiteHighlight, createCountSurveySitesLayer, isCountSurveySitesLayer } from "../../../../lib/volume-app/createCountSurveySitesLayer";
+import { VolumeSite } from "../../../../lib/volume-app/siteTemporalQuery";
 import { createDynamicLineLayer, applyDynamicLineRenderer, isConfigurationSupported } from "../../../../lib/volume-app/DynamicLineRenderer";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import { VOLUME_LEVEL_CONFIG } from "../../../theme/volumeLevelColors";
@@ -36,6 +38,8 @@ interface VolumeMapProps {
   selectedCountSite?: string | null;
   highlightedBinSites?: string[];
   showLoadingOverlay?: boolean;
+  surveySites?: VolumeSite[];
+  onSurveySiteSelect?: (siteId: string | null) => void;
 }
 
 export default function VolumeMap({ 
@@ -51,8 +55,10 @@ export default function VolumeMap({
   schoolDistrictFilter,
   onSelectionChange,
   selectedCountSite: selectedCountSiteProp, // Keep for compatibility
-  highlightedBinSites: highlightedBinSitesProp = [], // Keep for compatibility
-  showLoadingOverlay = true, // Add the new prop with default value
+  highlightedBinSites: highlightedBinSitesProp = [],
+  showLoadingOverlay = true,
+  surveySites = [],
+  onSurveySiteSelect,
 }: VolumeMapProps) {
   // Use Zustand store for state management
   const { selectedCountSite, highlightedBinSites, setMapView: setStoreMapView } = useVolumeAppStore();
@@ -63,6 +69,7 @@ export default function VolumeMap({
   const [aadtLayer, setAadtLayer] = useState<FeatureLayer | null>(null);
   const [hexagonLayer, setHexagonLayer] = useState<GroupLayer | null>(null);
   const [dynamicLineLayer, setDynamicLineLayer] = useState<FeatureLayer | null>(null);
+  const [surveySitesLayer, setSurveySitesLayer] = useState<FeatureLayer | null>(null);
   
   // Loading state for line layer
   const [isLineLayerLoading, setIsLineLayerLoading] = useState<boolean>(false);
@@ -142,46 +149,53 @@ export default function VolumeMap({
     if (viewReady && mapViewRef.current) {
       const loadLayers = async () => {
         try {
-          const aadt = await createAADTLayer();
-          // For modeled data, use single mode; for raw data, default to bike
+          try {
+            const aadt = await createAADTLayer();
+            mapViewRef.current.map.add(aadt);
+            setAadtLayer(aadt);
+            if (onAadtLayerReady) {
+              try {
+                onAadtLayerReady(aadt);
+              } catch (err) {
+                console.warn('onAadtLayerReady callback failed:', err);
+              }
+            }
+          } catch (error) {
+            console.warn("Legacy AADT count layer unavailable:", error);
+          }
+
           const modeForHexagon = activeTab === 'modeled-data' ? selectedMode : 'bike';
-          const hexagon = createHexagonLayer(modelCountsBy, selectedYear, modeForHexagon);
+          try {
+            const hexagon = createHexagonLayer(modelCountsBy, selectedYear, modeForHexagon);
+            mapViewRef.current.map.add(hexagon);
+            setHexagonLayer(hexagon);
+          } catch (error) {
+            console.warn("Modeled hexagon layer unavailable:", error);
+          }
+
+          try {
+            const dynamicLines = createDynamicLineLayer();
+            mapViewRef.current.map.add(dynamicLines);
+            setDynamicLineLayer(dynamicLines);
+          } catch (error) {
+            console.warn("Dynamic line layer unavailable:", error);
+          }
+
+          try {
+            const modeledLayers = modeledVolumeService.getLayers();
+            modeledLayers.forEach(layer => {
+              mapViewRef.current.map.add(layer);
+            });
+          } catch (error) {
+            console.warn("Modeled volume query layers unavailable:", error);
+          }
           
-          // Add volume layers to map (bottom layers)
-          mapViewRef.current.map.add(aadt);
-          mapViewRef.current.map.add(hexagon);
-          
-          // Add dynamic line layer
-          const dynamicLines = createDynamicLineLayer();
-          mapViewRef.current.map.add(dynamicLines);
-          setDynamicLineLayer(dynamicLines);
-          
-          // Add modeled volume service layers for spatial querying (invisible but queryable)
-          const modeledLayers = modeledVolumeService.getLayers();
-          modeledLayers.forEach(layer => {
-            mapViewRef.current.map.add(layer);
-          });
-          
-          // Add boundary layers to map (these should render OVER the hexagon layers)
           const boundaryLayers = boundaryService.getBoundaryLayers();
           boundaryLayers.forEach(layer => mapViewRef.current.map.add(layer));
           
-          // Add graphics layer for custom drawing (top layer)
           const graphicsLayer = new GraphicsLayer();
           mapViewRef.current.map.add(graphicsLayer);
           setSketchLayer(graphicsLayer);
-          
-          // Store layer references
-          setAadtLayer(aadt);
-          setHexagonLayer(hexagon);
-          if (onAadtLayerReady) {
-            try {
-              onAadtLayerReady(aadt);
-            } catch (err) {
-              console.warn('onAadtLayerReady callback failed:', err);
-            }
-          }
-          
         } catch (error) {
           console.error("Error loading layers:", error);
         }
@@ -342,30 +356,74 @@ export default function VolumeMap({
 
   // Control layers based on tab and model counts selection
   useEffect(() => {
-    if (aadtLayer && hexagonLayer) {
+    if (aadtLayer) {
+      aadtLayer.visible = (activeTab === 'raw-data' && !surveySitesLayer) || activeTab === 'data-completeness';
+    }
+    if (hexagonLayer) {
       if (activeTab === 'raw-data' || activeTab === 'data-completeness') {
-        // Show raw AADT data for both Raw Data and Data Completeness tabs
-        aadtLayer.visible = true;
         hexagonLayer.visible = false;
-        // Dynamic line layer visibility controlled by zoom effect
-        // Dynamic line layer will update automatically
-      } else { // 'modeled-data' tab
-        aadtLayer.visible = false;
-        // Show appropriate layer based on zoom level
-        const showLineSegments = shouldShowLineSegments(currentZoomLevel);
-        hexagonLayer.visible = !showLineSegments;
-        
-        if (showLineSegments) {
-          // Set visibility based on user toggles
-          // Dynamic line layer visibility controlled by zoom effect
-        } else {
-          // Hide line segments and clear graphics when showing hexagons
-          // Dynamic line layer visibility controlled by zoom effect
-          // Dynamic line layer will update automatically
-        }
+      } else {
+        hexagonLayer.visible = !shouldShowLineSegments(currentZoomLevel);
       }
     }
-  }, [activeTab, modelCountsBy, aadtLayer, hexagonLayer, currentZoomLevel, selectedMode, showBicyclist, showPedestrian]);
+    if (surveySitesLayer) {
+      surveySitesLayer.visible = activeTab === 'raw-data';
+    }
+  }, [activeTab, aadtLayer, hexagonLayer, currentZoomLevel, surveySitesLayer]);
+
+  useEffect(() => {
+    if (!viewReady || !mapViewRef.current || activeTab !== 'raw-data') {
+      return;
+    }
+
+    const mapLayers = mapViewRef.current.map.allLayers || mapViewRef.current.map.layers;
+    const layerList = typeof mapLayers?.toArray === "function" ? mapLayers.toArray() : [];
+    const existing = layerList.find((layer: __esri.Layer) => isCountSurveySitesLayer(layer)) as FeatureLayer | undefined;
+    if (existing) {
+      mapViewRef.current.map.remove(existing);
+    }
+
+    if (surveySites.length === 0) {
+      setSurveySitesLayer(null);
+      return;
+    }
+
+    const layer = createCountSurveySitesLayer(surveySites);
+    mapViewRef.current.map.add(layer);
+    setSurveySitesLayer(layer);
+    applyCountSurveySiteHighlight(layer, selectedCountSite ?? null);
+  }, [viewReady, activeTab, surveySites]);
+
+  useEffect(() => {
+    if (surveySitesLayer) {
+      applyCountSurveySiteHighlight(surveySitesLayer, selectedCountSite ?? null);
+    }
+  }, [surveySitesLayer, selectedCountSite]);
+
+  useEffect(() => {
+    if (!viewReady || !mapViewRef.current || !onSurveySiteSelect) return;
+
+    const handle = mapViewRef.current.on("click", async (event: __esri.ViewClickEvent) => {
+      if (activeTab !== "raw-data") return;
+      try {
+        const hit = await mapViewRef.current.hitTest(event);
+        const siteHit = hit.results.find((result: any) =>
+          result.graphic && isCountSurveySitesLayer(result.graphic.layer)
+        );
+        if (siteHit?.graphic) {
+          const siteId = siteHit.graphic.attributes?.id;
+          if (siteId != null) {
+            onSurveySiteSelect(String(siteId));
+            event.stopPropagation?.();
+          }
+        }
+      } catch (error) {
+        console.warn("Count site click handling failed:", error);
+      }
+    });
+
+    return () => handle?.remove?.();
+  }, [viewReady, activeTab, onSurveySiteSelect]);
 
   // DYNAMIC STYLING: Instant switch between hexagon and line views
   useEffect(() => {

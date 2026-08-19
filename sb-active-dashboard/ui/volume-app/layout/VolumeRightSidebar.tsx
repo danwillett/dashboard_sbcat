@@ -25,6 +25,11 @@ import TrendsHeader from "../components/right-sidebar/TrendsHeader";
 import YearToYearVolumeComparison from "../components/right-sidebar/YearToYearVolumeComparison";
 import LocationIndicator from "../../components/LocationIndicator";
 
+/** Temporary: hide area-comparison panels until raw site history is stable. */
+const SHOW_YEAR_TO_YEAR_COMPARISON = false;
+const SHOW_HIGHEST_VOLUME_AREAS = false;
+const SHOW_AADV_DISTRIBUTION = false;
+
 interface DateRangeValue {
   startDate: Date;
   endDate: Date;
@@ -504,12 +509,14 @@ export default function VolumeRightSidebar({
                 showPedestrian={showPedestrian}
               />
 
+              {SHOW_YEAR_TO_YEAR_COMPARISON && (
               <YearToYearVolumeComparison 
                 selectedGeometry={selectedGeometry}
                 showBicyclist={showBicyclist}
                 showPedestrian={showPedestrian}
                 dateRange={dateRange}
               />
+              )}
               <TimelineSparkline
                 sites={timelineData}
                 startDate={dateRange.startDate}
@@ -524,12 +531,15 @@ export default function VolumeRightSidebar({
                 showPedestrian={showPedestrian}
                 modelCountsBy={modelCountsBy}
               />
+              {SHOW_AADV_DISTRIBUTION && (
                             <AADVHistogram 
                 selectedGeometry={selectedGeometry}
                 dateRange={dateRange}
                 showBicyclist={showBicyclist}
                 showPedestrian={showPedestrian}
               />
+              )}
+              {SHOW_HIGHEST_VOLUME_AREAS && (
               <HighestVolume 
                 mapView={mapView}
                 sitesLayer={sitesLayer}
@@ -542,6 +552,7 @@ export default function VolumeRightSidebar({
                 selectedSiteId={selectedCountSite}
                 onSiteSelect={setSelectedCountSite}
               />
+              )}
               {/* @deprecated ModeBreakdown component is deprecated and will be removed
               <ModeBreakdown 
                 selectedGeometry={selectedGeometry}

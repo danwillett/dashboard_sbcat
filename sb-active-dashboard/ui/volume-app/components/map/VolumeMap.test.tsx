@@ -21,6 +21,11 @@ vi.mock('@arcgis/map-components-react', () => ({
             length: 0,
             includes: vi.fn(() => false),
             getItemAt: vi.fn(),
+            toArray: vi.fn(() => []),
+            find: vi.fn(() => undefined)
+          },
+          allLayers: {
+            find: vi.fn(() => undefined),
             toArray: vi.fn(() => [])
           }
         },
@@ -33,8 +38,9 @@ vi.mock('@arcgis/map-components-react', () => ({
           visible: false,
           open: vi.fn()
         },
-        on: vi.fn(),
-        container: document.createElement('div'),
+        on: vi.fn(() => ({ remove: vi.fn() })),
+        hitTest: vi.fn().mockResolvedValue({ results: [] }),
+        container: typeof document !== "undefined" ? document.createElement("div") : undefined,
         toMap: vi.fn()
       };
       

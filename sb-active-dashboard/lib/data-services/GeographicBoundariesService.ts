@@ -746,6 +746,7 @@ export class GeographicBoundariesService {
         layer.type === 'feature' && (
           layer.title === 'Safety Incidents' || 
           layer.title === 'Weighted Safety Incidents' ||
+          layer.title === 'Count Survey Sites' ||
           (layer as { id?: string }).id?.includes('incident')
         )
       );

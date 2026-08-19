@@ -297,92 +297,187 @@ function DateRangeSection({ dateRange, onDateRangeChange, datasetBounds }: DateR
     return { startOfPeriod, endOfPeriod, totalDays, startPercent, endPercent };
   }, [selection.startDate, selection.endDate, datasetBounds]);
 
-  const handleMouseDown = useCallback((type: 'start' | 'end') => {
-    setIsDragging(type);
-  }, []);
+  const updateFromClientX = useCallback(
+    (clientX: number, handle: 'start' | 'end') => {
+      if (!trackRef.current) return;
+      const rect = trackRef.current.getBoundingClientRect();
+      const percent = Math.max(
+        0,
+        Math.min(100, ((clientX - rect.left) / rect.width) * 100)
+      );
+      const days = Math.round((percent / 100) * totalDays);
+      const newDate = new Date(
+        startOfPeriod.getTime() + days * 24 * 60 * 60 * 1000
+      );
+      const constrainedDate = new Date(
+        Math.max(
+          startOfPeriod.getTime(),
+          Math.min(endOfPeriod.getTime(), newDate.getTime())
+        )
+      );
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging || !trackRef.current) return;
-    const rect = trackRef.current.getBoundingClientRect();
-    const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-    const days = Math.round((percent / 100) * totalDays);
-    const newDate = new Date(startOfPeriod.getTime() + days * 24 * 60 * 60 * 1000);
+      if (handle === 'start' && constrainedDate <= selection.endDate) {
+        setSelection((prev) => ({ ...prev, startDate: constrainedDate }));
+      } else if (handle === 'end' && constrainedDate >= selection.startDate) {
+        setSelection((prev) => ({ ...prev, endDate: constrainedDate }));
+      }
+    },
+    [
+      totalDays,
+      startOfPeriod,
+      endOfPeriod,
+      selection.endDate,
+      selection.startDate,
+    ]
+  );
 
-    // Constrain dates within dataset bounds
-    const constrainedDate = new Date(Math.max(startOfPeriod.getTime(), Math.min(endOfPeriod.getTime(), newDate.getTime())));
+  const beginDrag = useCallback(
+    (type: 'start' | 'end', event: React.PointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setIsDragging(type);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    []
+  );
 
-    if (isDragging === 'start' && constrainedDate <= selection.endDate) {
-      setSelection(prev => ({ ...prev, startDate: constrainedDate }));
-    } else if (isDragging === 'end' && constrainedDate >= selection.startDate) {
-      setSelection(prev => ({ ...prev, endDate: constrainedDate }));
-    }
-  }, [isDragging, totalDays, startOfPeriod, endOfPeriod, selection.endDate, selection.startDate]);
+  const onHandlePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!isDragging) return;
+      event.preventDefault();
+      event.stopPropagation();
+      updateFromClientX(event.clientX, isDragging);
+    },
+    [isDragging, updateFromClientX]
+  );
 
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(null);
-  }, []);
+  const endDrag = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!isDragging) return;
+      event.preventDefault();
+      event.stopPropagation();
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        // Pointer may already be released
+      }
+      setIsDragging(null);
+    },
+    [isDragging]
+  );
+
+  // Keep dragging smooth when the pointer leaves the handle/track.
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const onMove = (event: PointerEvent) => {
+      event.preventDefault();
+      updateFromClientX(event.clientX, isDragging);
+    };
+    const onUp = () => setIsDragging(null);
+
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+    document.body.style.cursor = 'grabbing';
+    document.addEventListener('pointermove', onMove, { passive: false });
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+
+    return () => {
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
+      document.body.style.cursor = '';
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+    };
+  }, [isDragging, updateFromClientX]);
 
   return (
     <div className="p-4">
       <div id="date-range-section">
         <h3 className="text-base font-medium text-gray-700 mb-3">Date Range</h3>
         <div ref={datePickerRef} id="date-range-picker" className="bg-gray-100 p-2 rounded-md">
-          <div className="flex justify-between items-center mb-1 group cursor-pointer" onClick={openCalendar}>
-            <div 
-              className="px-2 py-1 bg-gray-200 rounded group-hover:bg-gray-300 transition-colors focus:outline-none active:outline-none"
+          <div className="mb-1 flex flex-nowrap items-center justify-between gap-2">
+            <span
+              id="start-date-label"
+              className="shrink-0 select-none whitespace-nowrap rounded bg-gray-200 px-2 py-1 text-sm text-gray-600"
             >
-              <span id="start-date-label" className="text-sm text-gray-600 p-1">
-                {formatDate(selection.startDate)}
-              </span>
-            </div>
-            <div 
-              className="flex items-center justify-center group-hover:scale-110 transition-transform"
+              {formatDate(selection.startDate)}
+            </span>
+            <button
+              type="button"
+              aria-label="Open calendar"
+              onClick={openCalendar}
+              className="flex shrink-0 items-center justify-center rounded p-1 hover:bg-gray-200 focus:outline-none"
+              style={{ backgroundColor: 'transparent' }}
             >
-              <img 
-                src={calendarIcon} 
-                alt="open calendar" 
-                className="w-4 h-4" 
+              <img
+                src={calendarIcon}
+                alt=""
+                className="h-4 w-4"
+                draggable={false}
               />
-            </div>
-            <div 
-              className="px-2 py-1 bg-gray-200 rounded group-hover:bg-gray-300 transition-colors focus:outline-none active:outline-none"
+            </button>
+            <span
+              id="end-date-label"
+              className="shrink-0 select-none whitespace-nowrap rounded bg-gray-200 px-2 py-1 text-sm text-gray-600"
             >
-              <span id="end-date-label" className="text-sm text-gray-600 p-1">
-                {formatDate(selection.endDate)}
-              </span>
-            </div>
+              {formatDate(selection.endDate)}
+            </span>
           </div>
-          
-          <div 
-            className="relative h-6 flex items-center px-2"
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+
+          <div
+            className={`relative flex h-6 select-none items-center px-2 ${
+              isDragging ? 'cursor-grabbing' : ''
+            }`}
+            style={{ touchAction: 'none' }}
           >
-            <div ref={trackRef} className="relative w-full h-2 bg-gray-200 rounded-full">
-              <div 
+            <div
+              ref={trackRef}
+              className="relative h-2 w-full rounded-full bg-gray-200"
+            >
+              <div
                 id="date-range-selection"
-                className="absolute h-2 bg-blue-500 rounded-full"
+                className="pointer-events-none absolute h-2 rounded-full bg-blue-500"
                 style={{
                   left: `${startPercent}%`,
-                  width: `${endPercent - startPercent}%`
+                  width: `${endPercent - startPercent}%`,
                 }}
               />
               <div
-                className="absolute size-4 bg-white border-2 border-blue-500 rounded-full -top-1 cursor-pointer hover:scale-110 transition-transform"
+                role="slider"
+                aria-label="Start date"
+                aria-valuenow={startPercent}
+                tabIndex={0}
+                className="absolute -top-1 size-4 cursor-grab rounded-full border-2 border-blue-500 bg-white touch-none select-none active:cursor-grabbing"
                 style={{
                   left: `${startPercent}%`,
-                  transform: 'translateX(-50%)'
+                  transform: 'translateX(-50%)',
+                  touchAction: 'none',
                 }}
-                onMouseDown={() => handleMouseDown('start')}
+                onPointerDown={(e) => beginDrag('start', e)}
+                onPointerMove={onHandlePointerMove}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                onClick={(e) => e.stopPropagation()}
               />
               <div
-                className="absolute size-4 bg-white border-2 border-blue-500 rounded-full -top-1 cursor-pointer hover:scale-110 transition-transform"
+                role="slider"
+                aria-label="End date"
+                aria-valuenow={endPercent}
+                tabIndex={0}
+                className="absolute -top-1 size-4 cursor-grab rounded-full border-2 border-blue-500 bg-white touch-none select-none active:cursor-grabbing"
                 style={{
                   left: `${endPercent}%`,
-                  transform: 'translateX(-50%)'
+                  transform: 'translateX(-50%)',
+                  touchAction: 'none',
                 }}
-                onMouseDown={() => handleMouseDown('end')}
+                onPointerDown={(e) => beginDrag('end', e)}
+                onPointerMove={onHandlePointerMove}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                onClick={(e) => e.stopPropagation()}
               />
             </div>
           </div>
@@ -403,4 +498,4 @@ function DateRangeSection({ dateRange, onDateRangeChange, datasetBounds }: DateR
   );
 }
 
-export default React.memo(DateRangeSection); 
+export default React.memo(DateRangeSection);

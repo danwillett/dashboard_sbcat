@@ -44,6 +44,23 @@ vi.mock('../../lib/hooks/useSelection', () => ({
   })
 }));
 
+vi.mock('../../lib/data-services/VolumeSitesApiService', () => ({
+  fetchVolumeSurveySites: vi.fn().mockResolvedValue({
+    sites: [],
+    availableYears: [2022, 2023, 2024],
+    fromApi: true,
+  }),
+  fetchVolumeSiteSeries: vi.fn().mockResolvedValue({
+    site_id: 1,
+    name: 'Test Site',
+    source: 'test',
+    start: null,
+    end: null,
+    months: null,
+    series: [],
+  }),
+}));
+
 describe('VolumeApp Year Selector Bug Prevention', () => {
   it('should prevent "onYearChange is not a function" error by ensuring prop flow', async () => {
     const user = userEvent.setup();

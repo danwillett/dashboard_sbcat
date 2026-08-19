@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSelection } from "../../lib/hooks/useSelection";
 import { useVolumeAppStore } from "../../lib/stores/volume-app-state";
 import VolumeMap from "./components/map/VolumeMap";
@@ -8,6 +8,12 @@ import VolumeSubHeader from "./layout/VolumeSubHeader";
 import DisclaimerModal from "../components/DisclaimerModal";
 import VolumeDataDisclaimer from "../components/VolumeDataDisclaimer";
 import { SchoolDistrictFilter } from "../components/filters/GeographicLevelSection";
+import { fetchVolumeSurveySites } from "../../lib/data-services/VolumeSitesApiService";
+import {
+  DEFAULT_VOLUME_SITE_FILTERS,
+  VolumeSite,
+  VolumeSiteQueryFilters,
+} from "../../lib/volume-app/siteTemporalQuery";
 
 const getToday = () => new Date();
 
@@ -15,60 +21,109 @@ export default function VolumeApp() {
   const [activeTab, setActiveTab] = useState('raw-data');
   const [showDisclaimer, setShowDisclaimer] = useState(true);
   
-  // Selection hook for polygon selection
   const { selectedGeometry, selectedAreaName, onSelectionChange } = useSelection();
   
-  // Use Zustand store for count site selection and bin highlighting
   const { 
     selectedCountSite, 
     highlightedBinSites, 
     setSelectedCountSite, 
-    setHighlightedBinSites,
     setMapView: setStoreMapView 
   } = useVolumeAppStore();
   
-  // Map-related state to share between components
-  // For Raw Data/Data Completeness: dual selection (showBicyclist, showPedestrian)
-  // For Modeled Data: single selection (selectedMode)
   const [showBicyclist, setShowBicyclist] = useState(true);
   const [showPedestrian, setShowPedestrian] = useState(true);
   const [selectedMode, setSelectedMode] = useState<'bike' | 'ped'>('bike');
   const [modelCountsBy, setModelCountsBy] = useState<string>("cost-benefit");
   const [mapView, setMapView] = useState<__esri.MapView | null>(null);
   const [aadtLayer, setAadtLayer] = useState<__esri.FeatureLayer | null>(null);
-  const [geographicLevel, setGeographicLevel] = useState('city-service-area');
+  const [geographicLevel, setGeographicLevel] = useState('county');
   const [schoolDistrictFilter, setSchoolDistrictFilter] = useState<SchoolDistrictFilter>({ gradeFilter: 'high-school' });
   
-  
-  // Date range state for timeline and filtering
   const [dateRange, setDateRange] = useState({
-    startDate: new Date(2020, 0, 1), // 1/1/2020 (local time)
+    startDate: new Date(2020, 0, 1),
     endDate: getToday(),
   });
 
-  // Year selection state for modeled data
   const [selectedYear, setSelectedYear] = useState(2023);
+  const [years, setYears] = useState<number[]>(DEFAULT_VOLUME_SITE_FILTERS.years);
+  const [weekdayFilter, setWeekdayFilter] = useState(DEFAULT_VOLUME_SITE_FILTERS.weekdayFilter);
+  const [timeOfDay, setTimeOfDay] = useState(DEFAULT_VOLUME_SITE_FILTERS.timeOfDay);
+  const [surveySites, setSurveySites] = useState<VolumeSite[]>([]);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [sitesError, setSitesError] = useState<string | null>(null);
+  const [sitesLoading, setSitesLoading] = useState(false);
 
-  // Note: Removed auto-switch to City/Service Area restriction
-  // Users can now select any geographic level (including county and census tract) for all tabs
+  const siteFilters: VolumeSiteQueryFilters = useMemo(() => ({
+    years,
+    weekdayFilter,
+    timeOfDay,
+    showBicyclist,
+    showPedestrian,
+    dateRange,
+  }), [years, weekdayFilter, timeOfDay, showBicyclist, showPedestrian, dateRange]);
 
-  // Handle map view ready from map component
+  useEffect(() => {
+    if (activeTab !== "raw-data") return;
+
+    let cancelled = false;
+    setSitesLoading(true);
+    setSitesError(null);
+
+    const handle = window.setTimeout(() => {
+      fetchVolumeSurveySites(siteFilters)
+        .then((result) => {
+          if (cancelled) return;
+          setSurveySites(result.sites);
+          if (result.availableYears.length > 0) {
+            setAvailableYears(result.availableYears);
+          }
+          if (!result.fromApi) {
+            setSitesError("Live volume API is unavailable; showing sites from the feature service when possible.");
+          }
+        })
+        .catch((error: Error) => {
+          if (cancelled) return;
+          setSurveySites([]);
+          setSitesError(error.message || "Failed to load count survey sites.");
+        })
+        .finally(() => {
+          if (!cancelled) setSitesLoading(false);
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
+  }, [activeTab, siteFilters]);
+
+  const selectedSiteName = useMemo(() => {
+    if (!selectedCountSite) return null;
+    return surveySites.find((site) => String(site.id) === selectedCountSite)?.name || null;
+  }, [selectedCountSite, surveySites]);
+
+  useEffect(() => {
+    if (!selectedCountSite) return;
+    const stillVisible = surveySites.some((site) => String(site.id) === selectedCountSite);
+    if (!stillVisible && surveySites.length > 0) {
+      setSelectedCountSite(null);
+    }
+  }, [surveySites, selectedCountSite, setSelectedCountSite]);
+
   const handleMapViewReady = (view: __esri.MapView) => {
-
     setMapView(view);
-    setStoreMapView(view); // Also update Zustand store
+    setStoreMapView(view);
   };
 
-  // Handle bin sites highlighting (now handled by Zustand store)
-  const handleBinSitesHighlight = (siteNames: string[]) => {
-    // This is now handled directly by the Zustand store in AADTHistogram
-    // Keep this function for compatibility but it's no longer needed
-  };
-
-  // Clear highlighted sites when selecting individual sites (now handled by Zustand store)
   const handleCountSiteSelect = (siteId: string | null) => {
-    // This is now handled directly by the Zustand store
-    // Keep this function for compatibility but it's no longer needed
+    setSelectedCountSite(siteId);
+  };
+
+  const handleSiteFiltersChange = (
+    next: Partial<Pick<VolumeSiteQueryFilters, "years" | "weekdayFilter">>
+  ) => {
+    if (next.years !== undefined) setYears(next.years);
+    if (next.weekdayFilter) setWeekdayFilter(next.weekdayFilter);
   };
 
   return (
@@ -103,6 +158,14 @@ export default function VolumeApp() {
           onDateRangeChange={setDateRange}
           selectedYear={selectedYear}
           onYearChange={setSelectedYear}
+          siteFilters={siteFilters}
+          availableYears={availableYears}
+          onSiteFiltersChange={handleSiteFiltersChange}
+          selectedCountSite={selectedCountSite}
+          selectedSiteName={selectedSiteName}
+          onClearSelectedSite={() => setSelectedCountSite(null)}
+          siteCount={sitesLoading ? undefined : surveySites.length}
+          sitesError={sitesError}
         />
         <VolumeMap 
           activeTab={activeTab}
@@ -119,6 +182,8 @@ export default function VolumeApp() {
           selectedCountSite={selectedCountSite}
           highlightedBinSites={highlightedBinSites}
           showLoadingOverlay={!showDisclaimer}
+          surveySites={surveySites}
+          onSurveySiteSelect={handleCountSiteSelect}
         />
         <VolumeRightSidebar 
           activeTab={activeTab}
@@ -133,7 +198,6 @@ export default function VolumeApp() {
           dateRange={dateRange}
           selectedCountSite={selectedCountSite}
           onCountSiteSelect={handleCountSiteSelect}
-          onBinSitesHighlight={handleBinSitesHighlight}
           highlightedBinSites={highlightedBinSites}
           selectedYear={selectedYear}
         />
