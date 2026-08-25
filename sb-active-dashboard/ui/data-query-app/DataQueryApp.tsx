@@ -61,11 +61,11 @@ import {
 import { SafetyIncidentSummary } from "@/lib/data-query-app/safetyIncidentQuery";
 import CountSurveyVizLegend from "@/ui/data-query-app/components/CountSurveyVizLegend";
 import SafetyIncidentVizLegend from "@/ui/data-query-app/components/SafetyIncidentVizLegend";
-import ModeledVolumeVizLegend from "@/ui/data-query-app/components/ModeledVolumeVizLegend";
 import DataQueryMapWidgets from "@/ui/data-query-app/components/DataQueryMapWidgets";
 import DataQueryMapZoomNotice, {
   MapZoomNotice,
 } from "@/ui/data-query-app/components/DataQueryMapZoomNotice";
+import "@/ui/data-query-app/data-query-map-widgets.css";
 
 export default function DataQueryApp() {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
@@ -246,6 +246,7 @@ export default function DataQueryApp() {
     jurisdictionStatsLoading: countJurisdictionStatsLoading,
     loadJurisdictionBreakdown: loadCountJurisdictionBreakdown,
     exportFilteredData: exportCountSurveyData,
+    exportFilteredShapefile: exportCountSurveyShapefile,
   } = useCountSurveyFilteredLayer({
     mapView,
     dataset: managedCountSurveyDataset,
@@ -269,6 +270,7 @@ export default function DataQueryApp() {
     jurisdictionStatsLoading,
     loadJurisdictionBreakdown,
     exportFilteredData: exportSafetyIncidentData,
+    exportFilteredShapefile: exportSafetyIncidentShapefile,
   } = useSafetyIncidentFilteredLayer({
     mapView,
     dataset: managedSafetyDataset,
@@ -493,8 +495,7 @@ export default function DataQueryApp() {
     countSurveyEnabled &&
     countSurveyVisualization.mode === "aadt" &&
     (countSurveyVisualization.varyColor || countSurveyVisualization.varySize);
-  const showMapLegends =
-    showCountLegend || safetyEnabled || modeledEnabled;
+  const showMapLegends = showCountLegend || safetyEnabled;
 
   return (
     <div id="data-query-app" className="flex h-full min-h-0 w-full flex-col bg-white">
@@ -533,33 +534,29 @@ export default function DataQueryApp() {
         <div id="data-query-map-area" className="relative min-w-0 flex-1">
           <DataQueryMap onMapViewReady={setMapView} />
           <DataQueryMapZoomNotice notices={mapZoomNotices} />
-          <DataQueryMapWidgets mapView={mapView} />
-          {showMapLegends ? (
-            <div className="pointer-events-none absolute bottom-5 left-5 z-10 flex max-w-[280px] flex-col gap-3">
-              {showCountLegend && (
-                <CountSurveyVizLegend
-                  visualization={countSurveyVisualization}
-                  yearUsedLabel={vizYearLabel}
-                  variant="map"
-                />
-              )}
-              {safetyEnabled && (
-                <SafetyIncidentVizLegend
-                  visualization={safetyVisualization}
-                  incidentCount={incidentCount}
-                />
-              )}
-              {modeledEnabled && (
-                <ModeledVolumeVizLegend
-                  geometry={modeledVolumeVisualization.geometry}
-                  identityLabel={modeledIdentityLabel}
-                  year={modeledVolumeFilters.year}
-                  activeField={modeledActiveField}
-                  activeResolution={modeledActiveResolution}
-                />
-              )}
-            </div>
-          ) : null}
+          <DataQueryMapWidgets
+            mapView={mapView}
+            customLegend={
+              showMapLegends ? (
+                <>
+                  {showCountLegend && (
+                    <CountSurveyVizLegend
+                      visualization={countSurveyVisualization}
+                      yearUsedLabel={vizYearLabel}
+                      variant="embedded"
+                    />
+                  )}
+                  {safetyEnabled && (
+                    <SafetyIncidentVizLegend
+                      visualization={safetyVisualization}
+                      incidentCount={incidentCount}
+                      variant="embedded"
+                    />
+                  )}
+                </>
+              ) : undefined
+            }
+          />
         </div>
 
         <DataQueryRightSidebar
@@ -602,6 +599,9 @@ export default function DataQueryApp() {
           onExportCountSurveyData={
             countSurveyEnabled ? exportCountSurveyData : undefined
           }
+          onExportCountSurveyShapefile={
+            countSurveyEnabled ? exportCountSurveyShapefile : undefined
+          }
           incidentCount={safetyEnabled ? incidentCount : null}
           safetyIncidents={safetyIncidents}
           safetyIncidentsTruncated={incidentsTruncated}
@@ -623,6 +623,9 @@ export default function DataQueryApp() {
           onLoadJurisdictionBreakdown={loadJurisdictionBreakdown}
           onExportSafetyIncidentData={
             safetyEnabled ? exportSafetyIncidentData : undefined
+          }
+          onExportSafetyIncidentShapefile={
+            safetyEnabled ? exportSafetyIncidentShapefile : undefined
           }
           filtersLoading={
             activeIsBicycleComfort

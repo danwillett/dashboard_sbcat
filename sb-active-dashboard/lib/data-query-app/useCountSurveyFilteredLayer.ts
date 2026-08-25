@@ -30,6 +30,7 @@ import {
 } from "@/lib/data-services/VolumeSitesApiService";
 import { VolumeSite } from "@/lib/volume-app/siteTemporalQuery";
 import { exportCountSurveyCsv } from "@/lib/data-query-app/exportCountSurveyCsv";
+import { exportCountSurveyShapefile } from "@/lib/data-query-app/exportCountSurveyShapefile";
 import { applyCountSurveySiteHighlight } from "@/lib/volume-app/createCountSurveySitesLayer";
 import { createCountSurveySitePopupTemplate } from "@/lib/volume-app/countSurveyPopupTemplate";
 
@@ -59,6 +60,11 @@ interface UseCountSurveyFilteredLayerResult {
     level: "city" | "service-area"
   ) => Promise<void>;
   exportFilteredData: () => Promise<{ rowCount: number; truncated: boolean }>;
+  exportFilteredShapefile: () => Promise<{
+    rowCount: number;
+    truncated: boolean;
+    filename?: string;
+  }>;
 }
 
 function sitesToGeoJsonFeatures(sites: VolumeSite[]) {
@@ -419,6 +425,19 @@ export function useCountSurveyFilteredLayer({
     return { rowCount: result.rowCount, truncated: result.truncated };
   }, [filters.siteFilters]);
 
+  const exportFilteredShapefile = useCallback(async () => {
+    const currentSites = sitesRef.current;
+    if (currentSites.length === 0) {
+      throw new Error("No survey sites match the current filters.");
+    }
+    const result = await exportCountSurveyShapefile(currentSites);
+    return {
+      rowCount: result.rowCount,
+      truncated: result.truncated,
+      filename: result.filename,
+    };
+  }, []);
+
   return {
     sites,
     siteCount,
@@ -433,5 +452,6 @@ export function useCountSurveyFilteredLayer({
     jurisdictionStatsLoading,
     loadJurisdictionBreakdown,
     exportFilteredData,
+    exportFilteredShapefile,
   };
 }

@@ -405,6 +405,8 @@ export async function applySafetyIncidentVisualization(
     }
   }
   layer.outFields = ["*"];
+  // Custom legend in Data Query map panel (style label + incident count).
+  layer.legendEnabled = false;
 
   if (visualization.styleBy === "severity") {
     const fieldName = findSeverityFieldName(layer) || "severity";

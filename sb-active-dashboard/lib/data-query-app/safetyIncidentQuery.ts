@@ -106,6 +106,7 @@ export async function queryAllFilteredIncidentFeatures(
     geometry?: __esri.Geometry | null;
     maxFeatures?: number;
     returnGeometry?: boolean;
+    outSpatialReference?: __esri.SpatialReferenceProperties;
   }
 ): Promise<{
   features: Array<{ attributes: Record<string, unknown>; geometry?: __esri.Geometry }>;
@@ -125,6 +126,9 @@ export async function queryAllFilteredIncidentFeatures(
     query.where = layer.definitionExpression || "1=1";
     query.outFields = ["*"];
     query.returnGeometry = options?.returnGeometry === true;
+    if (options?.returnGeometry && options.outSpatialReference) {
+      query.outSpatialReference = options.outSpatialReference;
+    }
     query.orderByFields = ["timestamp DESC"];
     query.num = Math.min(pageSize, maxFeatures - features.length);
     query.start = start;

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import LayerList from "@arcgis/core/widgets/LayerList";
 import Legend from "@arcgis/core/widgets/Legend";
 import { CalciteIcon } from "@esri/calcite-components-react";
@@ -6,6 +6,8 @@ import "../data-query-map-widgets.css";
 
 interface DataQueryMapWidgetsProps {
   mapView: __esri.MapView | null;
+  /** Managed layer legends (count surveys, safety, modeled volume) above the Esri legend. */
+  customLegend?: ReactNode;
 }
 
 /**
@@ -13,6 +15,7 @@ interface DataQueryMapWidgetsProps {
  */
 export default function DataQueryMapWidgets({
   mapView,
+  customLegend,
 }: DataQueryMapWidgetsProps) {
   const [layerListOpen, setLayerListOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
@@ -79,13 +82,13 @@ export default function DataQueryMapWidgets({
     };
   }, [mapView]);
 
-  // Open both panels when the first operational layer is added
+  // Open panels when layers or custom legend content appear
   useEffect(() => {
     if (!mapView?.map) return;
 
     const map = mapView.map;
     const tryAutoOpen = () => {
-      if (map.layers.length > 0 && !autoOpenedRef.current) {
+      if (!autoOpenedRef.current && (map.layers.length > 0 || customLegend)) {
         autoOpenedRef.current = true;
         setLayerListOpen(true);
         setLegendOpen(true);
@@ -95,7 +98,7 @@ export default function DataQueryMapWidgets({
     tryAutoOpen();
     const handle = map.layers.on("change", tryAutoOpen);
     return () => handle.remove();
-  }, [mapView]);
+  }, [mapView, customLegend]);
 
   return (
     <div
@@ -157,9 +160,18 @@ export default function DataQueryMapWidgets({
             </button>
           </div>
           <div
-            ref={legendContainerRef}
-            className="map-widget-panel-body map-widget-panel-body--legend"
-          />
+            className={`map-widget-panel-body map-widget-panel-body--legend${
+              customLegend ? " map-widget-panel-body--legend-with-custom" : ""
+            }`}
+          >
+            {customLegend ? (
+              <div className="map-widget-custom-legend">{customLegend}</div>
+            ) : null}
+            <div
+              ref={legendContainerRef}
+              className="map-widget-legend-esri"
+            />
+          </div>
         </div>
         {!legendOpen && (
           <button

@@ -33,6 +33,8 @@ import {
   listJurisdictionPlaces,
 } from "@/lib/data-query-app/safetyIncidentStats";
 import { exportSafetyIncidentsCsv } from "@/lib/data-query-app/exportSafetyIncidentsCsv";
+import { exportSafetyIncidentsShapefile } from "@/lib/data-query-app/exportSafetyIncidentsShapefile";
+import { createSafetyIncidentPopupTemplate } from "@/lib/data-query-app/safetyIncidentPopupTemplate";
 
 interface UseSafetyIncidentFilteredLayerArgs {
   mapView: __esri.MapView | null;
@@ -60,6 +62,7 @@ interface UseSafetyIncidentFilteredLayerResult {
   jurisdictionStatsLoading: boolean;
   loadJurisdictionBreakdown: (level: "city" | "service-area") => Promise<void>;
   exportFilteredData: () => Promise<{ rowCount: number; truncated: boolean }>;
+  exportFilteredShapefile: () => Promise<{ rowCount: number; truncated: boolean }>;
 }
 
 function graphicObjectId(graphic: __esri.Graphic): string | null {
@@ -100,6 +103,7 @@ export function useSafetyIncidentFilteredLayer({
   const requestIdRef = useRef(0);
   const statsRequestIdRef = useRef(0);
   const layerRef = useRef<FeatureLayer | null>(null);
+  const incidentLayerUrlRef = useRef<string | null>(null);
   const boundaryRef = useRef<__esri.Polygon | null>(null);
   const highlightHandleRef = useRef<__esri.Handle | null>(null);
   const onIncidentSelectRef = useRef(onIncidentSelect);
@@ -146,12 +150,17 @@ export function useSafetyIncidentFilteredLayer({
           if (cancelled || requestId !== requestIdRef.current) return;
 
           layer.popupEnabled = true;
+          layer.popupTemplate = createSafetyIncidentPopupTemplate(
+            () => incidentLayerUrlRef.current
+          );
           layer.outFields = ["*"];
           await applySafetyIncidentVisualization(layer, visualizationRef.current);
           if (cancelled || requestId !== requestIdRef.current) return;
 
           layerRef.current = layer;
-          setIncidentLayerUrl(layer.url || dataset.feature_service_url || null);
+          const layerUrl = layer.url || dataset.feature_service_url || null;
+          incidentLayerUrlRef.current = layerUrl;
+          setIncidentLayerUrl(layerUrl);
 
           const where = buildSafetyIncidentWhereClause(filters.filters);
           layer.definitionExpression = where;
@@ -354,11 +363,25 @@ export function useSafetyIncidentFilteredLayer({
           if (objectId) {
             if (summary) setSelectedIncident(summary);
             onIncidentSelectRef.current?.(objectId, summary);
+
+            const popupLocation =
+              incidentHit.graphic.geometry?.type === "point"
+                ? (incidentHit.graphic.geometry as __esri.Point)
+                : event.mapPoint;
+            if (mapView.popup && typeof mapView.popup.open === "function") {
+              mapView.popup.open({
+                features: [incidentHit.graphic],
+                location: popupLocation,
+              });
+            }
           }
         } else {
           // Clicked empty map / another layer — clear selection.
           setSelectedIncident(null);
           onIncidentSelectRef.current?.(null, null);
+          if (mapView.popup && typeof mapView.popup.close === "function") {
+            mapView.popup.close();
+          }
         }
       } catch (err) {
         console.warn("Safety incident click failed:", err);
@@ -484,6 +507,21 @@ export function useSafetyIncidentFilteredLayer({
     return { rowCount: result.rowCount, truncated: result.truncated };
   }, []);
 
+  const exportFilteredShapefile = useCallback(async () => {
+    const layer = layerRef.current;
+    if (!layer) {
+      throw new Error("Turn on the Safety Incidents layer to export data.");
+    }
+    const result = await exportSafetyIncidentsShapefile(layer, {
+      geometry: boundaryRef.current,
+    });
+    return {
+      rowCount: result.rowCount,
+      truncated: result.truncated,
+      filename: result.filename,
+    };
+  }, []);
+
   return {
     incidentCount,
     incidents,
@@ -497,5 +535,6 @@ export function useSafetyIncidentFilteredLayer({
     jurisdictionStatsLoading,
     loadJurisdictionBreakdown,
     exportFilteredData,
+    exportFilteredShapefile,
   };
 }

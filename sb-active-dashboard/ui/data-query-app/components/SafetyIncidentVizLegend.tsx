@@ -3,13 +3,16 @@ import { safetyLegendItems, SafetyIncidentVisualizationState } from "@/lib/data-
 interface SafetyIncidentVizLegendProps {
   visualization: SafetyIncidentVisualizationState;
   incidentCount?: number | null;
+  variant?: "map" | "embedded";
 }
 
 export default function SafetyIncidentVizLegend({
   visualization,
   incidentCount,
+  variant = "map",
 }: SafetyIncidentVizLegendProps) {
   const items = safetyLegendItems(visualization);
+  const isEmbedded = variant === "embedded";
   const title =
     visualization.styleBy === "severity"
       ? "Incidents by severity"
@@ -23,8 +26,12 @@ export default function SafetyIncidentVizLegend({
 
   return (
     <div
-      id="safety-incident-map-legend"
-      className="min-w-[220px] max-w-[280px] rounded-lg border border-gray-200 bg-white p-4 shadow-md"
+      id={isEmbedded ? "safety-incident-embedded-legend" : "safety-incident-map-legend"}
+      className={
+        isEmbedded
+          ? "px-3 py-3"
+          : "min-w-[220px] max-w-[280px] rounded-lg border border-gray-200 bg-white p-4 shadow-md"
+      }
     >
       <h4 className="text-sm font-semibold text-gray-800">{title}</h4>
       {typeof incidentCount === "number" && (

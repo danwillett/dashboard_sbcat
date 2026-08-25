@@ -91,6 +91,22 @@
   max-height: 280px;
 }
 
+#data-query-map-widgets .map-widget-panel-body--legend-with-custom {
+  max-height: 420px;
+}
+
+#data-query-map-widgets .map-widget-custom-legend {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+#data-query-map-widgets .map-widget-custom-legend > * + * {
+  border-top: 1px solid #e5e7eb;
+}
+
+#data-query-map-widgets .map-widget-legend-esri .esri-legend {
+  padding-top: 4px;
+}
+
 #data-query-map-widgets .esri-layer-list,
 #data-query-map-widgets .esri-legend {
   background-color: #ffffff !important;
@@ -151,5 +167,29 @@
 #bicycle-comfort-map-chart-modal,
 #count-survey-chart-modal,
 #safety-incident-chart-modal {
+  color-scheme: light;
+}
+
+/* Override global Vite dark button styles in Data Query panels */
+#data-query-right-sidebar .layer-export-footer button,
+#data-query-right-sidebar .layer-export-format-menu button {
+  background-color: #ffffff;
+  color: #374151;
+  color-scheme: light;
+  border-color: #e5e7eb;
+}
+
+#data-query-right-sidebar .layer-export-format-menu button:hover {
+  background-color: #f9fafb;
+}
+
+#data-query-right-sidebar .layer-export-format-menu button[aria-selected="true"] {
+  background-color: #ffffff;
+  color: #1d4ed8;
+}
+
+#data-query-right-sidebar [id$="-visualization-panel"] button[type="button"] {
+  background-color: #ffffff;
+  color: #111827;
   color-scheme: light;
 }

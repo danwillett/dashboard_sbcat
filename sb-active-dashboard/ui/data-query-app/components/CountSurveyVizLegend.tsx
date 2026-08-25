@@ -9,7 +9,7 @@ interface CountSurveyVizLegendProps {
   visualization: CountSurveyVisualizationState;
   yearUsedLabel?: string | null;
   /** Compact card for map overlay vs fuller panel preview */
-  variant?: "map" | "panel";
+  variant?: "map" | "panel" | "embedded";
   className?: string;
 }
 
@@ -30,23 +30,35 @@ export default function CountSurveyVizLegend({
   if (!visualization.varyColor && !visualization.varySize) return null;
 
   const isMap = variant === "map";
+  const isEmbedded = variant === "embedded";
   const ramp = getColorRamp(visualization.colorRamp || "blues");
   const [low, mid, high] = ramp.colors;
   const roadUserLabel =
     visualization.roadUser === "bike" ? "Bicyclist" : "Pedestrian";
   const gradient = `linear-gradient(90deg, ${rgb(low)}, ${rgb(mid)}, ${rgb(high)})`;
-  const sizeScale = isMap ? 1.25 : 1;
+  const isMapLike = isMap || isEmbedded;
+  const sizeScale = isMapLike ? 1.25 : 1;
 
   return (
     <div
-      id={isMap ? "count-survey-map-legend" : "count-survey-panel-legend"}
-      className={`rounded-lg border border-gray-200 bg-white shadow-md ${
-        isMap ? "p-4 min-w-[240px] max-w-[280px]" : "p-3"
-      } ${className}`}
+      id={
+        isEmbedded
+          ? "count-survey-embedded-legend"
+          : isMap
+            ? "count-survey-map-legend"
+            : "count-survey-panel-legend"
+      }
+      className={
+        isEmbedded
+          ? `px-3 py-3 ${className}`
+          : `rounded-lg border border-gray-200 bg-white shadow-md ${
+              isMap ? "p-4 min-w-[240px] max-w-[280px]" : "p-3"
+            } ${className}`
+      }
     >
       <h4
         className={`font-semibold text-gray-800 ${
-          isMap ? "text-sm" : "text-xs"
+          isMap || isEmbedded ? "text-sm" : "text-xs"
         }`}
       >
         Count sites · {roadUserLabel} AADT
@@ -54,7 +66,7 @@ export default function CountSurveyVizLegend({
       {yearUsedLabel && (
         <p
           className={`mt-0.5 text-gray-500 ${
-            isMap ? "text-xs" : "text-[10px]"
+            isMap || isEmbedded ? "text-xs" : "text-[10px]"
           }`}
         >
           {yearUsedLabel}
@@ -62,10 +74,10 @@ export default function CountSurveyVizLegend({
       )}
 
       {visualization.varyColor && (
-        <div className={isMap ? "mt-3" : "mt-2"}>
+        <div className={isMap || isEmbedded ? "mt-3" : "mt-2"}>
           <div
             className={`mb-1.5 flex items-center justify-between text-gray-500 ${
-              isMap ? "text-xs" : "text-[10px]"
+              isMap || isEmbedded ? "text-xs" : "text-[10px]"
             }`}
           >
             <span>{ramp.label}</span>
@@ -75,20 +87,20 @@ export default function CountSurveyVizLegend({
           </div>
           <div
             className={`w-full rounded-sm border border-gray-200 ${
-              isMap ? "h-4" : "h-3"
+              isMap || isEmbedded ? "h-4" : "h-3"
             }`}
             style={{ background: gradient }}
             aria-hidden
           />
           <div
             className={`mt-1.5 flex justify-between text-gray-600 ${
-              isMap ? "text-xs" : "text-[10px]"
+              isMap || isEmbedded ? "text-xs" : "text-[10px]"
             }`}
           >
             <span className="flex items-center gap-1.5">
               <span
                 className={`inline-block rounded-full border border-white shadow-sm ${
-                  isMap ? "h-3.5 w-3.5" : "h-2.5 w-2.5"
+                  isMap || isEmbedded ? "h-3.5 w-3.5" : "h-2.5 w-2.5"
                 }`}
                 style={{ backgroundColor: rgb(low) }}
               />
@@ -97,7 +109,7 @@ export default function CountSurveyVizLegend({
             <span className="flex items-center gap-1.5">
               <span
                 className={`inline-block rounded-full border border-white shadow-sm ${
-                  isMap ? "h-3.5 w-3.5" : "h-2.5 w-2.5"
+                  isMapLike ? "h-3.5 w-3.5" : "h-2.5 w-2.5"
                 }`}
                 style={{ backgroundColor: rgb(mid) }}
               />
@@ -106,7 +118,7 @@ export default function CountSurveyVizLegend({
             <span className="flex items-center gap-1.5">
               <span
                 className={`inline-block rounded-full border border-white shadow-sm ${
-                  isMap ? "h-4 w-4" : "h-3 w-3"
+                  isMapLike ? "h-4 w-4" : "h-3 w-3"
                 }`}
                 style={{ backgroundColor: rgb(high) }}
               />
@@ -120,17 +132,17 @@ export default function CountSurveyVizLegend({
         <div
           className={`${
             visualization.varyColor
-              ? isMap
+              ? isMapLike
                 ? "mt-4 border-t border-gray-100 pt-3"
                 : "mt-3 border-t border-gray-100 pt-2"
-              : isMap
+              : isMapLike
                 ? "mt-3"
                 : "mt-2"
           }`}
         >
           <p
             className={`mb-2 font-medium text-gray-600 ${
-              isMap ? "text-xs" : "text-[10px]"
+              isMapLike ? "text-xs" : "text-[10px]"
             }`}
           >
             Point size
@@ -150,7 +162,7 @@ export default function CountSurveyVizLegend({
               <div
                 key={stop.label}
                 className={`flex flex-col items-center gap-1.5 text-gray-600 ${
-                  isMap ? "text-xs" : "text-[10px]"
+                  isMapLike ? "text-xs" : "text-[10px]"
                 }`}
               >
                 <span

@@ -4,6 +4,11 @@ import {
   SafetyIncidentParty,
   SafetyIncidentSummary,
 } from "@/lib/data-query-app/safetyIncidentQuery";
+import {
+  formatIncidentWhen,
+  incidentInvolvementList,
+  incidentSelectionLabel,
+} from "@/lib/data-query-app/safetyIncidentDisplay";
 import { FilteredIncidentStats } from "@/lib/data-query-app/safetyIncidentStats";
 import { SafetyIncidentFilterState } from "@/lib/data-query-app/safetyIncidentFilters";
 import { SafetyIncidentChartDimension } from "@/lib/data-query-app/safetyIncidentChartOptions";
@@ -31,26 +36,8 @@ interface SafetyIncidentAnalysisPanelProps {
   ) => Promise<void>;
 }
 
-function formatWhen(value: string | null): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
-}
-
-function involvementList(incident: SafetyIncidentSummary): string {
-  const parts: string[] = [];
-  if (incident.bicyclistInvolved) parts.push("Bicyclist");
-  if (incident.pedestrianInvolved) parts.push("Pedestrian");
-  if (incident.vehicleInvolved) parts.push("Vehicle");
-  return parts.length > 0 ? parts.join(", ") : "—";
-}
-
 function incidentLabel(incident: SafetyIncidentSummary): string {
-  const when = formatWhen(incident.timestamp);
-  const loc = incident.location || "Unknown location";
-  const shortLoc = loc.length > 42 ? `${loc.slice(0, 40)}…` : loc;
-  return `${when} · ${shortLoc}`;
+  return incidentSelectionLabel(incident);
 }
 
 export default function SafetyIncidentAnalysisPanel({
@@ -231,7 +218,7 @@ export default function SafetyIncidentAnalysisPanel({
           <div>
             <h4 className="text-sm font-semibold text-gray-800">Summary</h4>
             <dl className="mt-2 space-y-2 text-sm">
-              <Row label="When" value={formatWhen(selectedIncident.timestamp)} />
+              <Row label="When" value={formatIncidentWhen(selectedIncident.timestamp)} />
               <Row label="Location" value={selectedIncident.location || "—"} />
               <Row label="Severity" value={selectedIncident.severity || "—"} />
               <Row
@@ -242,7 +229,7 @@ export default function SafetyIncidentAnalysisPanel({
                 label="Data source"
                 value={selectedIncident.dataSource || "—"}
               />
-              <Row label="Involved" value={involvementList(selectedIncident)} />
+              <Row label="Involved" value={incidentInvolvementList(selectedIncident)} />
               <Row
                 label="Incident ID"
                 value={

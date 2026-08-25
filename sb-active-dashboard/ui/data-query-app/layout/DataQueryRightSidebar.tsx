@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import PanelEdgeToggle from "@/ui/data-query-app/components/PanelEdgeToggle";
-import ExportFilteredDataButton from "@/ui/data-query-app/components/ExportFilteredDataButton";
+import LayerExportFooter from "@/ui/data-query-app/components/LayerExportFooter";
 import CountSurveyFiltersPanel from "@/ui/data-query-app/components/CountSurveyFiltersPanel";
 import CountSurveyVisualizationPanel from "@/ui/data-query-app/components/CountSurveyVisualizationPanel";
 import CountSurveySiteAnalysisPanel from "@/ui/data-query-app/components/CountSurveySiteAnalysisPanel";
@@ -11,7 +11,6 @@ import ModeledVolumeFiltersPanel from "@/ui/data-query-app/components/ModeledVol
 import ModeledVolumeVisualizationPanel from "@/ui/data-query-app/components/ModeledVolumeVisualizationPanel";
 import ArcGisFeatureLayerInfoPanel from "@/ui/data-query-app/components/ArcGisFeatureLayerInfoPanel";
 import ArcGisFeatureLayerVisualizationPanel from "@/ui/data-query-app/components/ArcGisFeatureLayerVisualizationPanel";
-import GenericFeatureLayerFooter from "@/ui/data-query-app/components/GenericFeatureLayerFooter";
 import BicycleComfortMapAnalysisPanel from "@/ui/data-query-app/components/BicycleComfortMapAnalysisPanel";
 import BicycleComfortMapFiltersPanel from "@/ui/data-query-app/components/BicycleComfortMapFiltersPanel";
 import {
@@ -89,6 +88,11 @@ interface DataQueryRightSidebarProps {
     level: "city" | "service-area"
   ) => Promise<void>;
   onExportCountSurveyData?: () => Promise<{ rowCount: number; truncated: boolean }>;
+  onExportCountSurveyShapefile?: () => Promise<{
+    rowCount: number;
+    truncated: boolean;
+    filename?: string;
+  }>;
   incidentCount: number | null;
   safetyIncidents: SafetyIncidentSummary[];
   safetyIncidentsTruncated: boolean;
@@ -103,6 +107,11 @@ interface DataQueryRightSidebarProps {
     level: "city" | "service-area"
   ) => Promise<void>;
   onExportSafetyIncidentData?: () => Promise<{ rowCount: number; truncated: boolean }>;
+  onExportSafetyIncidentShapefile?: () => Promise<{
+    rowCount: number;
+    truncated: boolean;
+    filename?: string;
+  }>;
   filtersLoading: boolean;
   filtersError: string | null;
   vizLoading: boolean;
@@ -232,6 +241,7 @@ export default function DataQueryRightSidebar({
   countJurisdictionStatsLoading = false,
   onLoadCountJurisdictionBreakdown,
   onExportCountSurveyData,
+  onExportCountSurveyShapefile,
   incidentCount,
   safetyIncidents,
   safetyIncidentsTruncated,
@@ -244,6 +254,7 @@ export default function DataQueryRightSidebar({
   jurisdictionStatsLoading,
   onLoadJurisdictionBreakdown,
   onExportSafetyIncidentData,
+  onExportSafetyIncidentShapefile,
   filtersLoading,
   filtersError,
   vizLoading,
@@ -304,12 +315,11 @@ export default function DataQueryRightSidebar({
   }, [preferredSection, onPreferredSectionConsumed]);
 
   useEffect(() => {
-    if (!preferredSection) {
-      setSection(
-        isBicycleComfort ? "filters" : isGenericFeature ? "info" : "filters"
-      );
-    }
-  }, [filterDataset?.id, isGenericFeature, isBicycleComfort, preferredSection]);
+    if (preferredSection) return;
+    setSection(
+      isBicycleComfort ? "filters" : isGenericFeature ? "info" : "filters"
+    );
+  }, [filterDataset?.id, isGenericFeature, isBicycleComfort]);
 
   if (isCollapsed) {
     return (
@@ -647,12 +657,13 @@ export default function DataQueryRightSidebar({
         )}
         </div>
 
-        {isCountSurvey && onExportCountSurveyData && (
-          <ExportFilteredDataButton
-            label="Export count sites & AADT summary (CSV)"
-            description="Site locations and summarized AADT survey periods only — not raw hourly or directional count time series."
-            rowNoun="AADT survey period rows"
-            onExport={onExportCountSurveyData}
+        {isCountSurvey &&
+          onExportCountSurveyData &&
+          onExportCountSurveyShapefile && (
+          <LayerExportFooter
+            description="CSV includes summarized AADT survey periods (not raw time series). Shapefile exports filtered site points (WGS 84). Shapefile field names are truncated to 10 characters."
+            onExportCsv={onExportCountSurveyData}
+            onExportShapefile={onExportCountSurveyShapefile}
             disabled={
               filtersLoading ||
               !!filtersError ||
@@ -669,9 +680,13 @@ export default function DataQueryRightSidebar({
           />
         )}
 
-        {isSafety && onExportSafetyIncidentData && (
-          <ExportFilteredDataButton
-            onExport={onExportSafetyIncidentData}
+        {isSafety &&
+          onExportSafetyIncidentData &&
+          onExportSafetyIncidentShapefile && (
+          <LayerExportFooter
+            description="Exports filtered incidents (WGS 84). Shapefile field names are truncated to 10 characters."
+            onExportCsv={onExportSafetyIncidentData}
+            onExportShapefile={onExportSafetyIncidentShapefile}
             disabled={
               filtersLoading ||
               !!filtersError ||
@@ -691,9 +706,13 @@ export default function DataQueryRightSidebar({
         {isGenericFeature &&
           onExportGenericFeatureData &&
           onExportGenericFeatureShapefile && (
-          <GenericFeatureLayerFooter
+          <LayerExportFooter
             portalUrl={genericFeatureMetadata?.portalUrl}
-            isBicycleComfort={isBicycleComfort}
+            description={
+              isBicycleComfort
+                ? "Exports use category filters (WGS 84). Geographic map extent filters are not included. Shapefile field names are truncated to 10 characters."
+                : "Exports from the feature service (WGS 84). Shapefile field names are truncated to 10 characters."
+            }
             disabled={
               filtersLoading ||
               !!filtersError ||

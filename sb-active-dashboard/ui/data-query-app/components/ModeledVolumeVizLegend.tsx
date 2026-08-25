@@ -7,6 +7,7 @@ interface ModeledVolumeVizLegendProps {
   year?: number | null;
   activeField?: string | null;
   activeResolution?: number | null;
+  variant?: "map" | "embedded";
   className?: string;
 }
 
@@ -19,16 +20,22 @@ export default function ModeledVolumeVizLegend({
   year,
   activeField,
   activeResolution = null,
+  variant = "map",
   className = "",
 }: ModeledVolumeVizLegendProps) {
   const legend = modeledVolumeLegendItems();
+  const isEmbedded = variant === "embedded";
   const geometryLabel =
     geometry === "hexagon" ? "H3 hexagons" : "Network segments";
 
   return (
     <div
-      id="modeled-volume-map-legend"
-      className={`min-w-[220px] max-w-[280px] rounded-lg border border-gray-200 bg-white p-4 shadow-md ${className}`}
+      id={isEmbedded ? "modeled-volume-embedded-legend" : "modeled-volume-map-legend"}
+      className={
+        isEmbedded
+          ? `px-3 py-3 ${className}`
+          : `min-w-[220px] max-w-[280px] rounded-lg border border-gray-200 bg-white p-4 shadow-md ${className}`
+      }
     >
       <h4 className="text-sm font-semibold text-gray-800">
         Modeled AADT · {geometryLabel}
