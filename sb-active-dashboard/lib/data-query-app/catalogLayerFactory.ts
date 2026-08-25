@@ -64,8 +64,15 @@ function isFeatureservDataset(dataset: CatalogDataset): boolean {
 }
 
 function withLayerIndex(serviceUrl: string, layerId?: number | null): string {
-  if (layerId === null || layerId === undefined) return serviceUrl;
-  return `${serviceUrl.replace(/\/$/, "")}/${layerId}`;
+  const clean = serviceUrl.replace(/\/$/, "");
+  if (layerId !== null && layerId !== undefined) {
+    return `${clean}/${layerId}`;
+  }
+  // Multi-layer FeatureServer URLs need an explicit layer index.
+  if (/\/FeatureServer$/i.test(clean)) {
+    return `${clean}/0`;
+  }
+  return clean;
 }
 
 interface GeoJsonFeature {
@@ -86,19 +93,80 @@ interface GeoJsonFeatureCollection {
 const FEATURES_BASE =
   import.meta.env.VITE_SBCAT_FEATURES_URL || "/sbcat-features";
 
+/** Match pg_featureserv.toml LimitMax (raise there too if you go higher). */
+export const OGC_FEATURES_PAGE_LIMIT = 10000;
+
+/**
+ * Rewrite an absolute or relative OGC link so browser requests go through the
+ * Vite/features proxy instead of the container hostname.
+ */
+export function rewriteOgcFeaturesLink(href: string): string {
+  if (!href) return href;
+  try {
+    if (/^https?:\/\//i.test(href)) {
+      return maybeProxyFeatureservUrl(href);
+    }
+    if (href.startsWith("/")) {
+      return `${FEATURES_BASE}${href}`;
+    }
+  } catch {
+    // fall through
+  }
+  return href;
+}
+
 /**
  * Page through an OGC API Features /items collection and return all features.
+ *
+ * Uses explicit offset paging through the proxied base URL. Following absolute
+ * "next" links from pg_featureserv often breaks under the Vite proxy (wrong
+ * host / missing /sbcat-features prefix), which previously stopped after the
+ * first page (~1000 features).
  */
 export async function fetchAllOgcCollectionItems(
   collectionUrl: string,
-  pageLimit = 1000
+  pageLimit = OGC_FEATURES_PAGE_LIMIT
+): Promise<GeoJsonFeature[]> {
+  return fetchOgcCollectionItems(collectionUrl, { pageLimit });
+}
+
+/**
+ * Fetch OGC Features items, optionally clipped to a WGS84 bbox.
+ */
+export async function fetchOgcCollectionItems(
+  collectionUrl: string,
+  options?: {
+    pageLimit?: number;
+    maxFeatures?: number;
+    /** [minLon, minLat, maxLon, maxLat] */
+    bbox?: [number, number, number, number];
+    /** pg_featureserv property filter, e.g. resolution=9 */
+    filter?: string;
+    signal?: AbortSignal;
+  }
 ): Promise<GeoJsonFeature[]> {
   const features: GeoJsonFeature[] = [];
   const base = maybeProxyFeatureservUrl(collectionUrl).replace(/\/$/, "");
-  let url: string | null = `${base}/items?f=json&limit=${pageLimit}`;
+  const limit = Math.max(
+    1,
+    Math.min(options?.pageLimit ?? OGC_FEATURES_PAGE_LIMIT, OGC_FEATURES_PAGE_LIMIT)
+  );
+  const maxFeatures = options?.maxFeatures ?? Number.POSITIVE_INFINITY;
+  const bboxParam = options?.bbox
+    ? `&bbox=${options.bbox.join(",")}`
+    : "";
+  const filterParam = options?.filter
+    ? `&filter=${encodeURIComponent(options.filter)}`
+    : "";
+  let offset = 0;
+  const maxPages = 50;
 
-  while (url) {
-    const response = await fetch(url);
+  for (let page = 0; page < maxPages; page += 1) {
+    if (options?.signal?.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
+    const url = `${base}/items?f=json&limit=${limit}&offset=${offset}${bboxParam}${filterParam}`;
+    const response = await fetch(url, { signal: options?.signal });
     const text = await response.text().catch(() => "");
     let payload: GeoJsonFeatureCollection | null = null;
     try {
@@ -114,14 +182,16 @@ export async function fetchAllOgcCollectionItems(
       );
     }
 
-    features.push(...(payload?.features || []));
+    const batch = payload?.features || [];
+    if (batch.length === 0) break;
 
-    const next = payload?.links?.find((link) => link.rel === "next");
-    if (!next?.href) {
-      url = null;
-    } else {
-      url = next.href.replace(/^https?:\/\/[^/]+/, FEATURES_BASE);
+    features.push(...batch);
+    offset += batch.length;
+
+    if (features.length >= maxFeatures) {
+      return features.slice(0, maxFeatures);
     }
+    if (batch.length < limit) break;
   }
 
   return features;
@@ -138,6 +208,33 @@ function inferFieldType(
     return "date";
   }
   return "string";
+}
+
+export function objectIdFromGeoJsonFeature(
+  feature: GeoJsonFeature,
+  index: number
+): number {
+  const props = feature.properties || {};
+  return Number(feature.id ?? props.id ?? index + 1) || index + 1;
+}
+
+export function graphicFromGeoJsonFeature(
+  feature: GeoJsonFeature,
+  index: number
+): Graphic | null {
+  const geometry = geometryFromGeoJson(feature.geometry);
+  if (!geometry) return null;
+
+  const props = { ...(feature.properties || {}) };
+  const objectId = objectIdFromGeoJsonFeature(feature, index);
+
+  return new Graphic({
+    geometry,
+    attributes: {
+      OBJECTID: objectId,
+      ...props,
+    },
+  });
 }
 
 function geometryFromGeoJson(
@@ -243,27 +340,15 @@ export function createClientFeatureLayerFromGeoJson(
   const propertyKeys = new Set<string>();
 
   features.forEach((feature, index) => {
-    const geometry = geometryFromGeoJson(feature.geometry);
-    if (!geometry) return;
+    const graphic = graphicFromGeoJsonFeature(feature, index);
+    if (!graphic) return;
 
-    if (geometry.type === "polyline") geometryType = "polyline";
-    else if (geometry.type === "polygon") geometryType = "polygon";
+    const geometry = graphic.geometry;
+    if (geometry?.type === "polyline") geometryType = "polyline";
+    else if (geometry?.type === "polygon") geometryType = "polygon";
 
-    const props = { ...(feature.properties || {}) };
-    Object.keys(props).forEach((key) => propertyKeys.add(key));
-
-    const objectId =
-      Number(feature.id ?? props.id ?? index + 1) || index + 1;
-
-    graphics.push(
-      new Graphic({
-        geometry,
-        attributes: {
-          OBJECTID: objectId,
-          ...props,
-        },
-      })
-    );
+    Object.keys(feature.properties || {}).forEach((key) => propertyKeys.add(key));
+    graphics.push(graphic);
   });
 
   if (graphics.length === 0) {

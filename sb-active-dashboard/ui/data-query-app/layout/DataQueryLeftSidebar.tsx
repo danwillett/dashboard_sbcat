@@ -39,7 +39,7 @@ function CategorySection({
   activeFilterDatasetId?: number | null;
   onOpenDatasetPanel?: (dataset: CatalogDataset) => void;
 }) {
-  const [expanded, setExpanded] = useState(depth < 1);
+  const [expanded, setExpanded] = useState(false);
   const datasets = node.datasets || [];
   const children = node.children || [];
   const enabledCount = datasets.filter((ds) => enabledIds.has(ds.id)).length;

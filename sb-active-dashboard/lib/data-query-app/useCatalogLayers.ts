@@ -7,12 +7,19 @@ import {
   filterVisibleCatalogTree,
   findDatasetInTree,
 } from "@/lib/data-services/CatalogApiService";
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import {
   catalogLayerId,
   createLayerForCatalogDataset,
   isCatalogLayerId,
 } from "@/lib/data-query-app/catalogLayerFactory";
+import { optimizeFeatureLayerTileQueries } from "@/lib/data-query-app/catalogFeatureLayerPerformance";
 import { isCountSurveyDataset } from "@/lib/data-query-app/countSurveyFilters";
+import { isModeledVolumeDataset } from "@/lib/data-query-app/modeledVolumeFilters";
+import {
+  isDemographicsOrHealthCatalogDataset,
+} from "@/lib/data-query-app/genericCatalogDataset";
+import { applyGenericCatalogFeatureLayerPopup } from "@/lib/data-query-app/genericCatalogFeatureLayerPopupTemplate";
 
 interface UseCatalogLayersResult {
   tree: CatalogCategoryNode[];
@@ -26,8 +33,8 @@ interface UseCatalogLayersResult {
 
 /**
  * Load catalog categories/datasets and sync toggled layers onto the map.
- * Count-survey datasets are skipped here — they are managed by
- * useCountSurveyFilteredLayer so temporal/geographic filters can apply.
+ * Count-survey and modeled-volume datasets are skipped here — they are managed
+ * by dedicated hooks so filters / geometry toggles can apply.
  */
 export function useCatalogLayers(
   mapView: __esri.MapView | null
@@ -106,8 +113,9 @@ export function useCatalogLayers(
           continue;
         }
 
-        // Managed by useCountSurveyFilteredLayer
+        // Managed by useCountSurveyFilteredLayer / useModeledVolumeFilteredLayer
         if (isCountSurveyDataset(dataset)) continue;
+        if (isModeledVolumeDataset(dataset)) continue;
 
         try {
           const layer = await createLayerForCatalogDataset(dataset);
@@ -116,6 +124,13 @@ export function useCatalogLayers(
           // Load to surface failures early
           if (typeof (layer as any).load === "function") {
             await (layer as any).load();
+            if (layer.type === "feature") {
+              const featureLayer = layer as FeatureLayer;
+              if (isDemographicsOrHealthCatalogDataset(dataset, treeRef.current)) {
+                await applyGenericCatalogFeatureLayerPopup(featureLayer);
+              }
+              await optimizeFeatureLayerTileQueries(featureLayer);
+            }
           }
         } catch (err) {
           nextErrors[datasetId] =

@@ -72,7 +72,11 @@ export default function CountSurveyFiltersPanel({
   };
 
   return (
-    <div id="count-survey-filters-panel" className="flex flex-col">
+    <div
+      id="count-survey-filters-panel"
+      className="flex flex-col"
+      style={{ colorScheme: "light", backgroundColor: "#ffffff", color: "#111827" }}
+    >
       {showHeader && (
         <div className="flex items-start justify-between gap-2 border-b border-gray-100 px-4 py-3">
           <div className="min-w-0">

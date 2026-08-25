@@ -1,0 +1,155 @@
+/**
+ * Custom LayerList / Legend panels for the Data Query map (no Expand popout).
+ */
+
+#data-query-map-area {
+  color-scheme: light;
+}
+
+#data-query-map-widgets .map-widget-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 2px;
+  background-color: #ffffff;
+  color: #374151;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+}
+
+#data-query-map-widgets .map-widget-toggle:hover {
+  background-color: #f9fafb;
+  color: #111827;
+}
+
+#data-query-map-widgets .map-widget-toggle calcite-icon {
+  color: currentColor;
+}
+
+#data-query-map-widgets .map-widget-panel {
+  background-color: #ffffff;
+  color: #111827;
+  color-scheme: light;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  min-width: 280px;
+  max-width: 320px;
+}
+
+#data-query-map-widgets .map-widget-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #ffffff;
+}
+
+#data-query-map-widgets .map-widget-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+#data-query-map-widgets .map-widget-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#data-query-map-widgets .map-widget-close:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+#data-query-map-widgets .map-widget-panel-body {
+  overflow: auto;
+  background-color: #ffffff;
+}
+
+#data-query-map-widgets .map-widget-panel-body--layers {
+  max-height: 360px;
+}
+
+#data-query-map-widgets .map-widget-panel-body--legend {
+  max-height: 280px;
+}
+
+#data-query-map-widgets .esri-layer-list,
+#data-query-map-widgets .esri-legend {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  color-scheme: light;
+  box-shadow: none;
+}
+
+#data-query-map-widgets calcite-list,
+#data-query-map-widgets calcite-list-item,
+#data-query-map-widgets calcite-flow,
+#data-query-map-widgets calcite-flow-item,
+#data-query-map-widgets calcite-panel {
+  --calcite-color-foreground-1: #ffffff;
+  --calcite-color-foreground-2: #f9fafb;
+  --calcite-color-foreground-3: #f3f4f6;
+  --calcite-color-text-1: #111827;
+  --calcite-color-text-2: #374151;
+  --calcite-color-text-3: #6b7280;
+  --calcite-color-background: #ffffff;
+}
+
+#data-query-map-widgets calcite-slider {
+  --calcite-color-foreground-1: #ffffff;
+  --calcite-color-text-1: #111827;
+  --calcite-slider-track-background-color: #d1d5db;
+  --calcite-slider-fill-color: #2563eb;
+  --calcite-slider-handle-background-color: #2563eb;
+  --calcite-slider-handle-border-color: #2563eb;
+}
+
+#data-query-map-widgets input[type="range"] {
+  color-scheme: light;
+  accent-color: #2563eb;
+  background-color: transparent;
+}
+
+#data-query-right-sidebar input[type="range"],
+#arcgis-feature-layer-visualization-panel input[type="range"] {
+  color-scheme: light;
+  accent-color: #2563eb;
+  background-color: transparent;
+}
+
+#data-query-right-sidebar input[type="checkbox"],
+#bicycle-comfort-map-chart-modal input[type="checkbox"],
+#count-survey-chart-modal input[type="checkbox"],
+#safety-incident-chart-modal input[type="checkbox"],
+#count-survey-timeseries-modal input[type="checkbox"] {
+  color-scheme: light;
+  accent-color: #2563eb;
+  background-color: #ffffff;
+  border-color: #d1d5db;
+}
+
+#data-query-right-sidebar,
+#bicycle-comfort-map-filters-panel,
+#bicycle-comfort-map-chart-modal,
+#count-survey-chart-modal,
+#safety-incident-chart-modal {
+  color-scheme: light;
+}

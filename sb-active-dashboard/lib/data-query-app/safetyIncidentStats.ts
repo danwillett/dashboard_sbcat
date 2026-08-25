@@ -1,6 +1,10 @@
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import Polygon from "@arcgis/core/geometry/Polygon";
 import {
+  SB_CITIES,
+  SB_SERVICE_AREAS,
+} from "@/lib/data-query-app/countSurveyFilters";
+import {
   normalizeIncidentSeverity,
   NormalizedSeverity,
 } from "@/lib/data-query-app/safetyIncidentVisualization";
@@ -715,61 +719,56 @@ export async function computeJurisdictionBreakdown(
   return rows.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
+const JURISDICTION_BOUNDARIES_URL =
+  "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/sb_cities_service_areas_multi_layer/FeatureServer/1";
+
+function escapeSqlLiteral(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
 export async function listJurisdictionPlaces(
   level: "city" | "service-area"
 ): Promise<Array<{ name: string; geometry: Polygon }>> {
-  const url =
-    "https://spatialcenter.grit.ucsb.edu/server/rest/services/Hosted/sb_cities_service_areas_multi_layer/FeatureServer/1";
+  const names =
+    level === "city" ? [...SB_CITIES] : [...SB_SERVICE_AREAS];
+
   const placesLayer = new FeatureLayer({
-    url,
-    outFields: ["name", "type", "fid"],
+    url: JURISDICTION_BOUNDARIES_URL,
+    outFields: ["name", "fid"],
   });
   await placesLayer.load();
 
+  const whereClause = names
+    .map(
+      (name) =>
+        `LOWER(name) = '${escapeSqlLiteral(name.toLowerCase())}'`
+    )
+    .join(" OR ");
+
   const query = placesLayer.createQuery();
-  // Layer may use different type labels; fetch all and filter client-side.
-  query.where = "1=1";
-  query.outFields = ["name", "type", "fid"];
+  query.where = whereClause;
+  query.outFields = ["name", "fid"];
   query.returnGeometry = true;
   query.outSpatialReference = { wkid: 4326 };
-  query.num = 500;
 
   const result = await placesLayer.queryFeatures(query);
-  const wantCity = level === "city";
-  const places: Array<{ name: string; geometry: Polygon }> = [];
+  const geometryByName = new Map<string, Polygon>();
 
   for (const feature of result.features) {
     const name = feature.attributes?.name;
-    const type = String(feature.attributes?.type || "").toLowerCase();
     const geometry = feature.geometry as Polygon | undefined;
-    if (!name || !geometry) continue;
-
-    const isCity =
-      type.includes("city") ||
-      type.includes("town") ||
-      type === "" ||
-      type.includes("incorporated");
-    const isService =
-      type.includes("service") ||
-      type.includes("area") ||
-      type.includes("transit");
-
-    if (wantCity && !isCity && isService) continue;
-    if (!wantCity && !isService && isCity) continue;
-
-    places.push({ name: String(name), geometry });
-  }
-
-  // If type filtering wiped everything, return all named polygons.
-  if (places.length === 0) {
-    for (const feature of result.features) {
-      const name = feature.attributes?.name;
-      const geometry = feature.geometry as Polygon | undefined;
-      if (name && geometry) {
-        places.push({ name: String(name), geometry });
-      }
+    if (name && geometry) {
+      geometryByName.set(String(name), geometry);
     }
   }
 
-  return places.sort((a, b) => a.name.localeCompare(b.name));
+  const places: Array<{ name: string; geometry: Polygon }> = [];
+  for (const name of names) {
+    const geometry = geometryByName.get(name);
+    if (geometry) {
+      places.push({ name, geometry });
+    }
+  }
+
+  return places;
 }

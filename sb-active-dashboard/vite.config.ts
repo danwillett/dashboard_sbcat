@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       proxy: {
-        // Avoid browser CORS on localhost by proxying Azure Functions + pg_featureserv
+        // Avoid browser CORS on localhost by proxying Azure Functions + pg_featureserv / pg_tileserv
         "/sbcat-api": {
           target: apiTarget,
           changeOrigin: true,
@@ -29,6 +29,16 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: true,
           rewrite: (p) => p.replace(/^\/sbcat-features/, ""),
+        },
+        "/sbcat-tiles": {
+          target:
+            "https://ca-sbcat-tileserv.happyglacier-722a1c53.westus2.azurecontainerapps.io",
+          changeOrigin: true,
+          secure: true,
+          // Longer timeouts — ArcGIS requests many MVT tiles in parallel
+          timeout: 120_000,
+          proxyTimeout: 120_000,
+          rewrite: (p) => p.replace(/^\/sbcat-tiles/, ""),
         },
       },
     },

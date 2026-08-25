@@ -6,7 +6,14 @@ interface ExportFilteredDataButtonProps {
   label?: string;
   description?: string;
   rowNoun?: string;
-  onExport: () => Promise<{ rowCount: number; truncated: boolean }>;
+  /** Omit outer footer chrome when nested inside a shared export panel. */
+  embedded?: boolean;
+  onExport: () => Promise<{
+    rowCount: number;
+    truncated: boolean;
+    downloadOnly?: boolean;
+    filename?: string;
+  }>;
 }
 
 export default function ExportFilteredDataButton({
@@ -15,6 +22,7 @@ export default function ExportFilteredDataButton({
   label = "Export filtered data (CSV)",
   description,
   rowNoun = "rows",
+  embedded = false,
   onExport,
 }: ExportFilteredDataButtonProps) {
   const [exporting, setExporting] = useState(false);
@@ -26,23 +34,44 @@ export default function ExportFilteredDataButton({
     setNotice(null);
     try {
       const result = await onExport();
-      setNotice(
-        result.truncated
-          ? `Exported ${result.rowCount.toLocaleString()} ${rowNoun} (export limit reached; more data may exist).`
-          : `Exported ${result.rowCount.toLocaleString()} ${rowNoun} to CSV.`
-      );
+      if (result.downloadOnly) {
+        setNotice(
+          result.filename
+            ? `Downloaded ${result.filename} from the portal.`
+            : "Portal export download started."
+        );
+      } else {
+        setNotice(
+          result.truncated
+            ? `Exported ${result.rowCount.toLocaleString()} ${rowNoun} (export limit reached; more data may exist).`
+            : result.filename?.endsWith(".zip")
+              ? `Exported ${result.rowCount.toLocaleString()} ${rowNoun} to ${result.filename}.`
+              : `Exported ${result.rowCount.toLocaleString()} ${rowNoun} to CSV.`
+        );
+      }
     } catch (err) {
+      console.error("Export failed:", err);
       setNotice(err instanceof Error ? err.message : String(err));
     } finally {
       setExporting(false);
     }
   };
 
-  const isError = notice != null && !notice.startsWith("Exported");
+  const isError =
+    notice != null &&
+    !notice.startsWith("Exported") &&
+    !notice.startsWith("Downloaded") &&
+    !notice.startsWith("Portal export download started");
 
   return (
-    <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-3">
-      {description && (
+    <div
+      className={
+        embedded
+          ? ""
+          : "shrink-0 border-t border-gray-200 bg-white px-4 py-3"
+      }
+    >
+      {description && !embedded && (
         <p className="mb-2 text-xs leading-relaxed text-gray-500">{description}</p>
       )}
       <button

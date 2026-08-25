@@ -116,3 +116,27 @@ export function findDatasetInTree(
   }
   return null;
 }
+
+/**
+ * Ancestor category names from root to the category that owns the dataset
+ * (excludes the dataset title itself). Empty if not found.
+ */
+export function findDatasetCategoryPath(
+  nodes: CatalogCategoryNode[],
+  datasetId: number,
+  ancestors: string[] = []
+): string[] {
+  for (const node of nodes) {
+    const path = [...ancestors, node.name];
+    if ((node.datasets || []).some((ds) => ds.id === datasetId)) {
+      return path;
+    }
+    const nested = findDatasetCategoryPath(
+      node.children || [],
+      datasetId,
+      path
+    );
+    if (nested.length > 0) return nested;
+  }
+  return [];
+}

@@ -7,7 +7,19 @@ import CountSurveySiteAnalysisPanel from "@/ui/data-query-app/components/CountSu
 import SafetyIncidentFiltersPanel from "@/ui/data-query-app/components/SafetyIncidentFiltersPanel";
 import SafetyIncidentVisualizationPanel from "@/ui/data-query-app/components/SafetyIncidentVisualizationPanel";
 import SafetyIncidentAnalysisPanel from "@/ui/data-query-app/components/SafetyIncidentAnalysisPanel";
-import { CatalogDataset, datasetDisplayTitle } from "@/lib/data-services/CatalogApiService";
+import ModeledVolumeFiltersPanel from "@/ui/data-query-app/components/ModeledVolumeFiltersPanel";
+import ModeledVolumeVisualizationPanel from "@/ui/data-query-app/components/ModeledVolumeVisualizationPanel";
+import ArcGisFeatureLayerInfoPanel from "@/ui/data-query-app/components/ArcGisFeatureLayerInfoPanel";
+import ArcGisFeatureLayerVisualizationPanel from "@/ui/data-query-app/components/ArcGisFeatureLayerVisualizationPanel";
+import GenericFeatureLayerFooter from "@/ui/data-query-app/components/GenericFeatureLayerFooter";
+import BicycleComfortMapAnalysisPanel from "@/ui/data-query-app/components/BicycleComfortMapAnalysisPanel";
+import BicycleComfortMapFiltersPanel from "@/ui/data-query-app/components/BicycleComfortMapFiltersPanel";
+import {
+  CatalogCategoryNode,
+  CatalogDataset,
+  datasetDisplayTitle,
+  findDatasetCategoryPath,
+} from "@/lib/data-services/CatalogApiService";
 import { CountSurveyFilterState, isCountSurveyDataset } from "@/lib/data-query-app/countSurveyFilters";
 import {
   CountSurveyVisualizationState,
@@ -17,16 +29,29 @@ import {
   SafetyIncidentFilterState,
 } from "@/lib/data-query-app/safetyIncidentFilters";
 import { SafetyIncidentVisualizationState } from "@/lib/data-query-app/safetyIncidentVisualization";
+import {
+  isModeledVolumeDataset,
+  ModeledVolumeFilterState,
+} from "@/lib/data-query-app/modeledVolumeFilters";
+import { ModeledVolumeModel } from "@/lib/data-query-app/modeledVolumeFields";
+import { ModeledVolumeVisualizationState } from "@/lib/data-query-app/modeledVolumeVisualization";
+import { isArcGisFeatureCatalogDataset, isBicycleComfortMapDataset } from "@/lib/data-query-app/genericCatalogDataset";
+import { GenericFeatureLayerVisualizationState } from "@/lib/data-query-app/genericFeatureLayerVisualization";
+import { BicycleComfortCategoryStats } from "@/lib/data-query-app/bicycleComfortMapStats";
+import { BicycleComfortFilterState } from "@/lib/data-query-app/bicycleComfortMapFilters";
+import { ArcGisFeatureLayerMetadata } from "@/lib/data-services/ArcGisFeatureLayerMetadataService";
 import { SafetyIncidentSummary } from "@/lib/data-query-app/safetyIncidentQuery";
 import { FilteredIncidentStats } from "@/lib/data-query-app/safetyIncidentStats";
 import { VolumeSite } from "@/lib/volume-app/siteTemporalQuery";
 import { FilteredCountSurveyStats, EMPTY_COUNT_SURVEY_STATS } from "@/lib/data-query-app/countSurveyStats";
 
 export type DataQueryPanelSection =
+  | "info"
   | "filters"
   | "visualization"
   | "site-analysis"
-  | "incident-analysis";
+  | "incident-analysis"
+  | "layer-analysis";
 
 /** @deprecated Use DataQueryPanelSection */
 export type CountSurveyPanelSection = DataQueryPanelSection;
@@ -37,11 +62,24 @@ interface DataQueryRightSidebarProps {
   filterDataset: CatalogDataset | null;
   countSurveyFilters: CountSurveyFilterState;
   safetyFilters: SafetyIncidentFilterState;
+  modeledVolumeFilters: ModeledVolumeFilterState;
   countSurveyVisualization: CountSurveyVisualizationState;
   onCountSurveyVisualizationChange: (next: CountSurveyVisualizationState) => void;
   safetyVisualization: SafetyIncidentVisualizationState;
   onSafetyVisualizationChange: (next: SafetyIncidentVisualizationState) => void;
+  modeledVolumeVisualization: ModeledVolumeVisualizationState;
+  onModeledVolumeVisualizationChange: (
+    next: ModeledVolumeVisualizationState
+  ) => void;
   availableYears: number[];
+  modeledAvailableYears: number[];
+  modeledActiveField: string | null;
+  modeledIdentityLabel: string | null;
+  modeledModel: ModeledVolumeModel;
+  modeledZoomTooLow?: boolean;
+  modeledFeatureCount?: number | null;
+  modeledActiveResolution?: number | null;
+  modeledFullExtentLoaded?: boolean;
   sites: VolumeSite[];
   siteCount: number | null;
   countSurveyAvailabilityStats?: FilteredCountSurveyStats;
@@ -72,12 +110,49 @@ interface DataQueryRightSidebarProps {
   vizYearLabel: string | null;
   onCountSurveyFiltersChange: (next: CountSurveyFilterState) => void;
   onSafetyFiltersChange: (next: SafetyIncidentFilterState) => void;
+  onModeledVolumeFiltersChange: (next: ModeledVolumeFilterState) => void;
   onCloseFilters: () => void;
   selectedSiteId?: string | null;
   selectedSiteName?: string | null;
   onSelectSite: (siteId: string | null, siteName?: string | null) => void;
   preferredSection?: DataQueryPanelSection | null;
   onPreferredSectionConsumed?: () => void;
+  catalogTree?: CatalogCategoryNode[];
+  genericFeatureVisualization?: GenericFeatureLayerVisualizationState;
+  onGenericFeatureVisualizationChange?: (
+    next: GenericFeatureLayerVisualizationState
+  ) => void;
+  genericFeatureMetadata?: ArcGisFeatureLayerMetadata | null;
+  genericFeatureMetadataLoading?: boolean;
+  genericFeatureMetadataError?: string | null;
+  genericFeatureNumericFields?: __esri.Field[];
+  genericFeatureLayerReady?: boolean;
+  genericFeatureVizLoading?: boolean;
+  genericFeatureVizError?: string | null;
+  bicycleComfortStats?: BicycleComfortCategoryStats | null;
+  bicycleComfortStatsLoading?: boolean;
+  bicycleComfortStatsError?: string | null;
+  bicycleComfortFilters?: BicycleComfortFilterState;
+  onBicycleComfortFiltersChange?: (next: BicycleComfortFilterState) => void;
+  bicycleComfortFeatureCount?: number | null;
+  bicycleComfortAvailableCategories?: string[];
+  bicycleComfortCategoriesLoading?: boolean;
+  bicycleComfortJurisdictionPlaces?: string[];
+  bicycleComfortJurisdictionPlacesLoading?: boolean;
+  bicycleComfortFiltersLoading?: boolean;
+  bicycleComfortFiltersError?: string | null;
+  onExportGenericFeatureData?: () => Promise<{
+    rowCount: number;
+    truncated: boolean;
+    downloadOnly?: boolean;
+    filename?: string;
+  }>;
+  onExportGenericFeatureShapefile?: () => Promise<{
+    rowCount: number;
+    truncated: boolean;
+    downloadOnly?: boolean;
+    filename?: string;
+  }>;
 }
 
 function PanelTabs({
@@ -134,11 +209,22 @@ export default function DataQueryRightSidebar({
   filterDataset,
   countSurveyFilters,
   safetyFilters,
+  modeledVolumeFilters,
   countSurveyVisualization,
   onCountSurveyVisualizationChange,
   safetyVisualization,
   onSafetyVisualizationChange,
+  modeledVolumeVisualization,
+  onModeledVolumeVisualizationChange,
   availableYears,
+  modeledAvailableYears,
+  modeledActiveField,
+  modeledIdentityLabel,
+  modeledModel,
+  modeledZoomTooLow = false,
+  modeledFeatureCount = null,
+  modeledActiveResolution = null,
+  modeledFullExtentLoaded = false,
   sites,
   siteCount,
   countSurveyAvailabilityStats,
@@ -165,17 +251,48 @@ export default function DataQueryRightSidebar({
   vizYearLabel,
   onCountSurveyFiltersChange,
   onSafetyFiltersChange,
+  onModeledVolumeFiltersChange,
   onCloseFilters,
   selectedSiteId = null,
   selectedSiteName = null,
   onSelectSite,
   preferredSection = null,
   onPreferredSectionConsumed,
+  catalogTree = [],
+  genericFeatureVisualization,
+  onGenericFeatureVisualizationChange,
+  genericFeatureMetadata = null,
+  genericFeatureMetadataLoading = false,
+  genericFeatureMetadataError = null,
+  genericFeatureNumericFields = [],
+  genericFeatureLayerReady = false,
+  genericFeatureVizLoading = false,
+  genericFeatureVizError = null,
+  bicycleComfortStats = null,
+  bicycleComfortStatsLoading = false,
+  bicycleComfortStatsError = null,
+  bicycleComfortFilters,
+  onBicycleComfortFiltersChange,
+  bicycleComfortFeatureCount = null,
+  bicycleComfortAvailableCategories = [],
+  bicycleComfortCategoriesLoading = false,
+  bicycleComfortJurisdictionPlaces = [],
+  bicycleComfortJurisdictionPlacesLoading = false,
+  bicycleComfortFiltersLoading = false,
+  bicycleComfortFiltersError = null,
+  onExportGenericFeatureData,
+  onExportGenericFeatureShapefile,
 }: DataQueryRightSidebarProps) {
   const isCountSurvey =
     !!filterDataset && isCountSurveyDataset(filterDataset);
   const isSafety = !!filterDataset && isSafetyIncidentDataset(filterDataset);
-  const hasTabs = isCountSurvey || isSafety;
+  const isModeled =
+    !!filterDataset && isModeledVolumeDataset(filterDataset);
+  const isGenericFeature =
+    !!filterDataset && isArcGisFeatureCatalogDataset(filterDataset);
+  const isBicycleComfort =
+    !!filterDataset && isBicycleComfortMapDataset(filterDataset);
+  const hasTabs = isCountSurvey || isSafety || isModeled || isGenericFeature;
 
   const [section, setSection] = useState<DataQueryPanelSection>("filters");
 
@@ -188,9 +305,11 @@ export default function DataQueryRightSidebar({
 
   useEffect(() => {
     if (!preferredSection) {
-      setSection("filters");
+      setSection(
+        isBicycleComfort ? "filters" : isGenericFeature ? "info" : "filters"
+      );
     }
-  }, [filterDataset?.id]);
+  }, [filterDataset?.id, isGenericFeature, isBicycleComfort, preferredSection]);
 
   if (isCollapsed) {
     return (
@@ -212,6 +331,7 @@ export default function DataQueryRightSidebar({
     <div
       id="data-query-right-sidebar"
       className="relative z-20 flex h-full w-[412px] flex-shrink-0 flex-col border-l border-gray-200 bg-white"
+      style={{ colorScheme: "light", backgroundColor: "#ffffff" }}
     >
       <PanelEdgeToggle
         id="data-query-right-collapse-icon"
@@ -274,6 +394,41 @@ export default function DataQueryRightSidebar({
               { id: "visualization", label: "Visualization" },
               { id: "incident-analysis", label: "Incident Analysis" },
             ]}
+          />
+        )}
+
+        {isModeled && (
+          <PanelTabs
+            id="modeled-volume-panel-tabs"
+            label="Modeled volume panel sections"
+            section={section}
+            onChange={setSection}
+            tabs={[
+              { id: "filters", label: "Filters" },
+              { id: "visualization", label: "Visualization" },
+            ]}
+          />
+        )}
+
+        {isGenericFeature && (
+          <PanelTabs
+            id="generic-feature-layer-panel-tabs"
+            label="Feature layer panel sections"
+            section={section}
+            onChange={setSection}
+            tabs={
+              isBicycleComfort
+                ? [
+                    { id: "filters", label: "Filters" },
+                    { id: "info", label: "Info" },
+                    { id: "visualization", label: "Visualization" },
+                    { id: "layer-analysis", label: "Analysis" },
+                  ]
+                : [
+                    { id: "info", label: "Info" },
+                    { id: "visualization", label: "Visualization" },
+                  ]
+            }
           />
         )}
       </div>
@@ -373,7 +528,107 @@ export default function DataQueryRightSidebar({
           />
         )}
 
-        {!isCountSurvey && !isSafety && filterDataset && (
+        {isModeled && filterDataset && section === "filters" && (
+          <ModeledVolumeFiltersPanel
+            datasetTitle={datasetDisplayTitle(filterDataset)}
+            model={modeledModel}
+            identityLabel={modeledIdentityLabel}
+            filters={modeledVolumeFilters}
+            availableYears={modeledAvailableYears}
+            activeField={modeledActiveField}
+            loading={filtersLoading}
+            error={filtersError}
+            zoomTooLow={modeledZoomTooLow}
+            featureCount={modeledFeatureCount}
+            activeResolution={modeledActiveResolution}
+            fullExtentLoaded={modeledFullExtentLoaded}
+            onFiltersChange={onModeledVolumeFiltersChange}
+            showHeader={false}
+          />
+        )}
+
+        {isModeled && section === "visualization" && (
+          <ModeledVolumeVisualizationPanel
+            visualization={modeledVolumeVisualization}
+            onChange={onModeledVolumeVisualizationChange}
+            identityLabel={modeledIdentityLabel}
+            activeField={modeledActiveField}
+            loading={vizLoading}
+            error={vizError}
+          />
+        )}
+
+        {isGenericFeature && filterDataset && section === "info" && (
+            <ArcGisFeatureLayerInfoPanel
+              dataset={filterDataset}
+              tree={catalogTree}
+              metadata={genericFeatureMetadata}
+              loading={genericFeatureMetadataLoading}
+              error={genericFeatureMetadataError}
+            />
+          )}
+
+        {isGenericFeature &&
+          section === "visualization" &&
+          genericFeatureVisualization &&
+          onGenericFeatureVisualizationChange && (
+            <ArcGisFeatureLayerVisualizationPanel
+              visualization={genericFeatureVisualization}
+              onChange={onGenericFeatureVisualizationChange}
+              numericFields={genericFeatureNumericFields}
+              loading={genericFeatureVizLoading}
+              error={genericFeatureVizError}
+              layerReady={genericFeatureLayerReady}
+            />
+          )}
+
+        {isBicycleComfort &&
+          filterDataset &&
+          section === "filters" &&
+          bicycleComfortFilters &&
+          onBicycleComfortFiltersChange && (
+            <BicycleComfortMapFiltersPanel
+              datasetTitle={datasetDisplayTitle(filterDataset)}
+              filters={bicycleComfortFilters}
+              availableCategories={bicycleComfortAvailableCategories}
+              categoriesLoading={bicycleComfortCategoriesLoading}
+              featureCount={bicycleComfortFeatureCount}
+              jurisdictionPlaces={bicycleComfortJurisdictionPlaces}
+              jurisdictionPlacesLoading={bicycleComfortJurisdictionPlacesLoading}
+              loading={bicycleComfortFiltersLoading}
+              error={bicycleComfortFiltersError}
+              onFiltersChange={onBicycleComfortFiltersChange}
+              showHeader={false}
+            />
+          )}
+
+        {isBicycleComfort &&
+          filterDataset &&
+          section === "layer-analysis" &&
+          bicycleComfortFilters &&
+          onBicycleComfortFiltersChange && (
+            <BicycleComfortMapAnalysisPanel
+              datasetTitle={datasetDisplayTitle(filterDataset)}
+              stats={bicycleComfortStats}
+              loading={bicycleComfortStatsLoading}
+              error={bicycleComfortStatsError}
+              filters={bicycleComfortFilters}
+              onFiltersChange={onBicycleComfortFiltersChange}
+              availableCategories={bicycleComfortAvailableCategories}
+              categoriesLoading={bicycleComfortCategoriesLoading}
+              featureCount={bicycleComfortFeatureCount}
+              jurisdictionPlaces={bicycleComfortJurisdictionPlaces}
+              jurisdictionPlacesLoading={bicycleComfortJurisdictionPlacesLoading}
+              filtersLoading={bicycleComfortFiltersLoading}
+              filtersError={bicycleComfortFiltersError}
+            />
+          )}
+
+        {!isCountSurvey &&
+          !isSafety &&
+          !isModeled &&
+          !isGenericFeature &&
+          filterDataset && (
           <div className="px-4 py-4">
             <p className="text-sm text-gray-600">
               Layer tools for{" "}
@@ -430,6 +685,30 @@ export default function DataQueryRightSidebar({
                   ? "Turn on the layer to export filtered data."
                   : undefined
             }
+          />
+        )}
+
+        {isGenericFeature &&
+          onExportGenericFeatureData &&
+          onExportGenericFeatureShapefile && (
+          <GenericFeatureLayerFooter
+            portalUrl={genericFeatureMetadata?.portalUrl}
+            isBicycleComfort={isBicycleComfort}
+            disabled={
+              filtersLoading ||
+              !!filtersError ||
+              !genericFeatureLayerReady ||
+              !genericFeatureMetadata?.serviceUrl
+            }
+            disabledReason={
+              !genericFeatureLayerReady
+                ? "Turn on the layer to export data."
+                : !genericFeatureMetadata?.serviceUrl
+                  ? "Layer service URL is not available yet."
+                  : undefined
+            }
+            onExportCsv={onExportGenericFeatureData}
+            onExportShapefile={onExportGenericFeatureShapefile}
           />
         )}
       </div>
