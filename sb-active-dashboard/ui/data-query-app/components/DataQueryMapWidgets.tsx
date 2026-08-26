@@ -1,13 +1,50 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import Collection from "@arcgis/core/core/Collection";
 import LayerList from "@arcgis/core/widgets/LayerList";
 import Legend from "@arcgis/core/widgets/Legend";
+import ActionButton from "@arcgis/core/support/actions/ActionButton";
 import { CalciteIcon } from "@esri/calcite-components-react";
+import {
+  EQUITY_LAYER_PROP_TITLE_MAIN,
+  isEquityAnalysisResultLayerId,
+  parseEquityAnalysisIdFromResultLayerId,
+} from "@/lib/infrastructure-equity-app/infrastructureEquityPinned";
 import "../data-query-map-widgets.css";
 
 interface DataQueryMapWidgetsProps {
   mapView: __esri.MapView | null;
   /** Managed layer legends (count surveys, safety, modeled volume) above the Esri legend. */
   customLegend?: ReactNode;
+  /** When set, equity analysis result layers get a remove action in the layer list. */
+  onEquityAnalysisRemove?: (analysisId: string) => void;
+  /** DOM id for the widget root (for page-specific styling). */
+  widgetsRootId?: string;
+  /** Hide the Esri Legend widget (use with customLegend for analysis-only views). */
+  hideEsriLegend?: boolean;
+  /** Show the legend panel even when no custom legend is provided. */
+  showLegendPanel?: boolean;
+  /** Legend panel header when the panel is open. */
+  legendPanelTitle?: string;
+  /** Hide layer-list visibility toggles (equity preview layers use sidebar eye icons). */
+  hideLayerListVisibility?: boolean;
+}
+
+function decorateEquityResultListItem(event: {
+  item: __esri.ListItem;
+}) {
+  const layer = event.item.layer;
+  const layerId = layer?.id != null ? String(layer.id) : undefined;
+  if (!isEquityAnalysisResultLayerId(layerId)) return;
+
+  const layerRecord = layer as __esri.FeatureLayer & {
+    get?: (key: string) => unknown;
+  };
+  const titleMain = (layerRecord.get?.(EQUITY_LAYER_PROP_TITLE_MAIN) ??
+    layer?.title) as string | undefined;
+
+  if (titleMain) {
+    event.item.title = titleMain;
+  }
 }
 
 /**
@@ -16,6 +53,12 @@ interface DataQueryMapWidgetsProps {
 export default function DataQueryMapWidgets({
   mapView,
   customLegend,
+  onEquityAnalysisRemove,
+  widgetsRootId = "data-query-map-widgets",
+  hideEsriLegend = false,
+  showLegendPanel,
+  legendPanelTitle = "Legend",
+  hideLayerListVisibility = false,
 }: DataQueryMapWidgetsProps) {
   const [layerListOpen, setLayerListOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
@@ -25,14 +68,12 @@ export default function DataQueryMapWidgets({
   const layerListRef = useRef<LayerList | null>(null);
   const legendRef = useRef<Legend | null>(null);
   const autoOpenedRef = useRef(false);
+  const onEquityAnalysisRemoveRef = useRef(onEquityAnalysisRemove);
+  onEquityAnalysisRemoveRef.current = onEquityAnalysisRemove;
 
-  // Create ArcGIS widgets in our panel containers
+  // LayerList is independent of legend visibility so toggling layers does not reset the list.
   useEffect(() => {
-    if (
-      !mapView ||
-      !layerListContainerRef.current ||
-      !legendContainerRef.current
-    ) {
+    if (!mapView || !layerListContainerRef.current) {
       return;
     }
 
@@ -47,12 +88,36 @@ export default function DataQueryMapWidgets({
           container.classList.add("calcite-mode-light");
           container.style.colorScheme = "light";
         }
+
+        decorateEquityResultListItem(event);
+
+        const layerId = event.item.layer?.id;
+        const layerIdStr = layerId != null ? String(layerId) : undefined;
+        if (
+          onEquityAnalysisRemoveRef.current &&
+          isEquityAnalysisResultLayerId(layerIdStr)
+        ) {
+          const removeAction = new ActionButton({
+            title: "Remove analysis",
+            id: "remove-equity-analysis",
+            icon: "trash",
+          });
+          event.item.actionsSections = new Collection([
+            new Collection([removeAction]),
+          ]);
+        }
       },
     });
 
-    const legend = new Legend({
-      view: mapView,
-      container: legendContainerRef.current,
+    const handleLayerListAction = layerList.on("trigger-action", (event) => {
+      if (event.action.id !== "remove-equity-analysis") return;
+      const layerId = event.item.layer?.id;
+      const layerIdStr = layerId != null ? String(layerId) : undefined;
+      if (!layerIdStr || !isEquityAnalysisResultLayerId(layerIdStr)) return;
+      const analysisId = parseEquityAnalysisIdFromResultLayerId(layerIdStr);
+      if (analysisId) {
+        onEquityAnalysisRemoveRef.current?.(analysisId);
+      }
     });
 
     layerList.when().then(() => {
@@ -63,6 +128,29 @@ export default function DataQueryMapWidgets({
       }
     });
 
+    layerListRef.current = layerList;
+
+    return () => {
+      handleLayerListAction.remove();
+      layerList.destroy();
+      layerListRef.current = null;
+    };
+  }, [mapView]);
+
+  useEffect(() => {
+    if (!mapView || hideEsriLegend || !legendContainerRef.current) {
+      if (legendRef.current) {
+        legendRef.current.destroy();
+        legendRef.current = null;
+      }
+      return;
+    }
+
+    const legend = new Legend({
+      view: mapView,
+      container: legendContainerRef.current,
+    });
+
     legend.when().then(() => {
       const container = legend.container as HTMLElement | undefined;
       if (container) {
@@ -71,16 +159,13 @@ export default function DataQueryMapWidgets({
       }
     });
 
-    layerListRef.current = layerList;
     legendRef.current = legend;
 
     return () => {
-      layerList.destroy();
       legend.destroy();
-      layerListRef.current = null;
       legendRef.current = null;
     };
-  }, [mapView]);
+  }, [mapView, hideEsriLegend]);
 
   // Open panels when layers or custom legend content appear
   useEffect(() => {
@@ -91,19 +176,63 @@ export default function DataQueryMapWidgets({
       if (!autoOpenedRef.current && (map.layers.length > 0 || customLegend)) {
         autoOpenedRef.current = true;
         setLayerListOpen(true);
-        setLegendOpen(true);
+        if (customLegend || !hideEsriLegend) {
+          setLegendOpen(true);
+        }
       }
     };
 
     tryAutoOpen();
     const handle = map.layers.on("change", tryAutoOpen);
     return () => handle.remove();
-  }, [mapView, customLegend]);
+  }, [mapView, customLegend, hideEsriLegend, showLegendPanel]);
+
+  const legendPanelVisible =
+    showLegendPanel ?? Boolean(customLegend || !hideEsriLegend);
+
+  // Open the legend when custom legend content appears (e.g. equity analysis).
+  useEffect(() => {
+    if (customLegend && legendPanelVisible) {
+      setLegendOpen(true);
+    }
+  }, [customLegend, legendPanelVisible]);
+
+  // Open the legend when any layer is turned on.
+  useEffect(() => {
+    if (!mapView?.map || !legendPanelVisible) return;
+
+    const map = mapView.map;
+    const watchHandles: __esri.WatchHandle[] = [];
+
+    const bindLayerVisibility = (layer: __esri.Layer) => {
+      watchHandles.push(
+        layer.watch("visible", (visible: boolean) => {
+          if (visible) setLegendOpen(true);
+        })
+      );
+    };
+
+    map.allLayers.forEach((layer) => bindLayerVisibility(layer));
+
+    const allLayersChangeHandle = map.allLayers.on("change", (event) => {
+      event.added.forEach((layer) => {
+        bindLayerVisibility(layer);
+        if (layer.visible) setLegendOpen(true);
+      });
+    });
+
+    return () => {
+      watchHandles.forEach((handle) => handle.remove());
+      allLayersChangeHandle.remove();
+    };
+  }, [mapView, legendPanelVisible]);
 
   return (
     <div
-      id="data-query-map-widgets"
-      className="pointer-events-none absolute inset-0 z-20"
+      id={widgetsRootId}
+      className={`pointer-events-none absolute inset-0 z-20${
+        hideLayerListVisibility ? " map-widget-layer-list--no-visibility" : ""
+      }`}
     >
       {/* Top-left: layers */}
       <div className="pointer-events-auto absolute top-3 left-3">
@@ -142,49 +271,53 @@ export default function DataQueryMapWidgets({
       </div>
 
       {/* Bottom-left: legend */}
-      <div className="pointer-events-auto absolute bottom-5 left-5">
-        <div
-          className={
-            legendOpen ? "map-widget-panel map-widget-panel--legend" : "hidden"
-          }
-        >
-          <div className="map-widget-panel-header">
-            <span className="map-widget-panel-title">Legend</span>
+      {legendPanelVisible && (
+        <div className="pointer-events-auto absolute bottom-5 left-5">
+          <div
+            className={
+              legendOpen ? "map-widget-panel map-widget-panel--legend" : "hidden"
+            }
+          >
+            <div className="map-widget-panel-header">
+              <span className="map-widget-panel-title">{legendPanelTitle}</span>
+              <button
+                type="button"
+                className="map-widget-close"
+                onClick={() => setLegendOpen(false)}
+                aria-label="Close legend"
+              >
+                ×
+              </button>
+            </div>
+            <div
+              className={`map-widget-panel-body map-widget-panel-body--legend${
+                customLegend ? " map-widget-panel-body--legend-with-custom" : ""
+              }${hideEsriLegend ? " map-widget-panel-body--legend-custom-only" : ""}`}
+            >
+              {customLegend ? (
+                <div className="map-widget-custom-legend">{customLegend}</div>
+              ) : null}
+              {!hideEsriLegend ? (
+                <div
+                  ref={legendContainerRef}
+                  className="map-widget-legend-esri"
+                />
+              ) : null}
+            </div>
+          </div>
+          {!legendOpen && (
             <button
               type="button"
-              className="map-widget-close"
-              onClick={() => setLegendOpen(false)}
-              aria-label="Close legend"
+              className="map-widget-toggle"
+              onClick={() => setLegendOpen(true)}
+              aria-label="Open legend"
+              title={legendPanelTitle}
             >
-              ×
+              <CalciteIcon icon="legend" scale="s" />
             </button>
-          </div>
-          <div
-            className={`map-widget-panel-body map-widget-panel-body--legend${
-              customLegend ? " map-widget-panel-body--legend-with-custom" : ""
-            }`}
-          >
-            {customLegend ? (
-              <div className="map-widget-custom-legend">{customLegend}</div>
-            ) : null}
-            <div
-              ref={legendContainerRef}
-              className="map-widget-legend-esri"
-            />
-          </div>
+          )}
         </div>
-        {!legendOpen && (
-          <button
-            type="button"
-            className="map-widget-toggle"
-            onClick={() => setLegendOpen(true)}
-            aria-label="Open legend"
-            title="Legend"
-          >
-            <CalciteIcon icon="legend" scale="s" />
-          </button>
-        )}
-      </div>
+      )}
     </div>
   );
 }

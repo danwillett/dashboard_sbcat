@@ -162,7 +162,26 @@ const NUMERIC_FIELD_TYPES = new Set([
   "single",
   "double",
   "long",
+  "big-integer",
 ]);
+
+export function isNumericLayerFieldType(
+  fieldType: string | undefined | null
+): boolean {
+  return fieldType != null && NUMERIC_FIELD_TYPES.has(fieldType);
+}
+
+export function parseNumericAttributeValue(
+  raw: unknown
+): number | null {
+  if (raw == null || raw === "") return null;
+  if (typeof raw === "bigint") {
+    const num = Number(raw);
+    return Number.isFinite(num) ? num : null;
+  }
+  const num = Number(raw);
+  return Number.isFinite(num) ? num : null;
+}
 
 const OID_FIELD_NAMES = new Set(["OBJECTID", "FID", "OID"]);
 
@@ -179,7 +198,7 @@ export function getStylableFieldType(
 export function listNumericLayerFields(layer: FeatureLayer): __esri.Field[] {
   return (layer.fields || []).filter(
     (field) =>
-      NUMERIC_FIELD_TYPES.has(field.type) &&
+      isNumericLayerFieldType(field.type) &&
       field.name &&
       !isOidFieldName(field.name) &&
       !field.name.toLowerCase().startsWith("shape")

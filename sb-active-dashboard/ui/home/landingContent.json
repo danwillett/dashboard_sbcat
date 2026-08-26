@@ -64,7 +64,8 @@
         {
           "id": "equity-infrastructure",
           "title": "Infrastructure Equity",
-          "description": "Examine how bike and pedestrian infrastructure is distributed across communities."
+          "description": "Examine how bike and pedestrian infrastructure is distributed across communities.",
+          "link": "/infrastructure-equity"
         }
       ]
     },

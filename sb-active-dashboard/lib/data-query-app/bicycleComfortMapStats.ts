@@ -56,6 +56,30 @@ function resolveCategoryField(
   return categoryField ?? DEFAULT_CATEGORY_FIELD;
 }
 
+/**
+ * Field used for low / medium / high comfort bands in equity analysis.
+ * Prefer comfort_class (e.g. "Medium comfort") over class_export (e.g. "Bike boulevard").
+ */
+export async function resolveBicycleComfortBandField(
+  layer: FeatureLayer,
+  categoryFieldHint?: string
+): Promise<string> {
+  await layer.load();
+  if (layer.fields?.some((field) => field.name === "comfort_class")) {
+    return "comfort_class";
+  }
+  return resolveCategoryField(layer, categoryFieldHint);
+}
+
+/** Symbology / detailed infrastructure class field (portal renderer). */
+export async function resolveBicycleComfortCategoryField(
+  layer: FeatureLayer,
+  categoryFieldHint?: string
+): Promise<string> {
+  await layer.load();
+  return resolveCategoryField(layer, categoryFieldHint);
+}
+
 function buildCategoryStats(
   categoryField: string,
   lengthField: string,
@@ -156,16 +180,40 @@ export async function fetchBicycleComfortCategoryStats(
 
 export async function listBicycleComfortCategories(
   layer: FeatureLayer,
-  categoryField?: string
+  categoryField?: string,
+  additionalWhere?: string
 ): Promise<string[]> {
   await layer.load();
   const field = resolveCategoryField(layer, categoryField);
+  const where = additionalWhere?.trim() || "1=1";
+
+  const renderer = layer.renderer;
+  if (renderer?.type === "unique-value" && where === "1=1") {
+    const uniqueRenderer = renderer as __esri.UniqueValueRenderer;
+    const rendererField = uniqueRenderer.field;
+    if (!rendererField || rendererField === field) {
+      const fromRenderer = (uniqueRenderer.uniqueValueInfos ?? [])
+        .map((info) => String(info.value ?? "").trim())
+        .filter(Boolean);
+      if (fromRenderer.length > 0) {
+        return [...new Set(fromRenderer)].sort((a, b) => a.localeCompare(b));
+      }
+    }
+  }
+
+  const oidField = pickOidField(layer);
   const query = layer.createQuery();
-  query.where = "1=1";
+  query.where = where;
   query.returnGeometry = false;
-  query.outFields = [field];
-  query.orderByFields = [field];
-  query.num = 2000;
+  query.outFields = [];
+  query.outStatistics = [
+    new StatisticDefinition({
+      statisticType: "count",
+      onStatisticField: oidField,
+      outStatisticFieldName: "segment_count",
+    }),
+  ];
+  query.groupByFieldsForStatistics = [field];
 
   const result = await layer.queryFeatures(query);
   const values = new Set<string>();

@@ -6,6 +6,15 @@
   color-scheme: light;
 }
 
+#infrastructure-equity-map-area {
+  color-scheme: light;
+}
+
+#infrastructure-equity-map-area #data-query-map-widgets .map-widget-panel,
+#infrastructure-equity-map-area #data-query-map-widgets .map-widget-toggle {
+  color-scheme: light;
+}
+
 #data-query-map-widgets .map-widget-toggle {
   display: flex;
   align-items: center;
@@ -83,20 +92,46 @@
   background-color: #ffffff;
 }
 
-#data-query-map-widgets .map-widget-panel-body--layers {
-  max-height: 360px;
+/* Layer list: top-anchored — keep panel from extending past mid-screen */
+#data-query-map-widgets .map-widget-panel--layers .map-widget-panel-body--layers {
+  max-height: calc(50vh - 3rem);
 }
 
-#data-query-map-widgets .map-widget-panel-body--legend {
-  max-height: 280px;
-}
-
-#data-query-map-widgets .map-widget-panel-body--legend-with-custom {
-  max-height: 420px;
+/* Legend: bottom-anchored — allow up to half the viewport for scrollable content */
+#data-query-map-widgets .map-widget-panel--legend .map-widget-panel-body--legend,
+#data-query-map-widgets
+  .map-widget-panel--legend
+  .map-widget-panel-body--legend-with-custom {
+  max-height: calc(50vh - 3.25rem);
 }
 
 #data-query-map-widgets .map-widget-custom-legend {
   border-bottom: 1px solid #e5e7eb;
+  padding-left: 4px;
+}
+
+#data-query-map-widgets .equity-bivariate-legend {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+#data-query-map-widgets
+  .esri-layer-list__item-panel
+  .esri-layer-list__child-toggle {
+  display: none !important;
+}
+
+#data-query-map-widgets .esri-layer-list__item-panel {
+  margin-left: 0;
+  padding-left: 0;
+}
+
+#data-query-map-widgets .esri-layer-list__item-panel-content {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.35;
+  padding: 0 0 4px 0;
 }
 
 #data-query-map-widgets .map-widget-custom-legend > * + * {
@@ -192,4 +227,122 @@
   background-color: #ffffff;
   color: #111827;
   color-scheme: light;
+}
+
+.map-widget-panel-body--layers .equity-layer-list-subtitle {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.map-widget-panel-body--legend-custom-only .map-widget-custom-legend > div {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+  max-width: none;
+}
+
+#infrastructure-equity-left-sidebar,
+#infrastructure-equity-left-sidebar-collapsed,
+#infrastructure-equity-right-sidebar,
+#infrastructure-equity-right-sidebar-collapsed,
+#infrastructure-equity-app {
+  color-scheme: light;
+  color: #111827;
+}
+
+#infrastructure-equity-left-sidebar .equity-form-radio,
+#infrastructure-equity-left-sidebar .equity-form-checkbox {
+  color-scheme: light;
+  accent-color: #2563eb;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+#infrastructure-equity-left-sidebar .equity-form-checkbox {
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+}
+
+#infrastructure-equity-left-sidebar select.equity-form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0.5rem 2rem 0.5rem 0.5rem;
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.27a.75.75 0 0 1 .02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem 1rem;
+  color-scheme: light;
+}
+
+#infrastructure-equity-left-sidebar .equity-review-section {
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+#infrastructure-equity-left-sidebar .equity-review-section > section + section {
+  margin-top: 0.75rem;
+}
+
+#infrastructure-equity-left-sidebar
+  #infrastructure-equity-left-content
+  button.equity-sidebar-icon-button[type="button"] {
+  color-scheme: light;
+  background-color: transparent;
+  border-color: transparent;
+  color: inherit;
+}
+
+#infrastructure-equity-left-sidebar #infrastructure-equity-comfort-filter {
+  color-scheme: light;
+  color: #111827;
+}
+
+#infrastructure-equity-left-sidebar
+  #infrastructure-equity-comfort-filter
+  button[type="button"] {
+  background-color: transparent;
+  color: #4b5563;
+  border: none;
+  padding: 4px 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+#infrastructure-equity-left-sidebar
+  #infrastructure-equity-comfort-filter
+  button[type="button"]:hover {
+  background-color: transparent;
+  border-color: transparent;
+  color: #111827;
+}
+
+#infrastructure-equity-left-sidebar #infrastructure-equity-left-footer button[type="button"] {
+  color-scheme: light;
+}
+
+#data-query-map-widgets.map-widget-layer-list--no-visibility
+  .esri-layer-list__item-toggle {
+  display: none !important;
+}
+
+#data-query-map-widgets .equity-layer-list-entry {
+  padding: 2px 0;
+}
+
+#data-query-map-widgets .equity-layer-list-title {
+  font-size: 13px;
+  line-height: 1.35;
+  color: #111827;
+}
+
+#data-query-map-widgets .equity-layer-list-subtitle {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.35;
+  margin-top: 2px;
 }

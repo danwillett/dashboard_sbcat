@@ -10,6 +10,7 @@ import Test from "./pages/dashboard/test";
 import AboutPage from "./pages/about";
 import ContactPage from "./pages/contact";
 import DataQueryAndDownloadPage from "./pages/data-query-and-download";
+import InfrastructureEquityPage from "./pages/infrastructure-equity";
 // import TestBoundariesPage from "./pages/dashboard/test-boundaries";
 
 import { ThemeProvider, CssBaseline, StyledEngineProvider } from "@mui/material";
@@ -33,6 +34,7 @@ function App() {
 
             {/* Tool experiences */}
             <Route path="/data-query-and-download" element={<DataQueryAndDownloadPage />} />
+            <Route path="/infrastructure-equity" element={<InfrastructureEquityPage />} />
 
             {/* everything that needs useMapContext */}
             <Route
