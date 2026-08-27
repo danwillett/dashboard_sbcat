@@ -38,7 +38,17 @@ import {
   listEquityJurisdictionPlaceNames,
   resolveEquityBoundaryGeometry,
 } from "@/lib/infrastructure-equity-app/infrastructureEquityGeography";
-import { runInfrastructureEquityAnalysis } from "@/lib/infrastructure-equity-app/infrastructureEquityAnalysis";
+import { runInfrastructureEquityAnalysis, computeInfrastructureEquityUnits, formatEquityAnalysisError, InfrastructureEquityUnitComputation } from "@/lib/infrastructure-equity-app/infrastructureEquityAnalysis";
+import {
+  DEFAULT_EQUITY_BIN_COUNT,
+  EquityBinCount,
+  buildEquityBivariateBreaks,
+} from "@/lib/infrastructure-equity-app/infrastructureEquityBivariate";
+import {
+  formatCombinedContextIndicatorLabel,
+  formatEquityAnalysisContextMetricLabel,
+} from "@/lib/infrastructure-equity-app/infrastructureEquityAcsIndicators";
+import { infrastructureMetricLabel } from "@/lib/infrastructure-equity-app/infrastructureEquityMetrics";
 import {
   loadNumericContextFields,
   pickDefaultNumericContextField,
@@ -55,16 +65,23 @@ import {
   syncContextReferenceLayer,
   syncGeographicExtentPreviewLayer,
   zoomMapToEquityGeographicExtent,
+  addEquityCustomBinPreviewLayer,
+  clearEquityAnalysisUnitHighlight,
+  highlightEquityAnalysisUnitOnMap,
+  removeEquityCustomBinPreviewLayer,
+  removeEquityCustomBinPreviewLayers,
 } from "@/lib/infrastructure-equity-app/infrastructureEquityMapLayers";
 import {
   createPinnedEquityAnalysis,
+  EQUITY_CUSTOM_BIN_CONTEXT_LAYER_ID,
+  EQUITY_CUSTOM_BIN_INFRASTRUCTURE_LAYER_ID,
   PinnedEquityAnalysis,
 } from "@/lib/infrastructure-equity-app/infrastructureEquityPinned";
 import "@/ui/data-query-app/data-query-map-widgets.css";
 
 export default function InfrastructureEquityApp() {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
-  const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(true);
   const [mapView, setMapView] = useState<__esri.MapView | null>(null);
   const [tree, setTree] = useState<CatalogCategoryNode[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
@@ -118,8 +135,32 @@ export default function InfrastructureEquityApp() {
   const [demographicsIndicatorBlockGroupSupport, setDemographicsIndicatorBlockGroupSupport] =
     useState<Record<number, Record<string, boolean>>>({});
 
+  const [usingDefaultBins, setUsingDefaultBins] = useState(true);
+  const [customBinMapping, setCustomBinMapping] = useState(false);
+  const [binsMapPreviewBusy, setBinsMapPreviewBusy] = useState(false);
+  const [contextBinsMapVisible, setContextBinsMapVisible] = useState(false);
+  const [infrastructureBinsMapVisible, setInfrastructureBinsMapVisible] =
+    useState(false);
+  const [binCount, setBinCount] = useState<EquityBinCount>(DEFAULT_EQUITY_BIN_COUNT);
+  const [infrastructureBreaks, setInfrastructureBreaks] = useState<number[] | null>(
+    null
+  );
+  const [contextBreaks, setContextBreaks] = useState<number[] | null>(null);
+  const [binPreview, setBinPreview] =
+    useState<InfrastructureEquityUnitComputation | null>(null);
+  const [binPreviewLoading, setBinPreviewLoading] = useState(false);
+  const [binPreviewError, setBinPreviewError] = useState<string | null>(null);
+  const [binPreviewProgress, setBinPreviewProgress] = useState<{
+    completed: number;
+    total: number;
+  } | null>(null);
+  const [lastRunConfigKey, setLastRunConfigKey] = useState<string | null>(null);
+
   const mapViewRef = useRef(mapView);
   mapViewRef.current = mapView;
+  const suppressingBinLayerWatchRef = useRef(0);
+  const contextBinSyncIdRef = useRef(0);
+  const infrastructureBinSyncIdRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,6 +194,7 @@ export default function InfrastructureEquityApp() {
       removeBikeComfortReferenceLayerFromMap(mapViewRef.current);
       removeContextReferenceLayerFromMap(mapViewRef.current);
       removeGeographicExtentPreviewLayerFromMap(mapViewRef.current);
+      removeEquityCustomBinPreviewLayers(mapViewRef.current);
     };
   }, []);
 
@@ -453,11 +495,418 @@ export default function InfrastructureEquityApp() {
         geographicFilter.placeName != null &&
         jurisdictionPlaces.includes(geographicFilter.placeName)));
 
+  const canConfigureBins = canRunAnalysis;
+
+  const binPreviewKey = useMemo(() => {
+    if (!canConfigureBins || !infrastructureDataset || !contextDataset || !contextKind) {
+      return null;
+    }
+    return [
+      infrastructureDataset.id,
+      JSON.stringify(infrastructureComfortSelection),
+      contextDataset.id,
+      contextKind,
+      selectedContextFields.join(","),
+      demographicsGeographyUnit,
+      geographicFilter.level,
+      geographicFilter.placeName ?? "",
+    ].join("|");
+  }, [
+    canConfigureBins,
+    infrastructureDataset,
+    infrastructureComfortSelection,
+    contextDataset,
+    contextKind,
+    selectedContextFields,
+    demographicsGeographyUnit,
+    geographicFilter,
+  ]);
+
+  useEffect(() => {
+    setBinPreview(null);
+    setBinPreviewError(null);
+    setBinPreviewLoading(false);
+    setBinPreviewProgress(null);
+    setInfrastructureBreaks(null);
+    setContextBreaks(null);
+    setUsingDefaultBins(true);
+    setContextBinsMapVisible(false);
+    setInfrastructureBinsMapVisible(false);
+    removeEquityCustomBinPreviewLayers(mapViewRef.current);
+  }, [binPreviewKey]);
+
+  // Prefetch unit distributions as soon as the config is ready. Leaving Step 4
+  // must not cancel or restart an in-flight/completed computation for the same key.
+  useEffect(() => {
+    if (!binPreviewKey) return;
+    if (!infrastructureDataset || !contextDataset || !contextKind) return;
+    if (binPreview) return;
+
+    let cancelled = false;
+    setBinPreviewLoading(true);
+    setBinPreviewError(null);
+    setBinPreviewProgress(null);
+
+    (async () => {
+      try {
+        const geographyUnit =
+          contextKind === "demographics"
+            ? demographicsGeographyUnit
+            : inferEquityGeographyUnit(contextDataset, contextKind);
+        const computed = await computeInfrastructureEquityUnits({
+          infrastructureDataset,
+          contextDataset,
+          infrastructureComfortSelection,
+          contextFields: selectedContextFields,
+          geographyUnit,
+          geographicFilter,
+          contextKind,
+          onProgress: (completed, total) => {
+            if (!cancelled) setBinPreviewProgress({ completed, total });
+          },
+        });
+        if (cancelled) return;
+        setBinPreview(computed);
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Equity bin preview failed", error);
+          setBinPreview(null);
+          setBinPreviewError(
+            formatEquityAnalysisError(
+              error,
+              "Failed to compute distributions for bin setup."
+            )
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setBinPreviewLoading(false);
+          setBinPreviewProgress(null);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    binPreviewKey,
+    binPreview,
+    infrastructureDataset,
+    contextDataset,
+    contextKind,
+    infrastructureComfortSelection,
+    selectedContextFields,
+    demographicsGeographyUnit,
+    geographicFilter,
+  ]);
+
+  useEffect(() => {
+    if (!binPreview) return;
+    const defaults = buildEquityBivariateBreaks(binPreview.units, { binCount });
+    setInfrastructureBreaks(defaults.infrastructure);
+    setContextBreaks(defaults.context);
+    setUsingDefaultBins(true);
+  }, [binPreview, binCount]);
+
+  const analysisConfigKey = useMemo(
+    () =>
+      JSON.stringify({
+        geographicFilter,
+        infrastructureDatasetId,
+        infrastructureComfortSelection,
+        contextKind,
+        contextDatasetId,
+        selectedContextFields,
+        demographicsGeographyUnit,
+        binCount,
+        customBinMapping,
+        infrastructureBreaks,
+        contextBreaks,
+      }),
+    [
+      geographicFilter,
+      infrastructureDatasetId,
+      infrastructureComfortSelection,
+      contextKind,
+      contextDatasetId,
+      selectedContextFields,
+      demographicsGeographyUnit,
+      binCount,
+      customBinMapping,
+      infrastructureBreaks,
+      contextBreaks,
+    ]
+  );
+
+  const canRerunAnalysis =
+    lastRunConfigKey != null && analysisConfigKey !== lastRunConfigKey;
+
+  const contextLabelForBins = useMemo(() => {
+    if (!contextDataset || !contextKind || selectedContextFields.length === 0) {
+      return "Context indicator";
+    }
+    return formatCombinedContextIndicatorLabel(
+      selectedContextFields,
+      contextDataset,
+      contextKind
+    );
+  }, [contextDataset, contextKind, selectedContextFields]);
+
+  const infrastructureLabelForBins = useMemo(
+    () => infrastructureMetricLabel(infrastructureComfortSelection),
+    [infrastructureComfortSelection]
+  );
+
+  const handleInfrastructureBreaksChange = useCallback((breaks: number[]) => {
+    setInfrastructureBreaks(breaks);
+    setUsingDefaultBins(false);
+  }, []);
+
+  const handleContextBreaksChange = useCallback((breaks: number[]) => {
+    setContextBreaks(breaks);
+    setUsingDefaultBins(false);
+  }, []);
+
+  const handleCustomBinMappingChange = useCallback(
+    (enabled: boolean) => {
+      setCustomBinMapping(enabled);
+      if (!enabled) {
+        setUsingDefaultBins(true);
+        setContextBinsMapVisible(false);
+        setInfrastructureBinsMapVisible(false);
+        removeEquityCustomBinPreviewLayers(mapViewRef.current);
+        if (binPreview) {
+          const defaults = buildEquityBivariateBreaks(binPreview.units, {
+            binCount,
+          });
+          setInfrastructureBreaks(defaults.infrastructure);
+          setContextBreaks(defaults.context);
+        }
+      }
+    },
+    [binPreview, binCount]
+  );
+
+  const syncCustomBinPreviewLayer = useCallback(
+    async (options: {
+      axis: "infrastructure" | "context";
+      label: string;
+      cuts: number[];
+      requestId: number;
+    }) => {
+      if (!binPreview) return;
+      const activeIdRef =
+        options.axis === "context"
+          ? contextBinSyncIdRef
+          : infrastructureBinSyncIdRef;
+      if (options.requestId !== activeIdRef.current) return;
+
+      suppressingBinLayerWatchRef.current += 1;
+      try {
+        if (options.requestId !== activeIdRef.current) return;
+        await addEquityCustomBinPreviewLayer({
+          mapView: mapViewRef.current,
+          axis: options.axis,
+          label: options.label,
+          units: binPreview.units,
+          cuts: options.cuts,
+          binCount,
+        });
+      } finally {
+        suppressingBinLayerWatchRef.current -= 1;
+      }
+    },
+    [binPreview, binCount]
+  );
+
+  const handleRemoveCustomBinPreview = useCallback(
+    (axis: "infrastructure" | "context") => {
+      if (axis === "context") {
+        contextBinSyncIdRef.current += 1;
+      } else {
+        infrastructureBinSyncIdRef.current += 1;
+      }
+      suppressingBinLayerWatchRef.current += 1;
+      try {
+        removeEquityCustomBinPreviewLayer(mapViewRef.current, axis);
+      } finally {
+        suppressingBinLayerWatchRef.current -= 1;
+      }
+      if (axis === "context") {
+        setContextBinsMapVisible(false);
+      } else {
+        setInfrastructureBinsMapVisible(false);
+      }
+    },
+    []
+  );
+
+  const handleToggleContextBinsOnMap = useCallback(async () => {
+    if (contextBinsMapVisible) {
+      handleRemoveCustomBinPreview("context");
+      return;
+    }
+    if (!binPreview || !contextBreaks) return;
+    setBinsMapPreviewBusy(true);
+    try {
+      const requestId = ++contextBinSyncIdRef.current;
+      await syncCustomBinPreviewLayer({
+        axis: "context",
+        label: contextLabelForBins,
+        cuts: contextBreaks,
+        requestId,
+      });
+      setContextBinsMapVisible(true);
+    } finally {
+      setBinsMapPreviewBusy(false);
+    }
+  }, [
+    contextBinsMapVisible,
+    handleRemoveCustomBinPreview,
+    binPreview,
+    contextBreaks,
+    contextLabelForBins,
+    syncCustomBinPreviewLayer,
+  ]);
+
+  const handleToggleInfrastructureBinsOnMap = useCallback(async () => {
+    if (infrastructureBinsMapVisible) {
+      handleRemoveCustomBinPreview("infrastructure");
+      return;
+    }
+    if (!binPreview || !infrastructureBreaks) return;
+    setBinsMapPreviewBusy(true);
+    try {
+      const requestId = ++infrastructureBinSyncIdRef.current;
+      await syncCustomBinPreviewLayer({
+        axis: "infrastructure",
+        label: infrastructureLabelForBins,
+        cuts: infrastructureBreaks,
+        requestId,
+      });
+      setInfrastructureBinsMapVisible(true);
+    } finally {
+      setBinsMapPreviewBusy(false);
+    }
+  }, [
+    infrastructureBinsMapVisible,
+    handleRemoveCustomBinPreview,
+    binPreview,
+    infrastructureBreaks,
+    infrastructureLabelForBins,
+    syncCustomBinPreviewLayer,
+  ]);
+
+  // Keep active bin preview layers in sync with cut adjustments.
+  useEffect(() => {
+    if (!contextBinsMapVisible || !binPreview || !contextBreaks) return;
+    const requestId = ++contextBinSyncIdRef.current;
+    void syncCustomBinPreviewLayer({
+      axis: "context",
+      label: contextLabelForBins,
+      cuts: contextBreaks,
+      requestId,
+    });
+  }, [
+    contextBinsMapVisible,
+    binPreview,
+    contextBreaks,
+    contextLabelForBins,
+    syncCustomBinPreviewLayer,
+  ]);
+
+  useEffect(() => {
+    if (!infrastructureBinsMapVisible || !binPreview || !infrastructureBreaks) {
+      return;
+    }
+    const requestId = ++infrastructureBinSyncIdRef.current;
+    void syncCustomBinPreviewLayer({
+      axis: "infrastructure",
+      label: infrastructureLabelForBins,
+      cuts: infrastructureBreaks,
+      requestId,
+    });
+  }, [
+    infrastructureBinsMapVisible,
+    binPreview,
+    infrastructureBreaks,
+    infrastructureLabelForBins,
+    syncCustomBinPreviewLayer,
+  ]);
+
+  // Deactivate toggle buttons if layers are removed outside the sidebar.
+  useEffect(() => {
+    if (!mapView?.map) return;
+    const handle = mapView.map.allLayers.on("change", (event) => {
+      if (suppressingBinLayerWatchRef.current > 0) return;
+      for (const layer of event.removed) {
+        const layerId = layer?.id != null ? String(layer.id) : "";
+        if (layerId === EQUITY_CUSTOM_BIN_CONTEXT_LAYER_ID) {
+          setContextBinsMapVisible(false);
+        }
+        if (layerId === EQUITY_CUSTOM_BIN_INFRASTRUCTURE_LAYER_ID) {
+          setInfrastructureBinsMapVisible(false);
+        }
+      }
+    });
+    return () => {
+      handle.remove();
+    };
+  }, [mapView]);
+
+  const handleBinCountChange = useCallback((next: EquityBinCount) => {
+    setBinCount(next);
+    setUsingDefaultBins(true);
+  }, []);
+
+  const handleResetBreaksToQuantiles = useCallback(() => {
+    if (!binPreview) return;
+    const defaults = buildEquityBivariateBreaks(binPreview.units, { binCount });
+    setInfrastructureBreaks(defaults.infrastructure);
+    setContextBreaks(defaults.context);
+    setUsingDefaultBins(true);
+  }, [binPreview, binCount]);
+
   const handleStartSetup = useCallback(() => {
     setPhase("setup");
     setSetupStep("geographic");
     setAnalysisError(null);
     setGeographicFilter(createDefaultEquityGeographicFilter());
+  }, []);
+
+  const handleStartOver = useCallback(() => {
+    setPhase("intro");
+    setSetupStep("geographic");
+    setAnalysisError(null);
+    setInfrastructureDatasetId(null);
+    setInfrastructureComfortSelection(DEFAULT_INFRASTRUCTURE_COMFORT_SELECTION);
+    setContextKind(null);
+    setContextDatasetId(null);
+    setSelectedContextFields([]);
+    setContextFieldOptions([]);
+    setContextFieldsError(null);
+    setGeographicFilter(createDefaultEquityGeographicFilter());
+    setDemographicsGeographyUnit("tract");
+    setBikeComfortVisible(false);
+    setContextLayerVisible(false);
+    setCustomBinMapping(false);
+    setBinCount(DEFAULT_EQUITY_BIN_COUNT);
+    setInfrastructureBreaks(null);
+    setContextBreaks(null);
+    setUsingDefaultBins(true);
+    setBinPreview(null);
+    setBinPreviewError(null);
+    setBinPreviewLoading(false);
+    setBinPreviewProgress(null);
+    setContextBinsMapVisible(false);
+    setInfrastructureBinsMapVisible(false);
+    setLastRunConfigKey(null);
+    removeEquityCustomBinPreviewLayers(mapViewRef.current);
+    removeBikeComfortReferenceLayerFromMap(mapViewRef.current);
+    removeContextReferenceLayerFromMap(mapViewRef.current);
+    removeGeographicExtentPreviewLayerFromMap(mapViewRef.current);
+    resetGeographicExtentPreviewCache();
   }, []);
 
   const handleBackToIntro = useCallback(() => {
@@ -501,7 +950,20 @@ export default function InfrastructureEquityApp() {
     []
   );
 
+  const handleScatterUnitClick = useCallback(
+    (objectId: number) => {
+      if (!activeAnalysisId) return;
+      void highlightEquityAnalysisUnitOnMap(
+        mapViewRef.current,
+        activeAnalysisId,
+        objectId
+      );
+    },
+    [activeAnalysisId]
+  );
+
   const handleRemovePinnedAnalysis = useCallback((analysisId: string) => {
+    clearEquityAnalysisUnitHighlight();
     removePinnedEquityAnalysisFromMap(mapViewRef.current, analysisId);
     setPinnedAnalyses((prev) => {
       const next = prev.filter((entry) => entry.id !== analysisId);
@@ -526,6 +988,7 @@ export default function InfrastructureEquityApp() {
     }
 
     setAnalysisRunning(true);
+    setRightCollapsed(false);
     setAnalysisError(null);
     setAnalysisProgress(null);
 
@@ -542,6 +1005,10 @@ export default function InfrastructureEquityApp() {
         geographyUnit,
         geographicFilter,
         contextKind,
+        binCount,
+        infrastructureBreaks: customBinMapping ? infrastructureBreaks : null,
+        contextBreaks: customBinMapping ? contextBreaks : null,
+        precomputed: binPreview,
         onProgress: (completed, total) =>
           setAnalysisProgress({ completed, total }),
       });
@@ -557,10 +1024,14 @@ export default function InfrastructureEquityApp() {
       setPinnedAnalyses((prev) => [...prev, pinned]);
       setActiveAnalysisId(pinned.id);
       setPhase("review");
+      setRightCollapsed(false);
+      setLastRunConfigKey(analysisConfigKey);
+      setContextBinsMapVisible(false);
+      setInfrastructureBinsMapVisible(false);
+      removeEquityCustomBinPreviewLayers(mapView);
     } catch (error) {
-      setAnalysisError(
-        error instanceof Error ? error.message : "Equity analysis failed."
-      );
+      console.error("Equity analysis failed", error);
+      setAnalysisError(formatEquityAnalysisError(error));
     } finally {
       setAnalysisRunning(false);
       setAnalysisProgress(null);
@@ -574,6 +1045,12 @@ export default function InfrastructureEquityApp() {
     selectedContextFields,
     demographicsGeographyUnit,
     geographicFilter,
+    binCount,
+    customBinMapping,
+    infrastructureBreaks,
+    contextBreaks,
+    binPreview,
+    analysisConfigKey,
   ]);
 
   return (
@@ -606,9 +1083,6 @@ export default function InfrastructureEquityApp() {
         contextFieldOptions={contextFieldOptions}
         contextFieldsLoading={contextFieldsLoading}
         contextFieldsError={contextFieldsError}
-        demographicsIndicatorBlockGroupSupport={
-          demographicsIndicatorBlockGroupSupport
-        }
         onRunAnalysis={handleRunAnalysis}
         analysisRunning={analysisRunning}
         analysisProgress={analysisProgress}
@@ -631,6 +1105,32 @@ export default function InfrastructureEquityApp() {
         demographicsGeographyUnit={demographicsGeographyUnit}
         onDemographicsGeographyUnitChange={setDemographicsGeographyUnit}
         demographicsGeographySupport={demographicsGeographySupport}
+        demographicsIndicatorBlockGroupSupport={
+          demographicsIndicatorBlockGroupSupport
+        }
+        binCount={binCount}
+        onBinCountChange={handleBinCountChange}
+        usingDefaultBins={usingDefaultBins}
+        infrastructureBreaks={infrastructureBreaks}
+        contextBreaks={contextBreaks}
+        onInfrastructureBreaksChange={handleInfrastructureBreaksChange}
+        onContextBreaksChange={handleContextBreaksChange}
+        onResetBreaksToQuantiles={handleResetBreaksToQuantiles}
+        binPreview={binPreview}
+        binPreviewLoading={binPreviewLoading}
+        binPreviewError={binPreviewError}
+        binPreviewProgress={binPreviewProgress}
+        infrastructureLabelForBins={infrastructureLabelForBins}
+        contextLabelForBins={contextLabelForBins}
+        onToggleContextBinsOnMap={handleToggleContextBinsOnMap}
+        onToggleInfrastructureBinsOnMap={handleToggleInfrastructureBinsOnMap}
+        contextBinsMapVisible={contextBinsMapVisible}
+        infrastructureBinsMapVisible={infrastructureBinsMapVisible}
+        binsMapPreviewBusy={binsMapPreviewBusy}
+        customBinMapping={customBinMapping}
+        onCustomBinMappingChange={handleCustomBinMappingChange}
+        canRerunAnalysis={canRerunAnalysis}
+        onStartOver={handleStartOver}
       />
 
       <div id="infrastructure-equity-map-area" className="relative min-w-0 flex-1">
@@ -638,20 +1138,28 @@ export default function InfrastructureEquityApp() {
         <DataQueryMapWidgets
           mapView={mapView}
           onEquityAnalysisRemove={handleRemovePinnedAnalysis}
-          hideLayerListVisibility
+          onEquityCustomBinPreviewRemove={handleRemoveCustomBinPreview}
           hideEsriLegend={!bikeComfortVisible && !contextLayerVisible}
           showLegendPanel={
             Boolean(activeAnalysis) ||
             bikeComfortVisible ||
             contextLayerVisible ||
             pinnedAnalyses.length > 0 ||
+            contextBinsMapVisible ||
+            infrastructureBinsMapVisible ||
             (phase === "setup" && setupStep === "geographic")
           }
           legendPanelTitle="Legend"
           customLegend={
             activeAnalysis ? (
               <EquityBivariateLegend
-                contextLabel={activeAnalysis.result.contextFieldLabel}
+                contextLabel={formatEquityAnalysisContextMetricLabel(
+                  activeAnalysis.result
+                )}
+                infrastructureLabel={
+                  activeAnalysis.result.infrastructureMetricLabel
+                }
+                binCount={activeAnalysis.result.breaks.binCount}
                 extentLabel={activeAnalysis.result.geographicLabel}
                 runTitle={activeAnalysis.layerTitleMain}
               />
@@ -660,15 +1168,22 @@ export default function InfrastructureEquityApp() {
         />
       </div>
 
-      <InfrastructureEquityRightSidebar
-        isCollapsed={rightCollapsed}
-        onToggle={() => setRightCollapsed((prev) => !prev)}
-        analysis={activeAnalysis?.result ?? null}
-        pinnedAnalyses={pinnedAnalyses}
-        activeAnalysisId={activeAnalysisId}
-        onSelectAnalysis={setActiveAnalysisId}
-        analysisRunning={analysisRunning}
-      />
+      {(analysisRunning || pinnedAnalyses.length > 0) && (
+        <InfrastructureEquityRightSidebar
+          isCollapsed={rightCollapsed}
+          onToggle={() => setRightCollapsed((prev) => !prev)}
+          analysis={activeAnalysis?.result ?? null}
+          pinnedAnalyses={pinnedAnalyses}
+          activeAnalysisId={activeAnalysisId}
+          onSelectAnalysis={setActiveAnalysisId}
+          analysisRunning={analysisRunning}
+          onScatterUnitClick={handleScatterUnitClick}
+          mapView={mapView}
+          resolveInfrastructureDataset={(datasetId) =>
+            findDatasetInTree(tree, datasetId)
+          }
+        />
+      )}
     </div>
   );
 }

@@ -62,6 +62,8 @@ import {
 import {
   EQUITY_BIKE_COMFORT_REFERENCE_LAYER_ID,
   EQUITY_CONTEXT_REFERENCE_LAYER_ID,
+  EQUITY_CUSTOM_BIN_CONTEXT_LAYER_ID,
+  EQUITY_CUSTOM_BIN_INFRASTRUCTURE_LAYER_ID,
   EQUITY_GEOGRAPHIC_EXTENT_PREVIEW_LAYER_ID,
   equityAnalysisResultLayerId,
   equityResultsExtentGroupId,
@@ -72,6 +74,17 @@ import {
   EQUITY_LAYER_PROP_TITLE_SUB,
   PinnedEquityAnalysis,
 } from "@/lib/infrastructure-equity-app/infrastructureEquityPinned";
+import ClassBreaksRenderer from "@arcgis/core/renderers/ClassBreaksRenderer";
+import ClassBreakInfo from "@arcgis/core/renderers/support/ClassBreakInfo";
+import {
+  equityRankBandColors,
+  equityRankBandLabels,
+  formatAxisValue,
+} from "@/lib/infrastructure-equity-app/infrastructureEquityAnalysisCharts";
+import {
+  EquityBinCount,
+  EquityUnitValues,
+} from "@/lib/infrastructure-equity-app/infrastructureEquityBivariate";
 
 interface EquityReferenceLayerMeta {
   equitySourceDatasetId?: number;
@@ -243,13 +256,17 @@ export async function addPinnedEquityAnalysisToMap(
   group.add(resultLayer);
   group.visible = true;
 
-  if (pinned.result.boundaryGeometry) {
-    await mapView.goTo(pinned.result.boundaryGeometry).catch(() => {});
-  } else {
-    const extentResult = await resultLayer.queryExtent();
-    if (extentResult.extent) {
-      await mapView.goTo(extentResult.extent.expand(1.08)).catch(() => {});
+  try {
+    if (pinned.result.boundaryGeometry) {
+      await mapView.goTo(pinned.result.boundaryGeometry);
+    } else {
+      const extentResult = await resultLayer.queryExtent();
+      if (extentResult.extent) {
+        await mapView.goTo(extentResult.extent.expand(1.08));
+      }
     }
+  } catch {
+    // Zoom is best-effort; analysis layer is already on the map.
   }
 
   return resultLayer;
@@ -986,3 +1003,249 @@ export {
   EQUITY_LAYER_PROP_TITLE_SUB,
   isEquityAnalysisResultLayerId,
 };
+
+const CUSTOM_BIN_VALUE_FIELD = "equity_bin_metric_value";
+
+function buildCustomBinClassBreaks(
+  values: number[],
+  cuts: number[],
+  binCount: EquityBinCount,
+  isPercent: boolean
+): Array<{ minValue: number; maxValue: number; label: string }> {
+  if (values.length === 0) return [];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const labels = equityRankBandLabels(binCount);
+  const edges = [min, ...cuts, max];
+  const breaks: Array<{ minValue: number; maxValue: number; label: string }> =
+    [];
+
+  for (let i = 0; i < binCount; i += 1) {
+    let minValue = edges[i];
+    let maxValue = edges[i + 1];
+    if (i === 0) {
+      minValue = Math.min(minValue, min) - 1e-6;
+    }
+    if (i === binCount - 1) {
+      maxValue = Math.max(maxValue, max) + 1e-6;
+    }
+    if (maxValue < minValue) maxValue = minValue;
+    breaks.push({
+      minValue,
+      maxValue,
+      label: `${labels[i] ?? `Bin ${i + 1}`} (${formatAxisValue(
+        edges[i],
+        isPercent
+      )}–${formatAxisValue(edges[i + 1], isPercent)})`,
+    });
+  }
+
+  return breaks;
+}
+
+function createCustomBinPreviewLayer(options: {
+  layerId: string;
+  title: string;
+  units: EquityUnitValues[];
+  valueSelector: (unit: EquityUnitValues) => number;
+  cuts: number[];
+  binCount: EquityBinCount;
+  axis: "infrastructure" | "context";
+  isPercent: boolean;
+}): FeatureLayer {
+  const values = options.units.map(options.valueSelector);
+  const colors = equityRankBandColors(options.axis, options.binCount);
+  const classBreaks = buildCustomBinClassBreaks(
+    values,
+    options.cuts,
+    options.binCount,
+    options.isPercent
+  );
+
+  const graphics = options.units
+    .filter((unit) => unit.displayGeometry)
+    .map(
+      (unit) =>
+        new Graphic({
+          geometry: unit.displayGeometry,
+          attributes: {
+            OBJECTID: unit.objectId,
+            equity_unit_label: unit.label ?? "",
+            [CUSTOM_BIN_VALUE_FIELD]: options.valueSelector(unit),
+          },
+        })
+    );
+
+  const renderer = new ClassBreaksRenderer({
+    field: CUSTOM_BIN_VALUE_FIELD,
+    classBreakInfos: classBreaks.map(
+      (br, index) =>
+        new ClassBreakInfo({
+          minValue: br.minValue,
+          maxValue: br.maxValue,
+          label: br.label,
+          symbol: new SimpleFillSymbol({
+            color: colors[index] ?? colors[colors.length - 1],
+            outline: { color: [255, 255, 255, 0.85], width: 0.5 },
+          }),
+        })
+    ),
+  });
+
+  return new FeatureLayer({
+    id: options.layerId,
+    title: options.title,
+    source: graphics,
+    objectIdField: "OBJECTID",
+    geometryType: "polygon",
+    fields: [
+      new Field({ name: "OBJECTID", type: "oid" }),
+      new Field({ name: "equity_unit_label", type: "string", alias: "Area" }),
+      new Field({
+        name: CUSTOM_BIN_VALUE_FIELD,
+        type: "double",
+        alias: options.title,
+      }),
+    ],
+    renderer,
+    opacity: 0.8,
+    legendEnabled: true,
+    listMode: "show",
+    popupEnabled: true,
+    outFields: ["*"],
+  });
+}
+
+function stripPercentSuffix(label: string): string {
+  return label.replace(/\s*\(%\)\s*$/, "").trim();
+}
+
+export async function addEquityCustomBinPreviewLayer(options: {
+  mapView: __esri.MapView | null;
+  axis: "infrastructure" | "context";
+  label: string;
+  units: EquityUnitValues[];
+  cuts: number[];
+  binCount: EquityBinCount;
+}): Promise<void> {
+  if (!options.mapView?.map) return;
+  if (options.units.length === 0) return;
+
+  const map = options.mapView.map;
+  const layerId =
+    options.axis === "context"
+      ? EQUITY_CUSTOM_BIN_CONTEXT_LAYER_ID
+      : EQUITY_CUSTOM_BIN_INFRASTRUCTURE_LAYER_ID;
+  const baseLabel = stripPercentSuffix(options.label) || options.label;
+  const title = `${baseLabel} - custom bins`;
+  const isPercent =
+    options.axis === "infrastructure" || /\(%\)|%/.test(options.label);
+
+  removeMapLayersById(map, layerId);
+
+  const layer = createCustomBinPreviewLayer({
+    layerId,
+    title,
+    units: options.units,
+    valueSelector: (unit) =>
+      options.axis === "context"
+        ? unit.contextValue
+        : unit.infrastructurePercent,
+    cuts: options.cuts,
+    binCount: options.binCount,
+    axis: options.axis,
+    isPercent,
+  });
+
+  map.add(layer, 0);
+  layer.visible = true;
+}
+
+export function removeEquityCustomBinPreviewLayer(
+  mapView: __esri.MapView | null,
+  axis: "infrastructure" | "context"
+): void {
+  if (!mapView?.map) return;
+  const layerId =
+    axis === "context"
+      ? EQUITY_CUSTOM_BIN_CONTEXT_LAYER_ID
+      : EQUITY_CUSTOM_BIN_INFRASTRUCTURE_LAYER_ID;
+  removeMapLayersById(mapView.map, layerId);
+}
+
+export function removeEquityCustomBinPreviewLayers(
+  mapView: __esri.MapView | null
+): void {
+  if (!mapView?.map) return;
+  removeMapLayersById(mapView.map, EQUITY_CUSTOM_BIN_CONTEXT_LAYER_ID);
+  removeMapLayersById(mapView.map, EQUITY_CUSTOM_BIN_INFRASTRUCTURE_LAYER_ID);
+}
+
+let equityScatterHighlightHandle: __esri.Handle | null = null;
+
+export function clearEquityAnalysisUnitHighlight(): void {
+  equityScatterHighlightHandle?.remove();
+  equityScatterHighlightHandle = null;
+}
+
+/** Highlight and zoom to a unit polygon on the active equity analysis result layer. */
+export async function highlightEquityAnalysisUnitOnMap(
+  mapView: __esri.MapView | null,
+  analysisId: string,
+  objectId: number
+): Promise<void> {
+  if (!mapView?.map || !Number.isFinite(objectId)) return;
+
+  const layer = findEquityResultLayer(mapView.map, analysisId) as
+    | FeatureLayer
+    | undefined;
+  if (!layer) return;
+
+  clearEquityAnalysisUnitHighlight();
+
+  const objectIdField = layer.objectIdField || "OBJECTID";
+  const query = layer.createQuery();
+  query.where = `${objectIdField} = ${Math.trunc(objectId)}`;
+  query.returnGeometry = true;
+  query.outFields = ["*"];
+  query.num = 1;
+
+  const result = await layer.queryFeatures(query);
+  const feature = result.features[0];
+  if (!feature?.geometry) return;
+
+  layer.visible = true;
+  const parent = layer.parent as __esri.GroupLayer | null | undefined;
+  if (parent && "visible" in parent) {
+    parent.visible = true;
+  }
+
+  const layerView = (await mapView.whenLayerView(
+    layer
+  )) as __esri.FeatureLayerView;
+  equityScatterHighlightHandle = layerView.highlight(feature);
+
+  await mapView
+    .goTo(
+      {
+        target: feature,
+        // Keep county-scale context readable while focusing the unit.
+      },
+      { duration: 400 }
+    )
+    .catch(() => {});
+
+  if (feature.geometry) {
+    const centroid =
+      "centroid" in feature.geometry && feature.geometry.centroid
+        ? feature.geometry.centroid
+        : feature.geometry.extent?.center;
+    if (centroid) {
+      mapView.openPopup({
+        features: [feature],
+        location: centroid,
+        fetchFeatures: false,
+      });
+    }
+  }
+}

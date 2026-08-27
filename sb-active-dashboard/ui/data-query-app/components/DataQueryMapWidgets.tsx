@@ -5,6 +5,8 @@ import Legend from "@arcgis/core/widgets/Legend";
 import ActionButton from "@arcgis/core/support/actions/ActionButton";
 import { CalciteIcon } from "@esri/calcite-components-react";
 import {
+  EQUITY_CUSTOM_BIN_CONTEXT_LAYER_ID,
+  EQUITY_CUSTOM_BIN_INFRASTRUCTURE_LAYER_ID,
   EQUITY_LAYER_PROP_TITLE_MAIN,
   isEquityAnalysisResultLayerId,
   parseEquityAnalysisIdFromResultLayerId,
@@ -17,6 +19,10 @@ interface DataQueryMapWidgetsProps {
   customLegend?: ReactNode;
   /** When set, equity analysis result layers get a remove action in the layer list. */
   onEquityAnalysisRemove?: (analysisId: string) => void;
+  /** When set, custom bin preview layers get a remove action in the layer list. */
+  onEquityCustomBinPreviewRemove?: (
+    axis: "infrastructure" | "context"
+  ) => void;
   /** DOM id for the widget root (for page-specific styling). */
   widgetsRootId?: string;
   /** Hide the Esri Legend widget (use with customLegend for analysis-only views). */
@@ -25,7 +31,7 @@ interface DataQueryMapWidgetsProps {
   showLegendPanel?: boolean;
   /** Legend panel header when the panel is open. */
   legendPanelTitle?: string;
-  /** Hide layer-list visibility toggles (equity preview layers use sidebar eye icons). */
+  /** Hide layer-list visibility toggles. */
   hideLayerListVisibility?: boolean;
 }
 
@@ -54,6 +60,7 @@ export default function DataQueryMapWidgets({
   mapView,
   customLegend,
   onEquityAnalysisRemove,
+  onEquityCustomBinPreviewRemove,
   widgetsRootId = "data-query-map-widgets",
   hideEsriLegend = false,
   showLegendPanel,
@@ -70,6 +77,10 @@ export default function DataQueryMapWidgets({
   const autoOpenedRef = useRef(false);
   const onEquityAnalysisRemoveRef = useRef(onEquityAnalysisRemove);
   onEquityAnalysisRemoveRef.current = onEquityAnalysisRemove;
+  const onEquityCustomBinPreviewRemoveRef = useRef(
+    onEquityCustomBinPreviewRemove
+  );
+  onEquityCustomBinPreviewRemoveRef.current = onEquityCustomBinPreviewRemove;
 
   // LayerList is independent of legend visibility so toggling layers does not reset the list.
   useEffect(() => {
@@ -93,30 +104,63 @@ export default function DataQueryMapWidgets({
 
         const layerId = event.item.layer?.id;
         const layerIdStr = layerId != null ? String(layerId) : undefined;
+        const actions: __esri.ActionButton[] = [];
+
         if (
           onEquityAnalysisRemoveRef.current &&
           isEquityAnalysisResultLayerId(layerIdStr)
         ) {
-          const removeAction = new ActionButton({
-            title: "Remove analysis",
-            id: "remove-equity-analysis",
-            icon: "trash",
-          });
+          actions.push(
+            new ActionButton({
+              title: "Remove analysis",
+              id: "remove-equity-analysis",
+              icon: "trash",
+            })
+          );
+        }
+
+        if (
+          onEquityCustomBinPreviewRemoveRef.current &&
+          (layerIdStr === EQUITY_CUSTOM_BIN_CONTEXT_LAYER_ID ||
+            layerIdStr === EQUITY_CUSTOM_BIN_INFRASTRUCTURE_LAYER_ID)
+        ) {
+          actions.push(
+            new ActionButton({
+              title: "Remove bin preview",
+              id: "remove-equity-custom-bins",
+              icon: "trash",
+            })
+          );
+        }
+
+        if (actions.length > 0) {
           event.item.actionsSections = new Collection([
-            new Collection([removeAction]),
+            new Collection(actions),
           ]);
         }
       },
     });
 
     const handleLayerListAction = layerList.on("trigger-action", (event) => {
-      if (event.action.id !== "remove-equity-analysis") return;
       const layerId = event.item.layer?.id;
       const layerIdStr = layerId != null ? String(layerId) : undefined;
-      if (!layerIdStr || !isEquityAnalysisResultLayerId(layerIdStr)) return;
-      const analysisId = parseEquityAnalysisIdFromResultLayerId(layerIdStr);
-      if (analysisId) {
-        onEquityAnalysisRemoveRef.current?.(analysisId);
+      if (!layerIdStr) return;
+
+      if (event.action.id === "remove-equity-analysis") {
+        if (!isEquityAnalysisResultLayerId(layerIdStr)) return;
+        const analysisId = parseEquityAnalysisIdFromResultLayerId(layerIdStr);
+        if (analysisId) {
+          onEquityAnalysisRemoveRef.current?.(analysisId);
+        }
+        return;
+      }
+
+      if (event.action.id === "remove-equity-custom-bins") {
+        if (layerIdStr === EQUITY_CUSTOM_BIN_CONTEXT_LAYER_ID) {
+          onEquityCustomBinPreviewRemoveRef.current?.("context");
+        } else if (layerIdStr === EQUITY_CUSTOM_BIN_INFRASTRUCTURE_LAYER_ID) {
+          onEquityCustomBinPreviewRemoveRef.current?.("infrastructure");
+        }
       }
     });
 

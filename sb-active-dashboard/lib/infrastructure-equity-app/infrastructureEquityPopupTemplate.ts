@@ -6,6 +6,7 @@ import {
   parseEquityBivariateClass,
 } from "@/lib/infrastructure-equity-app/infrastructureEquityBivariate";
 import { equityContextCategoryLabel } from "@/lib/infrastructure-equity-app/infrastructureEquityCatalog";
+import { formatEquityAnalysisContextMetricLabel } from "@/lib/infrastructure-equity-app/infrastructureEquityAcsIndicators";
 
 function escapeHtml(text: string): string {
   return text
@@ -79,12 +80,21 @@ export function equityAnalysisPopupHtml(
   const contextCategory = equityContextCategoryLabel(analysis.contextKind);
   const description = analysis.contextDatasetDescription?.trim();
   const bivariateClass = String(attrs.equity_bivariate_class ?? "");
-  const parsedClass = parseEquityBivariateClass(bivariateClass);
+  const parsedClass = parseEquityBivariateClass(
+    bivariateClass,
+    analysis.breaks.binCount
+  );
   const infrastructureRank = parsedClass
-    ? describeEquityBivariateBin(parsedClass.infrastructureBin)
+    ? describeEquityBivariateBin(
+        parsedClass.infrastructureBin,
+        analysis.breaks.binCount
+      )
     : "—";
   const contextRank = parsedClass
-    ? describeEquityBivariateBin(parsedClass.contextBin)
+    ? describeEquityBivariateBin(
+        parsedClass.contextBin,
+        analysis.breaks.binCount
+      )
     : "—";
 
   return (
@@ -111,7 +121,7 @@ export function equityAnalysisPopupHtml(
         escapeHtml(description) +
         "</p>"
       : "") +
-    statRow("Indicator", analysis.contextFieldLabel) +
+    statRow("Indicator", formatEquityAnalysisContextMetricLabel(analysis)) +
     statRow(
       "Value",
       analysis.contextValueIsPercent
@@ -124,7 +134,7 @@ export function equityAnalysisPopupHtml(
     statRow("Infrastructure rank", infrastructureRank) +
     statRow("Indicator rank", contextRank) +
     '<p style="margin:8px 0 0;font-size:11px;color:#6b7280;line-height:1.4">' +
-    "Map colors combine infrastructure and indicator ranks within the selected geographic extent (3×3 grid)." +
+    `Map colors combine infrastructure and indicator ranks within the selected geographic extent (${analysis.breaks.binCount}×${analysis.breaks.binCount} grid).` +
     "</p>" +
     "</div>" +
     "</div>"

@@ -1,4 +1,11 @@
-import { useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from "react";
 import {
   CatalogCategoryNode,
   CatalogDataset,
@@ -27,8 +34,8 @@ import {
   EquityGeographicFilter,
   EquityGeographicLevel,
 } from "@/lib/infrastructure-equity-app/infrastructureEquityGeography";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import PushPinIcon from "@mui/icons-material/PushPin";
+import PushPinOutlinedIcon from "@mui/icons-material/PushPinOutlined";
 import PanelEdgeToggle from "@/ui/data-query-app/components/PanelEdgeToggle";
 import EquityDatasetDescriptionHelp from "@/ui/infrastructure-equity-app/components/EquityDatasetDescriptionHelp";
 import EquityInfoTooltip from "@/ui/infrastructure-equity-app/components/EquityInfoTooltip";
@@ -39,17 +46,44 @@ import {
 import {
   canCombineContextIndicator,
   formatContextIndicatorLabel,
+  isAcsMedianField,
+  isAcsRaceDataset,
   toggleContextFieldSelection,
 } from "@/lib/infrastructure-equity-app/infrastructureEquityAcsIndicators";
+import EquityBinSetupPanel from "@/ui/infrastructure-equity-app/components/EquityBinSetupPanel";
+import { InfrastructureEquityUnitComputation } from "@/lib/infrastructure-equity-app/infrastructureEquityAnalysis";
+import { EquityBinCount } from "@/lib/infrastructure-equity-app/infrastructureEquityBivariate";
 
 export type EquitySetupPhase = "intro" | "setup" | "review";
-export type EquitySetupStep = "geographic" | "infrastructure" | "context";
+export type EquitySetupStep =
+  | "geographic"
+  | "infrastructure"
+  | "context"
+  | "bins";
 
 export const EQUITY_SETUP_STEPS: EquitySetupStep[] = [
   "geographic",
   "infrastructure",
   "context",
+  "bins",
 ];
+
+/** Slightly wider than the old fixed `w-80` (320px). */
+const MIN_LEFT_PANEL_WIDTH_PX = 320;
+const DEFAULT_LEFT_PANEL_WIDTH_PX = 400;
+const MAX_LEFT_PANEL_WIDTH_PX = 720;
+
+function clampLeftPanelWidth(width: number): number {
+  const viewportCap =
+    typeof window !== "undefined"
+      ? Math.floor(window.innerWidth * 0.5)
+      : MAX_LEFT_PANEL_WIDTH_PX;
+  const maxWidth = Math.max(
+    MIN_LEFT_PANEL_WIDTH_PX,
+    Math.min(MAX_LEFT_PANEL_WIDTH_PX, viewportCap)
+  );
+  return Math.min(maxWidth, Math.max(MIN_LEFT_PANEL_WIDTH_PX, Math.round(width)));
+}
 
 interface InfrastructureEquityLeftSidebarProps {
   isCollapsed: boolean;
@@ -100,6 +134,29 @@ interface InfrastructureEquityLeftSidebarProps {
     number,
     Record<string, boolean>
   >;
+  binCount: EquityBinCount;
+  onBinCountChange: (binCount: EquityBinCount) => void;
+  usingDefaultBins: boolean;
+  infrastructureBreaks: number[] | null;
+  contextBreaks: number[] | null;
+  onInfrastructureBreaksChange: (breaks: number[]) => void;
+  onContextBreaksChange: (breaks: number[]) => void;
+  onResetBreaksToQuantiles: () => void;
+  binPreview: InfrastructureEquityUnitComputation | null;
+  binPreviewLoading: boolean;
+  binPreviewError: string | null;
+  binPreviewProgress: { completed: number; total: number } | null;
+  infrastructureLabelForBins: string;
+  contextLabelForBins: string;
+  onToggleContextBinsOnMap: () => void;
+  onToggleInfrastructureBinsOnMap: () => void;
+  contextBinsMapVisible?: boolean;
+  infrastructureBinsMapVisible?: boolean;
+  binsMapPreviewBusy?: boolean;
+  customBinMapping: boolean;
+  onCustomBinMappingChange: (enabled: boolean) => void;
+  canRerunAnalysis: boolean;
+  onStartOver: () => void;
 }
 
 function InfrastructureDatasetOption({
@@ -121,7 +178,7 @@ function InfrastructureDatasetOption({
 }) {
   const title = datasetDisplayTitle(dataset);
   const isBikeComfort = isBicycleComfortMapDataset(dataset);
-  const [comfortFilterExpanded, setComfortFilterExpanded] = useState(false);
+  const [comfortFilterExpanded, setComfortFilterExpanded] = useState(true);
   const selectedBands =
     comfortSelection.mode === "bands" ? comfortSelection.bands : [];
 
@@ -187,14 +244,16 @@ function InfrastructureDatasetOption({
             onClick={onToggleMapVisible}
             aria-pressed={mapVisible}
             aria-label={
-              mapVisible ? `Hide ${title} on map` : `Show ${title} on map`
+              mapVisible
+                ? `Remove ${title} from map`
+                : `Add ${title} to map`
             }
-            title={mapVisible ? "Hide on map" : "Show on map"}
+            title={mapVisible ? "Remove from map" : "Add to map"}
           >
             {mapVisible ? (
-              <VisibilityIcon sx={{ fontSize: 18 }} />
+              <PushPinIcon sx={{ fontSize: 18 }} />
             ) : (
-              <VisibilityOffIcon sx={{ fontSize: 18 }} />
+              <PushPinOutlinedIcon sx={{ fontSize: 18 }} />
             )}
           </button>
         </div>
@@ -307,6 +366,10 @@ function ContextDatasetOption({
   const combinableIndicatorsAvailable = contextFieldOptions.some((field) =>
     canCombineContextIndicator(field.name, dataset, contextKind)
   );
+  const medianIndicatorsAvailable = contextFieldOptions.some((field) =>
+    isAcsMedianField(field.name)
+  );
+  const raceIndicatorsSingleSelectOnly = isAcsRaceDataset(dataset);
 
   const handleIndicatorToggle = (fieldName: string) => {
     onSelectedContextFieldsChange(
@@ -373,14 +436,16 @@ function ContextDatasetOption({
             disabled={disabled}
             aria-pressed={mapVisible}
             aria-label={
-              mapVisible ? `Hide ${title} on map` : `Show ${title} on map`
+              mapVisible
+                ? `Remove ${title} from map`
+                : `Add ${title} to map`
             }
-            title={mapVisible ? "Hide on map" : "Show on map"}
+            title={mapVisible ? "Remove from map" : "Add to map"}
           >
             {mapVisible ? (
-              <VisibilityIcon sx={{ fontSize: 18 }} />
+              <PushPinIcon sx={{ fontSize: 18 }} />
             ) : (
-              <VisibilityOffIcon sx={{ fontSize: 18 }} />
+              <PushPinOutlinedIcon sx={{ fontSize: 18 }} />
             )}
           </button>
         </div>
@@ -405,7 +470,18 @@ function ContextDatasetOption({
             <p className="text-xs font-medium text-gray-600">Indicators</p>
             {combinableIndicatorsAvailable && (
               <p className="mt-0.5 text-xs text-gray-500">
-                Select one or more to combine (e.g. non-white race groups).
+                Select one or more to combine.
+              </p>
+            )}
+            {raceIndicatorsSingleSelectOnly && (
+              <p className="mt-0.5 text-xs text-gray-500">
+                Race categories are not mutually exclusive, so only one
+                indicator can be selected at a time.
+              </p>
+            )}
+            {medianIndicatorsAvailable && (
+              <p className="mt-0.5 text-xs text-gray-500">
+                Median indicators are excluded from grouping.
               </p>
             )}
           </div>
@@ -469,10 +545,36 @@ function FieldHint({ children }: { children: string }) {
   return <p className="text-xs text-gray-500">{children}</p>;
 }
 
-function EquityReviewSectionBox({ children }: { children: ReactNode }) {
+function EquityReviewAccordion({
+  stepNumber,
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  stepNumber: number;
+  title: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
   return (
-    <div className="equity-review-section rounded-lg border border-gray-200 bg-gray-50/90 p-3">
-      {children}
+    <div className="equity-review-section overflow-hidden rounded-lg border border-gray-200 bg-gray-50/90">
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-gray-100/80"
+        style={{ backgroundColor: "transparent" }}
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+      >
+        <span className="w-3 flex-shrink-0 text-center text-[10px] text-gray-400">
+          {open ? "▾" : "▸"}
+        </span>
+        <span className="min-w-0 flex-1 text-sm font-semibold text-gray-900">
+          {stepNumber}) {title}
+        </span>
+      </button>
+      {open && <div className="border-t border-gray-200 px-3 py-3">{children}</div>}
     </div>
   );
 }
@@ -969,7 +1071,85 @@ export default function InfrastructureEquityLeftSidebar({
   onDemographicsGeographyUnitChange,
   demographicsGeographySupport,
   demographicsIndicatorBlockGroupSupport,
+  binCount,
+  onBinCountChange,
+  usingDefaultBins,
+  infrastructureBreaks,
+  contextBreaks,
+  onInfrastructureBreaksChange,
+  onContextBreaksChange,
+  onResetBreaksToQuantiles,
+  binPreview,
+  binPreviewLoading,
+  binPreviewError,
+  binPreviewProgress,
+  infrastructureLabelForBins,
+  contextLabelForBins,
+  onToggleContextBinsOnMap,
+  onToggleInfrastructureBinsOnMap,
+  contextBinsMapVisible = false,
+  infrastructureBinsMapVisible = false,
+  binsMapPreviewBusy = false,
+  customBinMapping,
+  onCustomBinMappingChange,
+  canRerunAnalysis,
+  onStartOver,
 }: InfrastructureEquityLeftSidebarProps) {
+  const [panelWidth, setPanelWidth] = useState(DEFAULT_LEFT_PANEL_WIDTH_PX);
+  const [isResizing, setIsResizing] = useState(false);
+  const dragStateRef = useRef<{
+    startX: number;
+    startWidth: number;
+  } | null>(null);
+
+  const handleResizeMouseDown = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      dragStateRef.current = {
+        startX: event.clientX,
+        startWidth: panelWidth,
+      };
+      setIsResizing(true);
+    },
+    [panelWidth]
+  );
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const drag = dragStateRef.current;
+      if (!drag) return;
+      const nextWidth = drag.startWidth + (event.clientX - drag.startX);
+      setPanelWidth(clampLeftPanelWidth(nextWidth));
+    };
+
+    const handleMouseUp = () => {
+      dragStateRef.current = null;
+      setIsResizing(false);
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
+
+  useEffect(() => {
+    const handleWindowResize = () => {
+      setPanelWidth((current) => clampLeftPanelWidth(current));
+    };
+    window.addEventListener("resize", handleWindowResize);
+    return () => window.removeEventListener("resize", handleWindowResize);
+  }, []);
+
   const infrastructureDatasets = collectInfrastructureEquityDatasets(tree);
   const healthDatasets = collectHealthContextDatasets(tree);
   const demographicsDatasets = collectDemographicsContextDatasets(tree);
@@ -1063,8 +1243,23 @@ export default function InfrastructureEquityLeftSidebar({
   return (
     <div
       id="infrastructure-equity-left-sidebar"
-      className="relative z-20 flex h-full w-80 flex-shrink-0 flex-col border-r border-gray-200 bg-white"
+      className="relative z-20 flex h-full flex-shrink-0 flex-col border-r border-gray-200 bg-white"
+      style={{ width: panelWidth }}
     >
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize setup panel"
+        aria-valuemin={MIN_LEFT_PANEL_WIDTH_PX}
+        aria-valuemax={MAX_LEFT_PANEL_WIDTH_PX}
+        aria-valuenow={panelWidth}
+        title="Drag to resize"
+        className={`absolute bottom-0 right-0 top-0 z-40 w-1.5 translate-x-1/2 cursor-col-resize touch-none ${
+          isResizing ? "bg-blue-400/50" : "bg-transparent hover:bg-blue-300/40"
+        }`}
+        onMouseDown={handleResizeMouseDown}
+      />
+
       <PanelEdgeToggle
         id="infrastructure-equity-left-collapse-icon"
         side="left"
@@ -1137,7 +1332,7 @@ export default function InfrastructureEquityLeftSidebar({
               <>
                 <WizardPageTitle
                   title="Infrastructure"
-                  subtitle="Choose the infrastructure layer to evaluate against your equity metrics. Use the eye icon to show the infrastructure layer on the map."
+                  subtitle="Choose the infrastructure layer to evaluate against your equity metrics. Use the pin icon to add the infrastructure layer to the map."
                 />
                 {infrastructureReviewContent}
               </>
@@ -1150,6 +1345,40 @@ export default function InfrastructureEquityLeftSidebar({
                   subtitle="Select a health or demographics dataset to use as an indicator of equity. This will be evaluated against the infrastructure dataset you chose on the last pane."
                 />
                 {contextReviewContent}
+              </>
+            )}
+
+            {setupStep === "bins" && (
+              <>
+                <WizardPageTitle
+                  title="Analysis bins"
+                  subtitle="Use equal-count default bands (terciles by default), or switch to custom bin mapping to edit cut points and optionally preview them on the map."
+                />
+                <EquityBinSetupPanel
+                  binCount={binCount}
+                  onBinCountChange={onBinCountChange}
+                  usingDefaultBins={usingDefaultBins}
+                  customBinMapping={customBinMapping}
+                  onCustomBinMappingChange={onCustomBinMappingChange}
+                  infrastructureBreaks={infrastructureBreaks}
+                  contextBreaks={contextBreaks}
+                  onInfrastructureBreaksChange={onInfrastructureBreaksChange}
+                  onContextBreaksChange={onContextBreaksChange}
+                  onResetBreaksToQuantiles={onResetBreaksToQuantiles}
+                  binPreview={binPreview}
+                  binPreviewLoading={binPreviewLoading}
+                  binPreviewError={binPreviewError}
+                  binPreviewProgress={binPreviewProgress}
+                  infrastructureLabel={infrastructureLabelForBins}
+                  contextLabel={contextLabelForBins}
+                  onToggleContextBinsOnMap={onToggleContextBinsOnMap}
+                  onToggleInfrastructureBinsOnMap={
+                    onToggleInfrastructureBinsOnMap
+                  }
+                  contextBinsMapVisible={contextBinsMapVisible}
+                  infrastructureBinsMapVisible={infrastructureBinsMapVisible}
+                  binsMapPreviewBusy={binsMapPreviewBusy}
+                />
                 <AnalysisStatusMessages
                   analysisError={analysisError}
                   analysisRunning={analysisRunning}
@@ -1165,15 +1394,53 @@ export default function InfrastructureEquityLeftSidebar({
           <div className="space-y-4">
             <WizardPageTitle
               title="Analysis configuration"
-              subtitle="Update your selections and run again to compare different configurations."
+              subtitle="Expand a step to update your selections. Rerun Analysis becomes available when something has changed."
             />
-            <EquityReviewSectionBox>
+            <EquityReviewAccordion
+              stepNumber={1}
+              title="Choose Geographic Extent"
+            >
               {geographicReviewContent}
-            </EquityReviewSectionBox>
-            <EquityReviewSectionBox>
+            </EquityReviewAccordion>
+            <EquityReviewAccordion
+              stepNumber={2}
+              title="Choose Infrastructure Type"
+            >
               {infrastructureReviewContent}
-            </EquityReviewSectionBox>
-            <EquityReviewSectionBox>{contextReviewContent}</EquityReviewSectionBox>
+            </EquityReviewAccordion>
+            <EquityReviewAccordion
+              stepNumber={3}
+              title="Choose Equity Metric"
+            >
+              {contextReviewContent}
+            </EquityReviewAccordion>
+            <EquityReviewAccordion stepNumber={4} title="Set Analysis Bins">
+              <EquityBinSetupPanel
+                binCount={binCount}
+                onBinCountChange={onBinCountChange}
+                usingDefaultBins={usingDefaultBins}
+                customBinMapping={customBinMapping}
+                onCustomBinMappingChange={onCustomBinMappingChange}
+                infrastructureBreaks={infrastructureBreaks}
+                contextBreaks={contextBreaks}
+                onInfrastructureBreaksChange={onInfrastructureBreaksChange}
+                onContextBreaksChange={onContextBreaksChange}
+                onResetBreaksToQuantiles={onResetBreaksToQuantiles}
+                binPreview={binPreview}
+                binPreviewLoading={binPreviewLoading}
+                binPreviewError={binPreviewError}
+                binPreviewProgress={binPreviewProgress}
+                infrastructureLabel={infrastructureLabelForBins}
+                contextLabel={contextLabelForBins}
+                onToggleContextBinsOnMap={onToggleContextBinsOnMap}
+                onToggleInfrastructureBinsOnMap={
+                  onToggleInfrastructureBinsOnMap
+                }
+                contextBinsMapVisible={contextBinsMapVisible}
+                infrastructureBinsMapVisible={infrastructureBinsMapVisible}
+                binsMapPreviewBusy={binsMapPreviewBusy}
+              />
+            </EquityReviewAccordion>
             <AnalysisStatusMessages
               analysisError={analysisError}
               analysisRunning={analysisRunning}
@@ -1259,7 +1526,34 @@ export default function InfrastructureEquityLeftSidebar({
               type="button"
               className="flex-1 rounded bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
               style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-              disabled={!canRunAnalysis || analysisRunning}
+              disabled={!canRunAnalysis}
+              onClick={() => onSetupStepChange("bins")}
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {phase === "setup" && setupStep === "bins" && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="flex-1 rounded border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              style={{ backgroundColor: "#ffffff" }}
+              onClick={() => onSetupStepChange("context")}
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              className="flex-1 rounded bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+              disabled={
+                !canRunAnalysis ||
+                analysisRunning ||
+                (customBinMapping &&
+                  (binPreviewLoading || !!binPreviewError))
+              }
               onClick={onRunAnalysis}
             >
               {analysisRunning ? "Running analysis…" : "Run Equity Analysis"}
@@ -1268,15 +1562,32 @@ export default function InfrastructureEquityLeftSidebar({
         )}
 
         {phase === "review" && (
-          <button
-            type="button"
-            className="w-full rounded bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-            style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-            disabled={!canRunAnalysis || analysisRunning}
-            onClick={onRunAnalysis}
-          >
-            {analysisRunning ? "Running analysis…" : "Run Equity Analysis"}
-          </button>
+          <div className="space-y-2">
+            <button
+              type="button"
+              className="w-full rounded bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+              disabled={
+                !canRerunAnalysis ||
+                !canRunAnalysis ||
+                analysisRunning ||
+                (customBinMapping &&
+                  (binPreviewLoading || !!binPreviewError))
+              }
+              onClick={onRunAnalysis}
+            >
+              {analysisRunning ? "Running analysis…" : "Rerun Analysis"}
+            </button>
+            <button
+              type="button"
+              className="w-full rounded border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              style={{ backgroundColor: "#ffffff" }}
+              disabled={analysisRunning}
+              onClick={onStartOver}
+            >
+              Start over
+            </button>
+          </div>
         )}
       </div>
     </div>

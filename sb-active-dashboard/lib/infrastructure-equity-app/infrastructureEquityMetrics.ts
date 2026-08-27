@@ -195,15 +195,16 @@ function bandLabel(band: InfrastructureComfortBand): string {
   );
 }
 
+/** Analysis / map / chart label for the selected comfort metric. */
 export function infrastructureMetricLabel(
   selection: InfrastructureComfortSelection
 ): string {
   if (selection.mode === "all") {
-    return INFRASTRUCTURE_COMFORT_ALL_OPTION.label;
+    return "% of Comfortable Streets";
   }
 
   const labels = selection.bands.map(bandLabel);
-  if (labels.length === 0) return INFRASTRUCTURE_COMFORT_ALL_OPTION.label;
+  if (labels.length === 0) return "% of Comfortable Streets";
   if (labels.length === 1) return labels[0];
   if (labels.length === 2) return labels.join(" + ");
   return (

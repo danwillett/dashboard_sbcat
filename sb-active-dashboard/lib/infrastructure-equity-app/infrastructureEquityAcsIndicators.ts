@@ -34,6 +34,7 @@ export function areContextIndicatorsCombinable(
 ): boolean {
   const fields = normalizeContextFieldSelection(fieldNames);
   if (fields.length <= 1) return true;
+  if (dataset && isAcsRaceDataset(dataset)) return false;
 
   const prefix = acsFieldPrefix(fields[0]);
   if (!prefix) return false;
@@ -55,6 +56,7 @@ export function canCombineContextIndicator(
   contextKind: EquityContextCategoryKind | null
 ): boolean {
   if (isAcsMedianField(fieldName)) return false;
+  if (dataset && isAcsRaceDataset(dataset)) return false;
   return shouldUseAcsPercentIndicator(fieldName, dataset, contextKind);
 }
 
@@ -67,7 +69,7 @@ export function toggleContextFieldSelection(
   const current = normalizeContextFieldSelection(selectedFields);
   const isSelected = current.includes(fieldName);
 
-  if (isAcsMedianField(fieldName)) {
+  if (isAcsMedianField(fieldName) || (dataset && isAcsRaceDataset(dataset))) {
     return isSelected ? [] : [fieldName];
   }
 
@@ -103,6 +105,28 @@ export function isAcsDemographicsDataset(dataset: CatalogDataset): boolean {
     .toLowerCase();
 
   return haystack.includes("acs") || haystack.includes("american community");
+}
+
+/**
+ * Race ACS counts are not mutually exclusive (people can appear in multiple
+ * categories), so percent indicators must stay single-select.
+ */
+export function isAcsRaceDataset(dataset: CatalogDataset): boolean {
+  const haystack = [
+    dataset.display_title,
+    dataset.service_path,
+    dataset.service_name,
+    dataset.primary_url,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    /\brace\b/.test(haystack) ||
+    haystack.includes("racial") ||
+    /(?:^|[_\s-])race(?:$|[_\s-])/.test(haystack)
+  );
 }
 
 export function isAcsMedianField(fieldName: string): boolean {
@@ -388,7 +412,56 @@ export function formatContextIndicatorLabel(
     return `${label} (%)`;
   }
 
+  if (dataset && isAcsMedianField(fieldName)) {
+    return appendDatasetTitleForMedianLabel(label, datasetDisplayTitle(dataset));
+  }
+
   return label;
+}
+
+/**
+ * Append the context dataset title when the indicator is a median field
+ * (e.g. "Median" → "Median Income"). No-ops if the title is already present.
+ */
+export function appendDatasetTitleForMedianLabel(
+  label: string,
+  datasetTitle: string | null | undefined,
+  contextFields?: string[]
+): string {
+  const trimmedLabel = label.trim();
+  const title = datasetTitle?.trim();
+  if (!trimmedLabel || !title) return trimmedLabel;
+
+  const looksMedian =
+    (contextFields?.some((field) => isAcsMedianField(field)) ?? false) ||
+    /\bmedian\b/i.test(trimmedLabel);
+  if (!looksMedian) return trimmedLabel;
+
+  if (trimmedLabel.toLowerCase().includes(title.toLowerCase())) {
+    return trimmedLabel;
+  }
+  return `${trimmedLabel} ${title}`;
+}
+
+/** Display label for an analysis context metric, enriching medians with dataset name. */
+export function formatEquityAnalysisContextMetricLabel(analysis: {
+  contextFieldLabel: string;
+  contextFields: string[];
+  contextDatasetTitle: string;
+}): string {
+  return appendDatasetTitleForMedianLabel(
+    analysis.contextFieldLabel,
+    analysis.contextDatasetTitle,
+    analysis.contextFields
+  );
+}
+
+/** Scatter / relationship chart title from the two dataset names. */
+export function formatEquityRelationshipChartTitle(analysis: {
+  infrastructureDatasetTitle: string;
+  contextDatasetTitle: string;
+}): string {
+  return `${analysis.infrastructureDatasetTitle} × ${analysis.contextDatasetTitle} relationship`;
 }
 
 /** Layer / legend title for a context preview with a selected indicator. */

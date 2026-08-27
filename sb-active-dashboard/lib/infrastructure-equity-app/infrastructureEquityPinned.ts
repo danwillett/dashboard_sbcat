@@ -11,6 +11,12 @@ export const EQUITY_BIKE_COMFORT_REFERENCE_LAYER_ID =
 export const EQUITY_CONTEXT_REFERENCE_LAYER_ID =
   "infrastructure-equity-context-reference";
 
+export const EQUITY_CUSTOM_BIN_CONTEXT_LAYER_ID =
+  "infrastructure-equity-custom-bins-context";
+
+export const EQUITY_CUSTOM_BIN_INFRASTRUCTURE_LAYER_ID =
+  "infrastructure-equity-custom-bins-infrastructure";
+
 export const EQUITY_GEOGRAPHIC_EXTENT_PREVIEW_LAYER_ID =
   "infrastructure-equity-geographic-extent-preview";
 
@@ -80,7 +86,9 @@ export function isEquityReferenceLayerId(
 ): boolean {
   return (
     layerId === EQUITY_BIKE_COMFORT_REFERENCE_LAYER_ID ||
-    layerId === EQUITY_CONTEXT_REFERENCE_LAYER_ID
+    layerId === EQUITY_CONTEXT_REFERENCE_LAYER_ID ||
+    layerId === EQUITY_CUSTOM_BIN_CONTEXT_LAYER_ID ||
+    layerId === EQUITY_CUSTOM_BIN_INFRASTRUCTURE_LAYER_ID
   );
 }
 

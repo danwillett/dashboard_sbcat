@@ -18,9 +18,12 @@ import {
 import {
   buildEquityBivariateBreaks,
   createEquityBivariateRenderer,
+  equityBinClassLabel,
   equityBivariateClass,
+  EquityBinCount,
   EquityBivariateBreaks,
   EquityUnitValues,
+  DEFAULT_EQUITY_BIN_COUNT,
 } from "@/lib/infrastructure-equity-app/infrastructureEquityBivariate";
 import {
   EquityContextCategoryKind,
@@ -85,7 +88,15 @@ function numericFieldValue(attrs: Record<string, unknown>, field: string): numbe
   return parseNumericAttributeValue(attrs[field]);
 }
 
-export async function runInfrastructureEquityAnalysis(options: {
+export interface InfrastructureEquityUnitComputation {
+  units: EquityUnitValues[];
+  unitsTotal: number;
+  boundaryGeometry: Polygon | null;
+  fieldAliases: Record<string, string | undefined>;
+  contextFields: string[];
+}
+
+export async function computeInfrastructureEquityUnits(options: {
   infrastructureDataset: CatalogDataset;
   contextDataset: CatalogDataset;
   infrastructureComfortSelection: InfrastructureComfortSelection;
@@ -94,7 +105,7 @@ export async function runInfrastructureEquityAnalysis(options: {
   geographicFilter: EquityGeographicFilter;
   contextKind: EquityContextCategoryKind;
   onProgress?: (completed: number, total: number) => void;
-}): Promise<InfrastructureEquityAnalysisResult> {
+}): Promise<InfrastructureEquityUnitComputation> {
   const boundaryGeometry = await resolveEquityBoundaryGeometry(
     options.geographicFilter
   );
@@ -238,7 +249,51 @@ export async function runInfrastructureEquityAnalysis(options: {
     );
   }
 
-  const breaks = buildEquityBivariateBreaks(units);
+  return {
+    units,
+    unitsTotal: eligibleCount,
+    boundaryGeometry,
+    fieldAliases,
+    contextFields,
+  };
+}
+
+export async function runInfrastructureEquityAnalysis(options: {
+  infrastructureDataset: CatalogDataset;
+  contextDataset: CatalogDataset;
+  infrastructureComfortSelection: InfrastructureComfortSelection;
+  contextFields: string[];
+  geographyUnit: EquityGeographyUnit;
+  geographicFilter: EquityGeographicFilter;
+  contextKind: EquityContextCategoryKind;
+  binCount?: EquityBinCount;
+  infrastructureBreaks?: number[] | null;
+  contextBreaks?: number[] | null;
+  /** Optional precomputed units (e.g. from bin-configuration preview). */
+  precomputed?: InfrastructureEquityUnitComputation | null;
+  onProgress?: (completed: number, total: number) => void;
+}): Promise<InfrastructureEquityAnalysisResult> {
+  const computed =
+    options.precomputed ??
+    (await computeInfrastructureEquityUnits({
+      infrastructureDataset: options.infrastructureDataset,
+      contextDataset: options.contextDataset,
+      infrastructureComfortSelection: options.infrastructureComfortSelection,
+      contextFields: options.contextFields,
+      geographyUnit: options.geographyUnit,
+      geographicFilter: options.geographicFilter,
+      contextKind: options.contextKind,
+      onProgress: options.onProgress,
+    }));
+
+  const { units, unitsTotal, boundaryGeometry, fieldAliases, contextFields } =
+    computed;
+
+  const breaks = buildEquityBivariateBreaks(units, {
+    binCount: options.binCount ?? DEFAULT_EQUITY_BIN_COUNT,
+    infrastructureBreaks: options.infrastructureBreaks,
+    contextBreaks: options.contextBreaks,
+  });
 
   return {
     geographyUnit: options.geographyUnit,
@@ -271,50 +326,81 @@ export async function runInfrastructureEquityAnalysis(options: {
     units,
     breaks,
     unitsWithData: units.length,
-    unitsTotal: eligibleCount,
+    unitsTotal,
   };
 }
 
+/** Surface ArcGIS / non-Error rejections with a readable message. */
+export function formatEquityAnalysisError(
+  error: unknown,
+  fallback = "Equity analysis failed."
+): string {
+  if (error instanceof Error) {
+    const message = error.message?.trim();
+    return message || fallback;
+  }
+  if (typeof error === "string" && error.trim()) return error.trim();
+  if (error && typeof error === "object") {
+    const record = error as {
+      message?: unknown;
+      details?: { message?: unknown };
+      name?: unknown;
+    };
+    if (typeof record.message === "string" && record.message.trim()) {
+      return record.message.trim();
+    }
+    if (
+      typeof record.details?.message === "string" &&
+      record.details.message.trim()
+    ) {
+      return record.details.message.trim();
+    }
+    if (typeof record.name === "string" && record.name.trim()) {
+      return record.name.trim();
+    }
+  }
+  return fallback;
+}
+
+/**
+ * Build the bivariate result layer from analysis unit geometries.
+ * Uses a minimal client-side schema (same pattern as custom bin preview) so we
+ * avoid reusing hosted-layer Field instances / geometry fields that can make
+ * ArcGIS reject FeatureLayer construction with a non-Error object.
+ */
 export async function buildEquityContextFeatureLayer(
-  contextDataset: CatalogDataset,
+  _contextDataset: CatalogDataset,
   analysis: InfrastructureEquityAnalysisResult,
   analysisId: string,
   layerTitles?: { titleMain: string; titleSubtitle: string }
 ): Promise<FeatureLayer> {
-  const sourceLayer = (await createLayerForCatalogDataset(contextDataset)) as FeatureLayer;
-  await sourceLayer.load();
-
-  const unitByObjectId = new Map(
-    analysis.units.map((unit) => [unit.objectId, unit])
-  );
-
-  const query = sourceLayer.createQuery();
-  query.where = "1=1";
-  query.outFields = ["*"];
-  query.returnGeometry = true;
-  query.num = 5000;
-
-  const result = await sourceLayer.queryFeatures(query);
+  const objectIdField = "OBJECTID";
   const graphics: Graphic[] = [];
 
-  for (const feature of result.features) {
-    const attrs = (feature.attributes ?? {}) as Record<string, unknown>;
-    const objectId = Number(
-      attrs.OBJECTID ?? attrs.objectid ?? attrs.FID ?? attrs.fid
-    );
-    const unit = unitByObjectId.get(objectId);
-    if (!unit || !feature.geometry) continue;
-
-    const displayGeometry = unit.displayGeometry ?? (feature.geometry as Polygon);
-
+  for (const unit of analysis.units) {
+    if (!unit.displayGeometry) continue;
+    const bivariate = equityBivariateClass(unit, analysis.breaks);
+    const [infraBinRaw, contextBinRaw] = bivariate.split("-");
+    const infraBin = Number(infraBinRaw);
+    const contextBin = Number(contextBinRaw);
     graphics.push(
       new Graphic({
-        geometry: displayGeometry,
+        geometry: unit.displayGeometry,
         attributes: {
-          ...attrs,
+          [objectIdField]: unit.objectId,
           equity_infra_pct: unit.infrastructurePercent,
           equity_context_value: unit.contextValue,
-          equity_bivariate_class: equityBivariateClass(unit, analysis.breaks),
+          equity_infra_bin: infraBin,
+          equity_context_bin: contextBin,
+          equity_infra_class: equityBinClassLabel(
+            infraBin,
+            analysis.breaks.binCount
+          ),
+          equity_context_class: equityBinClassLabel(
+            contextBin,
+            analysis.breaks.binCount
+          ),
+          equity_bivariate_class: bivariate,
           equity_unit_label: unit.label ?? "",
         },
       })
@@ -322,11 +408,14 @@ export async function buildEquityContextFeatureLayer(
   }
 
   if (graphics.length === 0) {
-    throw new Error("Could not build equity map layer from context features.");
+    throw new Error(
+      "Could not build equity map layer — no unit geometries were available."
+    );
   }
 
   const renderer = createEquityBivariateRenderer(analysis.breaks);
-  const equityFields = [
+  const fields = [
+    new Field({ name: objectIdField, type: "oid" }),
     new Field({
       name: "equity_infra_pct",
       type: "double",
@@ -336,6 +425,26 @@ export async function buildEquityContextFeatureLayer(
       name: "equity_context_value",
       type: "double",
       alias: analysis.contextFieldLabel,
+    }),
+    new Field({
+      name: "equity_infra_bin",
+      type: "integer",
+      alias: "Infrastructure bin",
+    }),
+    new Field({
+      name: "equity_context_bin",
+      type: "integer",
+      alias: "Equity bin",
+    }),
+    new Field({
+      name: "equity_infra_class",
+      type: "string",
+      alias: "Infrastructure class",
+    }),
+    new Field({
+      name: "equity_context_class",
+      type: "string",
+      alias: "Equity class",
     }),
     new Field({
       name: "equity_bivariate_class",
@@ -348,20 +457,21 @@ export async function buildEquityContextFeatureLayer(
       alias: "Area",
     }),
   ];
-  const fields = [...(sourceLayer.fields || []), ...equityFields];
 
   const titleMain =
     layerTitles?.titleMain ??
     analysis.infrastructureMetricLabel + " × " + analysis.contextFieldLabel;
   const titleSubtitle = layerTitles?.titleSubtitle ?? analysis.geographicLabel;
+  const spatialReference =
+    graphics[0].geometry?.spatialReference ?? undefined;
 
   const layer = new FeatureLayer({
     id: equityAnalysisResultLayerId(analysisId),
     title: titleMain,
     source: graphics,
-    objectIdField: sourceLayer.objectIdField || "OBJECTID",
+    objectIdField,
     geometryType: "polygon",
-    spatialReference: sourceLayer.spatialReference,
+    spatialReference,
     fields,
     renderer,
     opacity: 0.85,
@@ -371,6 +481,8 @@ export async function buildEquityContextFeatureLayer(
     listMode: "show",
     outFields: ["*"],
   });
+
+  await layer.load();
 
   layer.set(EQUITY_LAYER_PROP_TITLE_MAIN, titleMain);
   layer.set(EQUITY_LAYER_PROP_TITLE_SUB, titleSubtitle);

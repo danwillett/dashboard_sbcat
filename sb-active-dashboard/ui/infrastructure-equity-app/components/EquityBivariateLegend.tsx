@@ -1,28 +1,44 @@
-import { BIVARIATE_FILL_COLORS } from "@/lib/infrastructure-equity-app/infrastructureEquityBivariate";
+import {
+  getBivariateFillColors,
+  EquityBinCount,
+} from "@/lib/infrastructure-equity-app/infrastructureEquityBivariate";
 
 interface EquityBivariateLegendProps {
   contextLabel: string;
+  infrastructureLabel: string;
+  binCount?: EquityBinCount;
   /** Geographic extent label (e.g. City of Santa Barbara Boundaries). */
   extentLabel?: string;
   /** Active analysis run title (e.g. comfort metric × indicator). */
   runTitle?: string;
 }
 
-const CELL_SIZE_PX = 36;
-const CELL_GAP_PX = 3;
-const GRID_SIZE_PX = CELL_SIZE_PX * 3 + CELL_GAP_PX * 2;
+const CELL_SIZE_PX = 28;
+const CELL_GAP_PX = 2;
 
-/** Display rows with high context at the top (matches renderer row index 2 → 0). */
-const LEGEND_COLOR_ROWS = [...BIVARIATE_FILL_COLORS].reverse();
+function formatAxisPercentLabel(label: string): string {
+  const trimmed = label.trim();
+  if (!trimmed) return trimmed;
+  if (/\(%\)|%/.test(trimmed)) return trimmed;
+  return `${trimmed} (%)`;
+}
 
 export default function EquityBivariateLegend({
   contextLabel,
+  infrastructureLabel,
+  binCount = 3,
   extentLabel,
   runTitle,
 }: EquityBivariateLegendProps) {
+  const colors = getBivariateFillColors(binCount);
+  const legendRows = [...colors].reverse();
+  const gridSizePx = CELL_SIZE_PX * binCount + CELL_GAP_PX * (binCount - 1);
+
   const headerTitle = extentLabel
     ? `Equity Results - ${extentLabel}`
     : "Equity Results";
+  const yAxisTitle = contextLabel;
+  const xAxisTitle = formatAxisPercentLabel(infrastructureLabel);
 
   return (
     <div className="equity-bivariate-legend px-3 py-3">
@@ -36,28 +52,41 @@ export default function EquityBivariateLegend({
           </div>
         ) : null}
       </div>
-      <div
-        className="flex items-stretch gap-3 pl-1"
-        style={{ minHeight: GRID_SIZE_PX }}
-      >
+
+      <div className="flex items-start gap-2 pl-1">
         <div
-          className="flex flex-col justify-between text-[11px] leading-tight text-gray-500"
-          style={{ width: 72, height: GRID_SIZE_PX }}
+          className="flex items-stretch gap-1.5"
+          style={{ height: gridSizePx }}
         >
-          <span>High {contextLabel}</span>
-          <span>Low {contextLabel}</span>
+          <div
+            className="flex items-center justify-center text-[11px] font-medium leading-tight text-gray-600"
+            style={{
+              writingMode: "vertical-rl",
+              transform: "rotate(180deg)",
+              maxHeight: gridSizePx,
+            }}
+            title={yAxisTitle}
+          >
+            <span className="line-clamp-3 text-center">{yAxisTitle}</span>
+          </div>
+
+          <div className="flex flex-col justify-between py-0.5 text-[10px] leading-none text-gray-500">
+            <span>High</span>
+            <span>Low</span>
+          </div>
         </div>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0">
           <div
-            className="grid grid-cols-3"
+            className="grid"
             style={{
-              width: GRID_SIZE_PX,
-              height: GRID_SIZE_PX,
+              width: gridSizePx,
+              height: gridSizePx,
               gap: CELL_GAP_PX,
+              gridTemplateColumns: `repeat(${binCount}, ${CELL_SIZE_PX}px)`,
             }}
           >
-            {LEGEND_COLOR_ROWS.map((row, rowIndex) =>
+            {legendRows.map((row, rowIndex) =>
               row.map((color, colIndex) => (
                 <span
                   key={`${rowIndex}-${colIndex}`}
@@ -72,18 +101,25 @@ export default function EquityBivariateLegend({
               ))
             )}
           </div>
-          <div
-            className="mt-2 flex justify-between text-[11px] text-gray-500"
-            style={{ width: GRID_SIZE_PX }}
-          >
-            <span>Low infra.</span>
-            <span>High infra.</span>
+
+          <div style={{ width: gridSizePx }}>
+            <div className="mt-1.5 flex justify-between text-[10px] leading-none text-gray-500">
+              <span>Low</span>
+              <span>High</span>
+            </div>
+            <div
+              className="mt-1 text-center text-[11px] font-medium leading-tight text-gray-600"
+              title={xAxisTitle}
+            >
+              <span className="line-clamp-2">{xAxisTitle}</span>
+            </div>
           </div>
         </div>
       </div>
+
       <p className="mt-2 pl-1 text-[10px] leading-snug text-gray-500">
         Colors show relative rank within the selected analysis extent (not
-        absolute values from the preview layer).
+        absolute values from the preview layer). {binCount}×{binCount} bins.
       </p>
     </div>
   );
